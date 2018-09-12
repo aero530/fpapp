@@ -1,14 +1,15 @@
-// @flow
 import React, { Component } from 'react';
+import compose from 'recompose/compose';
+import { withStyles } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
 import routes from '../constants/routes.json';
 import styles from './Home.css';
 
-type Props = {};
+const muiStyles = () => ({
+  root: {}
+});
 
-export default class Home extends Component<Props> {
-  props: Props;
-
+class Home extends Component {
   render() {
     return (
       <div className={styles.container} data-tid="container">
@@ -18,3 +19,7 @@ export default class Home extends Component<Props> {
     );
   }
 }
+
+Home.propTypes = {};
+
+export default compose(withStyles(muiStyles))(Home);

@@ -1,20 +1,16 @@
-// @flow
 import React, { Component } from 'react';
+import compose from 'recompose/compose';
+import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
 import styles from './Counter.css';
 import routes from '../constants/routes.json';
 
-type Props = {
-  increment: () => void,
-  incrementIfOdd: () => void,
-  incrementAsync: () => void,
-  decrement: () => void,
-  counter: number
-};
+const muiStyles = () => ({
+  root: {}
+});
 
-export default class Counter extends Component<Props> {
-  props: Props;
-
+class Counter extends Component {
   render() {
     const {
       increment,
@@ -71,3 +67,13 @@ export default class Counter extends Component<Props> {
     );
   }
 }
+
+Counter.propTypes = {
+  increment: PropTypes.func.isRequired,
+  incrementIfOdd: PropTypes.func.isRequired,
+  incrementAsync: PropTypes.func.isRequired,
+  decrement: PropTypes.func.isRequired,
+  counter: PropTypes.number.isRequired
+};
+
+export default compose(withStyles(muiStyles))(Counter);

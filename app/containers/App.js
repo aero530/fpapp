@@ -1,15 +1,21 @@
-// @flow
 import * as React from 'react';
+import compose from 'recompose/compose';
+import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
 
-type Props = {
-  children: React.Node
-};
+const styles = () => ({
+  root: {}
+});
 
-export default class App extends React.Component<Props> {
-  props: Props;
-
+class App extends React.Component {
   render() {
     const { children } = this.props;
     return <React.Fragment>{children}</React.Fragment>;
   }
 }
+
+App.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
+export default compose(withStyles(styles))(App);
