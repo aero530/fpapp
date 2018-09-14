@@ -173,10 +173,6 @@ If you want to use Sass in your app, you only need to import `.sass` files inste
 import './app.global.scss';
 ```
 
-## Static Type Checking
-
-This project comes with Flow support out of the box! You can annotate your code with types, [get Flow errors as ESLint errors](https://github.com/amilajack/eslint-plugin-flowtype-errors), and get [type errors during runtime](https://github.com/codemix/flow-runtime) during development. Types are completely optional.
-
 ## Dispatching redux actions from main process
 
 See [#118](https://github.com/chentsulin/electron-react-boilerplate/issues/118) and [#108](https://github.com/chentsulin/electron-react-boilerplate/issues/108)
