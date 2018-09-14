@@ -1,7 +1,9 @@
-import { OPEN_FILE } from '../actions/file';
+import { OPEN_FILE, SAVE_FILE, EDIT_FILE_STATE_CONTENT } from '../actions/file';
 
 const initialState = {
-  content: ''
+  content: '',
+  filename: '',
+  modified: false
 };
 
 export default function(state = initialState, action) {
@@ -9,6 +11,19 @@ export default function(state = initialState, action) {
     case OPEN_FILE:
       return {
         ...state,
+        content: action.content,
+        filename: action.filename,
+        modified: false
+      };
+    case SAVE_FILE:
+      return {
+        ...state,
+        modified: false
+      };
+    case EDIT_FILE_STATE_CONTENT:
+      return {
+        ...state,
+        modified: true,
         content: action.content
       };
     default:

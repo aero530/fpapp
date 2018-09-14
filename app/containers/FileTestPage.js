@@ -14,7 +14,9 @@ class FileTestPage extends Component {
 FileTestPage.propTypes = {};
 
 const mapStateToProps = state => ({
-  content: state.file.content
+  content: state.file.content,
+  filename: state.file.filename,
+  modified: state.file.modified
 });
 
 const mapDispatchToProps = dispatch =>
