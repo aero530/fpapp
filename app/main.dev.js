@@ -16,8 +16,6 @@ let mainWindow = null;
 let backgroundWindow = null;
 let showExitPrompt = true;
 
-
-
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
@@ -88,7 +86,7 @@ app.on('ready', async () => {
     }
   });
 
-  mainWindow.on('close', (e) => {
+  mainWindow.on('close', e => {
     if (showExitPrompt) {
       e.preventDefault(); // Prevents the window from closing
       mainWindow.webContents.send('closeOnClick'); // Tell the rendered that a window close was attempted
@@ -107,18 +105,18 @@ app.on('ready', async () => {
   // ------------------------------------------------
   backgroundWindow = new BrowserWindow({
     show: false
-	});
-
-	backgroundWindow.loadURL(`file://${__dirname}/background/index.html`);
-	backgroundWindow.on('closed', () => {
-    backgroundWindow = null;
   });
 
+  // backgroundWindow.loadURL(`file://${__dirname}/background/index.html`);
+  backgroundWindow.loadURL(`file://${__dirname}/background.html`);
+  backgroundWindow.on('closed', () => {
+    backgroundWindow = null;
+  });
 
   // ------------------------------------------------
   // Setup IPC Communication
   // ------------------------------------------------
-  
+
   // renderer allows the app to close
   ipcMain.on('quitApp', () => {
     showExitPrompt = false;
@@ -132,6 +130,6 @@ app.on('ready', async () => {
   });
 
   ipcMain.on('for-background', (event, arg) => {
-    backgroundWindow.webContents.send('to-renderer', arg);
+    backgroundWindow.webContents.send('to-background', arg);
   });
 });

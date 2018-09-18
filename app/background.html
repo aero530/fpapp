@@ -9,7 +9,7 @@
     <script>
       {
         const scripts = [];
-
+        
         // Dynamically insert the DLL script in development env in the
         // renderer process
         if (process.env.NODE_ENV === 'development') {
@@ -25,8 +25,8 @@
         // );
         scripts.push(
           (process.env.HOT)
-            ? 'http://localhost:' + port + '/dist/main.entry.js'
-            : './dist/main.entry.js'
+            ? 'http://localhost:' + port + '/dist/background.entry.js'
+            : './dist/background.entry.js'
         );
 
         document.write(

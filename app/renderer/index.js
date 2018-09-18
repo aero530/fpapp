@@ -11,6 +11,10 @@ const { dialog } = require('electron').remote;
 
 const store = configureStore();
 
+ipcRenderer.on('to-renderer', (event, arg) => {
+  console.log(`renderer ${arg}`);
+});
+
 ipcRenderer.on('fileOpen', (event, arg) => {
   const { contents } = store.getState();
   store.dispatch(openFile(arg.filename[0]));
@@ -35,22 +39,22 @@ function showOpen() {
         { name: 'All Files', extensions: [] }
       ]
     },
-    (filePaths) => {
+    filePaths => {
       if (filePaths) {
         store.dispatch(openFile(filePaths[0]));
       }
     }
   );
-};
+}
 
-ipcRenderer.on('fileOpenOnClick', () => {  
+ipcRenderer.on('fileOpenOnClick', () => {
   const { modified } = store.getState().file;
 
   if (modified) {
     dialog.showMessageBox(
       {
         type: 'warning', // Can be "none", "info", "error", "question" or "warning".
-        buttons: ['Save', 'Don\'t Save', 'Cancel'], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
+        buttons: ['Save', "Don't Save", 'Cancel'], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
         defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
         title: 'File has not been saved', // Title of the message box, some platforms will not show it.
         message: 'Unsaved file', // Content of the message box.
@@ -72,28 +76,33 @@ ipcRenderer.on('fileOpenOnClick', () => {
   }
 });
 
-ipcRenderer.on('closeOnClick', () => {  
+ipcRenderer.on('closeOnClick', () => {
   const { modified } = store.getState().file;
-  if (modified) { // if file has been modified
-    dialog.showMessageBox( // check to see if user wants to save
+  if (modified) {
+    // if file has been modified
+    dialog.showMessageBox(
+      // check to see if user wants to save
       {
         type: 'warning', // Can be "none", "info", "error", "question" or "warning".
-        buttons: ['Save', 'Don\'t Save'], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
+        buttons: ['Save', "Don't Save"], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
         defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
         title: 'File has not been saved', // Title of the message box, some platforms will not show it.
         message: 'Unsaved file', // Content of the message box.
         detail: 'Do you want to save or discard your current edits?' // extra information of the message.
       },
       selection => {
-        if (selection === 0) { // user chose to save
+        if (selection === 0) {
+          // user chose to save
           store.dispatch(saveFile()); // save file
           ipcRenderer.send('quitApp'); // tell main process to quit
-        } else {  // user chose not to save
+        } else {
+          // user chose not to save
           ipcRenderer.send('quitApp'); // tell main process to quit
         }
       }
     );
-  } else { // file was not modified
+  } else {
+    // file was not modified
     ipcRenderer.send('quitApp'); // tell main process to quit
   }
 });

@@ -45,16 +45,36 @@ export default merge.smart(baseConfig, {
 
   target: 'electron-renderer',
 
-  entry: [
-    'react-hot-loader/patch',
-    `webpack-dev-server/client?http://localhost:${port}/`,
-    'webpack/hot/only-dev-server',
-    path.join(__dirname, 'app/renderer/index.js')
-  ],
+  // entry: [
+  //   'react-hot-loader/patch',
+  //   `webpack-dev-server/client?http://localhost:${port}/`,
+  //   'webpack/hot/only-dev-server',
+  //   path.join(__dirname, 'app/renderer/index.js')
+  // ],
+
+  entry: {
+    main: [
+      'react-hot-loader/patch',
+      `webpack-dev-server/client?http://localhost:${port}/`,
+      'webpack/hot/only-dev-server',
+      path.join(__dirname, 'app/renderer/index.js')
+    ],
+    background: [
+      'react-hot-loader/patch',
+      `webpack-dev-server/client?http://localhost:${port}/`,
+      'webpack/hot/only-dev-server',
+      path.join(__dirname, 'app/background/index.js')
+    ]
+  },
+
+  // output: {
+  //   publicPath: `http://localhost:${port}/dist/`,
+  //   filename: 'renderer.dev.js'
+  // },
 
   output: {
-    publicPath: `http://localhost:${port}/dist/`,
-    filename: 'renderer.dev.js'
+    filename: '[name].entry.js',
+    publicPath: `http://localhost:${port}/dist/`
   },
 
   module: {
