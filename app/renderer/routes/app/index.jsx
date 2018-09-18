@@ -32,61 +32,58 @@ import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import Badge from '@material-ui/core/Badge';
 import Typography from '@material-ui/core/Typography';
 
-import { mainListItems, secondaryListItems } from './menuItems';
+import {
+  mainListItems,
+  secondaryListItems,
+  accountListItems
+} from './menuItems';
 
 import Dashboard from './dashboard';
 import Counter from './Counter';
 import FileTest from './FileTest';
-// import Equipment from './equipment';
-// import Jobs from './jobs';
-// import AddJob from './jobs/addJob';
-// import Job from './job';
-// import Results from './results';
-// import Profile from './profile';
-// import Profiles from './profiles';
-// import AddProfile from './profiles/addProfile';
-
+import Accounts from './accounts';
+import Settings from './settings';
 
 const drawerWidth = 240;
 
 const styles = theme => ({
   root: {
-    display: 'flex',
+    display: 'flex'
   },
   toolbar: {
-    paddingRight: 24, // keep right padding when drawer closed
+    paddingRight: 24 // keep right padding when drawer closed
   },
   toolbarIcon: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
     padding: '0 8px',
-    ...theme.mixins.toolbar,
+    ...theme.mixins.toolbar
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(['width', 'margin'], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
+      duration: theme.transitions.duration.leavingScreen
+    })
   },
   appBarShift: {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
     transition: theme.transitions.create(['width', 'margin'], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
+      duration: theme.transitions.duration.enteringScreen
+    })
   },
   menuButton: {
     marginLeft: 12,
-    marginRight: 36,
+    marginRight: 36
   },
   menuButtonHidden: {
-    display: 'none',
+    display: 'none'
   },
   title: {
-    flexGrow: 1,
+    flexGrow: 1
   },
   drawerPaper: {
     position: 'relative',
@@ -94,46 +91,44 @@ const styles = theme => ({
     width: drawerWidth,
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
+      duration: theme.transitions.duration.enteringScreen
+    })
   },
   drawerPaperClose: {
     overflowX: 'hidden',
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
+      duration: theme.transitions.duration.leavingScreen
     }),
     width: theme.spacing.unit * 7,
     [theme.breakpoints.up('sm')]: {
-      width: theme.spacing.unit * 9,
-    },
+      width: theme.spacing.unit * 9
+    }
   },
   appBarSpacer: theme.mixins.toolbar,
   content: {
     flexGrow: 1,
     padding: theme.spacing.unit * 3,
     height: '100vh',
-    overflow: 'auto',
+    overflow: 'auto'
   },
   chartContainer: {
-    marginLeft: -22,
+    marginLeft: -22
   },
   tableContainer: {
-    height: 320,
-  },
+    height: 320
+  }
 });
-
 
 class AppRoute extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      open: false,
+      open: false
     };
   }
 
-  componentDidMount() {
-  }
+  componentDidMount() {}
 
   handleDrawerOpen = () => {
     this.setState({ open: true });
@@ -143,17 +138,17 @@ class AppRoute extends React.Component {
     this.setState({ open: false });
   };
 
-
   render() {
-    const {
-      classes,
-    } = this.props;
+    const { classes } = this.props;
 
     return (
       <div className={classes.root}>
         <AppBar
           position="absolute"
-          className={classNames(classes.appBar, this.state.open && classes.appBarShift)}
+          className={classNames(
+            classes.appBar,
+            this.state.open && classes.appBarShift
+          )}
         >
           <Toolbar>
             <IconButton
@@ -161,28 +156,36 @@ class AppRoute extends React.Component {
               aria-label="open drawer"
               onClick={this.handleDrawerOpen}
               className={classNames(
-                  classes.menuButton,
-                  this.state.open && classes.menuButtonHidden,
-                )}
+                classes.menuButton,
+                this.state.open && classes.menuButtonHidden
+              )}
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="title" color="inherit" noWrap className={classes.title}>
-                Dashboard
-              </Typography>
-              <IconButton color="inherit">
-                <Badge badgeContent={4} color="secondary">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
+            <Typography
+              variant="title"
+              color="inherit"
+              noWrap
+              className={classes.title}
+            >
+              {' '}
+            </Typography>
+            <IconButton color="inherit">
+              <Badge badgeContent={4} color="secondary">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
           </Toolbar>
         </AppBar>
         <Drawer
           variant="permanent"
           classes={{
-              paper: classNames(classes.drawerPaper, !this.state.open && classes.drawerPaperClose),
-            }}
-            open={this.state.open}
+            paper: classNames(
+              classes.drawerPaper,
+              !this.state.open && classes.drawerPaperClose
+            )
+          }}
+          open={this.state.open}
         >
           <div className={classes.toolbarIcon}>
             <IconButton onClick={this.handleDrawerClose}>
@@ -192,23 +195,19 @@ class AppRoute extends React.Component {
           <Divider />
           <List>{mainListItems}</List>
           <Divider />
+          <List>{accountListItems}</List>
+          <Divider />
           <List>{secondaryListItems}</List>
         </Drawer>
         <main className={classes.content}>
           <div className={classes.appBarSpacer} />
           <div className={classes.toolbar} />
           <Switch>
-          <Route exact path="/app" component={Dashboard} />
-          <Route exact path="/app/counter" component={Counter} />
-          <Route exact path="/app/filetest" component={FileTest} />
-            {/* <Route exact path="/app/equipment/:id" component={Equipment} />
-            <Route exact path="/app/jobs" component={Jobs} />
-            <Route exact path="/app/jobs/addJob" component={AddJob} />
-            <Route exact path="/app/job/:id" component={Job} />
-            <Route exact path="/app/profile/:id" component={Profile} />
-            <Route exact path="/app/profiles/addProfile" component={AddProfile} />
-            <Route exact path="/app/profiles" component={Profiles} />
-            <Route exact path="/app/results" component={Results} /> */}
+            <Route exact path="/app" component={Dashboard} />
+            <Route exact path="/app/counter" component={Counter} />
+            <Route exact path="/app/filetest" component={FileTest} />
+            <Route exact path="/app/settings" component={Settings} />
+            <Route exact path="/app/accounts/:type" component={Accounts} />
           </Switch>
         </main>
       </div>
@@ -216,20 +215,18 @@ class AppRoute extends React.Component {
   }
 }
 
-AppRoute.propTypes = {
-};
+AppRoute.propTypes = {};
 
-AppRoute.defaultProps = {
+AppRoute.defaultProps = {};
 
-};
+const mapStateToProps = state => ({});
 
-const mapStateToProps = state => ({
-});
-
-const mapDispatchToProps = dispatch => ({
-});
+const mapDispatchToProps = dispatch => ({});
 
 export default compose(
   withStyles(styles),
-  connect(mapStateToProps, mapDispatchToProps),
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(AppRoute);

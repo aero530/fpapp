@@ -5,7 +5,7 @@ import { ipcRenderer } from 'electron';
 import Root from './root';
 import { configureStore, history } from './store/configureStore';
 
-import { openFile, saveFile, saveAsFile } from './actions/file';
+import { openFile, saveFile, saveAsFile } from './actions/data';
 
 const { dialog } = require('electron').remote;
 
@@ -16,9 +16,9 @@ ipcRenderer.on('to-renderer', (event, arg) => {
 });
 
 ipcRenderer.on('fileOpen', (event, arg) => {
-  const { contents } = store.getState();
+  //const { contents } = store.getState();
   store.dispatch(openFile(arg.filename[0]));
-  ipcRenderer.send('for-background', contents);
+  //ipcRenderer.send('for-background', contents);
 });
 
 ipcRenderer.on('fileSave', () => {

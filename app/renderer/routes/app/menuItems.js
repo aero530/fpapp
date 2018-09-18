@@ -6,10 +6,18 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ListSubheader from '@material-ui/core/ListSubheader';
 import DashboardIcon from '@material-ui/icons/Dashboard';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
-import PeopleIcon from '@material-ui/icons/People';
+import FolderOpenIcon from '@material-ui/icons/FolderOpen';
 import BarChartIcon from '@material-ui/icons/BarChart';
-import LayersIcon from '@material-ui/icons/Layers';
-import AssignmentIcon from '@material-ui/icons/Assignment';
+import TableChartIcon from '@material-ui/icons/TableChart';
+import HomeIcon from '@material-ui/icons/Home';
+import CreditCardIcon from '@material-ui/icons/CreditCard';
+import LocalPharmacyIcon from '@material-ui/icons/LocalPharmacy';
+import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
+import SchoolIcon from '@material-ui/icons/School';
+import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import HotTubIcon from '@material-ui/icons/HotTub';
+import ShareIcon from '@material-ui/icons/Share';
+import SettingsIcon from '@material-ui/icons/Settings';
 
 export const mainListItems = (
   <div>
@@ -19,53 +27,100 @@ export const mainListItems = (
       </ListItemIcon>
       <ListItemText primary="Dashboard" />
     </ListItem>
-    <ListItem button component={Link} to="/app/counter">
+
+    <ListItem button component={Link} to="/app/settings">
       <ListItemIcon>
-        <ShoppingCartIcon />
+        <SettingsIcon />
       </ListItemIcon>
-      <ListItemText primary="Counter" />
+      <ListItemText primary="Settings" />
     </ListItem>
-    <ListItem button component={Link} to="/app/filetest">
-      <ListItemIcon>
-        <PeopleIcon />
-      </ListItemIcon>
-      <ListItemText primary="File Test" />
-    </ListItem>
-    <ListItem button>
+
+    <ListItem button component={Link} to="/app/graphs">
       <ListItemIcon>
         <BarChartIcon />
       </ListItemIcon>
-      <ListItemText primary="Reports" />
+      <ListItemText primary="Graphs" />
     </ListItem>
-    <ListItem button>
+
+    <ListItem button component={Link} to="/app/results">
       <ListItemIcon>
-        <LayersIcon />
+        <TableChartIcon />
       </ListItemIcon>
-      <ListItemText primary="Integrations" />
+      <ListItemText primary="Results" />
+    </ListItem>
+  </div>
+);
+
+export const accountListItems = (
+  <div>
+    <ListSubheader inset>Accounts</ListSubheader>
+    <ListItem button component={Link} to="/app/accounts/income">
+      <ListItemIcon>
+        <AttachMoneyIcon />
+      </ListItemIcon>
+      <ListItemText primary="Income" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/retirement">
+      <ListItemIcon>
+        <HotTubIcon />
+      </ListItemIcon>
+      <ListItemText primary="Retirement" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/college">
+      <ListItemIcon>
+        <SchoolIcon />
+      </ListItemIcon>
+      <ListItemText primary="College" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/expense">
+      <ListItemIcon>
+        <CreditCardIcon />
+      </ListItemIcon>
+      <ListItemText primary="Expense" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/loan">
+      <ListItemIcon>
+        <ShareIcon />
+      </ListItemIcon>
+      <ListItemText primary="Loan" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/mortgage">
+      <ListItemIcon>
+        <HomeIcon />
+      </ListItemIcon>
+      <ListItemText primary="Mortgage" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/savings">
+      <ListItemIcon>
+        <SaveAltIcon />
+      </ListItemIcon>
+      <ListItemText primary="Savings" />
+    </ListItem>
+    <ListItem button component={Link} to="/app/accounts/hsa">
+      <ListItemIcon>
+        <LocalPharmacyIcon />
+      </ListItemIcon>
+      <ListItemText primary="HSA" />
     </ListItem>
   </div>
 );
 
 export const secondaryListItems = (
   <div>
-    <ListSubheader inset>Saved reports</ListSubheader>
-    <ListItem button>
+    <ListSubheader inset>test stuff</ListSubheader>
+
+    <ListItem button component={Link} to="/app/counter">
       <ListItemIcon>
-        <AssignmentIcon />
+        <ShoppingCartIcon />
       </ListItemIcon>
-      <ListItemText primary="Current month" />
+      <ListItemText primary="Counter" />
     </ListItem>
-    <ListItem button>
+
+    <ListItem button component={Link} to="/app/filetest">
       <ListItemIcon>
-        <AssignmentIcon />
+        <FolderOpenIcon />
       </ListItemIcon>
-      <ListItemText primary="Last quarter" />
-    </ListItem>
-    <ListItem button>
-      <ListItemIcon>
-        <AssignmentIcon />
-      </ListItemIcon>
-      <ListItemText primary="Year-end sale" />
+      <ListItemText primary="File Test" />
     </ListItem>
   </div>
 );

@@ -18,7 +18,7 @@ function work() {
   let finished = false;
   while (!finished) {
     result += Math.random() * Math.random();
-    finished = new Date().getTime() > start + 10000;
+    finished = new Date().getTime() > start + 5000;
   }
   return result;
 }
