@@ -18,16 +18,26 @@ function saveFileReducer() {
   };
 }
 
-export function openFile(filePaths) {
+export function openFile(filePath) {
   return dispatch => {
-    fs.readFile(filePaths[0], 'utf8', (err, data) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) throw err;
-      dispatch(openFileReducer(data, filePaths[0]));
+      dispatch(openFileReducer(data, filePath));
     });
   };
 }
 
-export function saveFile(filePathInput) {
+export function saveFile() {
+  return (dispatch, getState) => {
+    const { content, filename } = getState().file;
+    fs.writeFile(filename, content, err => {
+      if (err) throw err;
+      dispatch(saveFileReducer());
+    });
+  };
+}
+
+export function saveAsFile(filePathInput) {
   return (dispatch, getState) => {
     const { content } = getState().file;
     fs.writeFile(filePathInput, content, err => {

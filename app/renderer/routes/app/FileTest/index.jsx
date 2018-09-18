@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
-import FileTest from '../components/FileTest';
-import * as FileActions from '../actions/file';
+import FileTest from '../../../components/FileTest';
+import * as FileActions from '../../../actions/file';
 
 class FileTestPage extends Component {
   render() {

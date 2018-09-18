@@ -2,14 +2,12 @@ import React, { Component } from 'react';
 import compose from 'recompose/compose';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
-import { Link } from 'react-router-dom';
+import Button from '@material-ui/core/Button';
 
-import routes from '../constants/routes.json';
+import DecrementIcon from '@material-ui/icons/Remove';
+import IncrementIcon from '@material-ui/icons/Add';
 
-const muiStyles = () => ({
-  backButton: {
-    position: 'absolute'
-  },
+const muiStyles = (theme) => ({
 
   counter: {
     position: 'absolute',
@@ -23,26 +21,17 @@ const muiStyles = () => ({
   btnGroup: {
     position: 'relative',
     top: '500px',
-    width: '480px',
+    width: '500px',
     margin: '0 auto'
   },
 
-  btn: {
-    fontSize: '1.6rem',
-    fontWeight: 'bold',
-    backgroundColor: '#fff',
-    borderRadius: '50%',
-    margin: '10px',
-    width: '100px',
-    height: '100px',
-    opacity: '0.7',
-    cursor: 'pointer',
-    fontFamily: 'Arial, Helvetica, Helvetica Neue, sans-serif',
-    '&:hover': {
-      color: 'white',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)'
-    }
-  }
+  button: {
+    margin: theme.spacing.unit,
+  },
+  extendedIcon: {
+    marginRight: theme.spacing.unit,
+  },
+
 });
 
 class Counter extends Component {
@@ -57,33 +46,26 @@ class Counter extends Component {
     } = this.props;
     return (
       <div>
-        <div className={classes.backButton}>
-          <Link to={routes.HOME}>
-            <i className="fa fa-arrow-left fa-3x" />
-          </Link>
-        </div>
         <div className={`counter ${classes.counter}`}>{counter}</div>
         <div className={classes.btnGroup}>
-          <button className={classes.btn} onClick={increment} type="button">
-            <i className="fa fa-plus" />
-          </button>
-          <button className={classes.btn} onClick={decrement} type="button">
-            <i className="fa fa-minus" />
-          </button>
-          <button
-            className={classes.btn}
+          <Button className={classes.button} onClick={increment}>
+            <IncrementIcon />
+          </Button>
+          <Button className={classes.button} onClick={decrement}>
+            <DecrementIcon />
+          </Button>
+          <Button
+          className={classes.button}
             onClick={incrementIfOdd}
-            type="button"
           >
             odd
-          </button>
-          <button
-            className={classes.btn}
+          </Button>
+          <Button
+          className={classes.button}
             onClick={() => incrementAsync()}
-            type="button"
           >
             async
-          </button>
+          </Button>
         </div>
       </div>
     );

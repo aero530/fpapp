@@ -9,10 +9,14 @@
  * `./app/main.prod.js` using webpack. This gives us some performance wins.
  *
  */
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import MenuBuilder from './menu';
 
 let mainWindow = null;
+let backgroundWindow = null;
+let showExitPrompt = true;
+
+
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -59,6 +63,9 @@ app.on('ready', async () => {
     await installExtensions();
   }
 
+  // ------------------------------------------------
+  // Main Window
+  // ------------------------------------------------
   mainWindow = new BrowserWindow({
     show: false,
     width: 1024,
@@ -81,10 +88,50 @@ app.on('ready', async () => {
     }
   });
 
+  mainWindow.on('close', (e) => {
+    if (showExitPrompt) {
+      e.preventDefault(); // Prevents the window from closing
+      mainWindow.webContents.send('closeOnClick'); // Tell the rendered that a window close was attempted
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
+
+  // ------------------------------------------------
+  // Background Window
+  // ------------------------------------------------
+  backgroundWindow = new BrowserWindow({
+    show: false
+	});
+
+	backgroundWindow.loadURL(`file://${__dirname}/background/index.html`);
+	backgroundWindow.on('closed', () => {
+    backgroundWindow = null;
+  });
+
+
+  // ------------------------------------------------
+  // Setup IPC Communication
+  // ------------------------------------------------
+  
+  // renderer allows the app to close
+  ipcMain.on('quitApp', () => {
+    showExitPrompt = false;
+    mainWindow.close();
+    backgroundWindow.close();
+  });
+
+  // Windows can talk to each other via main
+  ipcMain.on('for-renderer', (event, arg) => {
+    mainWindow.webContents.send('to-renderer', arg);
+  });
+
+  ipcMain.on('for-background', (event, arg) => {
+    backgroundWindow.webContents.send('to-renderer', arg);
+  });
 });

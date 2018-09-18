@@ -1,4 +1,4 @@
-import { app, Menu, shell } from 'electron';
+import { app, Menu, shell, dialog } from 'electron';
 
 export default class MenuBuilder {
   constructor(mainWindow) {
@@ -6,6 +6,7 @@ export default class MenuBuilder {
   }
 
   buildMenu() {
+
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
@@ -184,10 +185,39 @@ export default class MenuBuilder {
         submenu: [
           {
             label: '&Open',
-            accelerator: 'Ctrl+O'
+            accelerator: 'Ctrl+O',
+            click: () => {
+              this.mainWindow.webContents.send('fileOpenOnClick');
+            }
           },
           {
-            label: '&Close',
+            label: '&Save',
+            accelerator: 'Ctrl+S',
+            click: () => {
+              this.mainWindow.webContents.send('fileSave');
+            }
+          },
+          {
+            label: '&Save As',
+            accelerator: 'Ctrl+Shift+S',
+            click: () => {
+              dialog.showSaveDialog(
+                {
+                  title: 'save as file',
+                  buttonLabel: 'save the file',
+                  filters: [
+                    { name: 'Text', extensions: ['txt', 'json'] },
+                    { name: 'All Files', extensions: [] }
+                  ]
+                },
+                (filePath) => {
+                  this.mainWindow.webContents.send('fileSaveAs', { filename: filePath });
+                }
+              )
+            }
+          },
+          {
+            label: '&Exit',
             accelerator: 'Ctrl+W',
             click: () => {
               this.mainWindow.close();

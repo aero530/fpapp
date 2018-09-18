@@ -8,27 +8,28 @@ import {
   MuiThemeProvider
 } from '@material-ui/core/styles';
 
-import indigo from '@material-ui/core/colors/indigo';
-import yellow from '@material-ui/core/colors/yellow';
-import red from '@material-ui/core/colors/red';
-
 import { Provider } from 'react-redux';
 import { ConnectedRouter } from 'react-router-redux';
-import Routes from '../Routes';
+import Routes from './routes';
+
+// Default theme settings
+// https://material-ui.com/customization/default-theme/
 
 const theme = createMuiTheme({
   palette: {
-    primary: indigo,
-    secondary: yellow,
-    error: red,
     // Used by `getContrastText()` to maximize the contrast between the background and
     // the text.
     contrastThreshold: 3,
     // Used to shift a color's luminance by approximately
     // two indexes within its tonal palette.
     // E.g., shift from Red 500 to Red 300 or Red 700.
-    tonalOffset: 0.2
-  }
+    tonalOffset: 0.2,
+    background: {
+      paper: "#fafafa",
+      default: "#eee",
+    }
+  },
+ 
 });
 
 const muiStyles = () => ({
