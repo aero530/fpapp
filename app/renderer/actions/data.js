@@ -3,11 +3,13 @@ import fs from 'fs';
 export const OPEN_DATA_FILE = 'OPEN_DATA_FILE';
 export const SAVE_DATA_FILE = 'SAVE_DATA_FILE';
 export const EDIT_DATA_FILE_STATE_CONTENT = 'EDIT_DATA_FILE_STATE_CONTENT';
+export const UPDATE_SETTING = 'UPDATE_SETTING';
+export const UPDATE_ACCOUNT = 'UPDATE_ACCOUNT';
 
-function openFileReducer(contentInput, accountsInput, filenameInput) {
+function openFileReducer(settingsInput, accountsInput, filenameInput) {
   return {
     type: OPEN_DATA_FILE,
-    settings: contentInput,
+    settings: settingsInput,
     accounts: accountsInput,
     filename: filenameInput
   };
@@ -23,26 +25,28 @@ export function openFile(filePath) {
   return dispatch => {
     fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) throw err;
+      const result = JSON.parse(data);
 
-      dispatch(openFileReducer(data, data, filePath));
+      const settingsFromFile = result.settings ? result.settings : {};
+      const accountsFromFile = result.accounts ? result.accounts : {};
+
+      dispatch(openFileReducer(settingsFromFile, accountsFromFile, filePath));
     });
   };
 }
 
-export function saveFile() {
+export function saveFile(filePathInput = null) {
   return (dispatch, getState) => {
-    const { content, filename } = getState().file;
-    fs.writeFile(filename, content, err => {
-      if (err) throw err;
-      dispatch(saveFileReducer());
-    });
-  };
-}
+    const { settings, accounts } = getState().data;
+    let { filename } = getState().data;
 
-export function saveAsFile(filePathInput) {
-  return (dispatch, getState) => {
-    const { content } = getState().file;
-    fs.writeFile(filePathInput, content, err => {
+    if (filePathInput) {
+      filename = filePathInput;
+    }
+    const data = { accounts, settings };
+    const result = JSON.stringify(data, null, '  ');
+
+    fs.writeFile(filename, result, err => {
       if (err) throw err;
       dispatch(saveFileReducer());
     });

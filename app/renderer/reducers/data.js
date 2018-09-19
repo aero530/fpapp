@@ -1,7 +1,9 @@
 import {
   OPEN_DATA_FILE,
   SAVE_DATA_FILE,
-  EDIT_DATA_FILE_STATE_CONTENT
+  EDIT_DATA_FILE_STATE_CONTENT,
+  UPDATE_SETTING,
+  UPDATE_ACCOUNT
 } from '../actions/data';
 
 const initialState = {
@@ -21,11 +23,13 @@ export default function(state = initialState, action) {
         filename: action.filename,
         modified: false
       };
+
     case SAVE_DATA_FILE:
       return {
         ...state,
         modified: false
       };
+
     case EDIT_DATA_FILE_STATE_CONTENT:
       return {
         ...state,
@@ -33,6 +37,25 @@ export default function(state = initialState, action) {
         settings: action.settings,
         accounts: action.accounts
       };
+
+    case UPDATE_SETTING: {
+      const prevSettings = state.settings;
+      prevSettings[action.name] = action.value;
+      return {
+        ...state,
+        settings: prevSettings
+      };
+    }
+
+    case UPDATE_ACCOUNT: {
+      const prevAccount = { ...state.accounts[action.accountName] };
+      prevAccount[action.fieldName] = action.fieldValue;
+      return {
+        ...state,
+        accounts: { ...state.accounts, [action.accountName]: prevAccount }
+      };
+    }
+
     default:
       return state;
   }

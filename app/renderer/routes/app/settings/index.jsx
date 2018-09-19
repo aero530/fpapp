@@ -5,8 +5,19 @@ import compose from 'recompose/compose';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
+
+import classNames from 'classnames';
+
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
+
+import Tooltip from '@material-ui/core/Tooltip';
+import TextField from '@material-ui/core/TextField';
+
+import NumberFormat from 'react-number-format';
+
+import { SET_APP_BAR_TITLE } from '../../../actions/app';
+import { UPDATE_SETTING } from '../../../actions/data';
 
 const styles = theme => ({
   root: {
@@ -14,52 +25,223 @@ const styles = theme => ({
     marginTop: theme.spacing.unit * 3
   },
   paper: {
-    position: 'absolute',
-    width: theme.spacing.unit * 50,
+    width: '100%',
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5],
-    padding: theme.spacing.unit * 4
+    padding: theme.spacing.unit * 4,
+    marginBottom: theme.spacing.unit * 4
   },
   button: {
     margin: theme.spacing.unit
   }
 });
 
+function NumberFormatPercentage(props) {
+  const { inputRef, onChange, ...other } = props;
+
+  return (
+    <NumberFormat
+      {...other}
+      getInputRef={inputRef}
+      onValueChange={(values, event) => {
+        onChange({
+          target: {
+            value: values.value,
+            floatValue: values.floatValue,
+            id: event.target.id
+          }
+        });
+      }}
+      suffix="%"
+    />
+  );
+}
+
+NumberFormatPercentage.propTypes = {
+  inputRef: PropTypes.func.isRequired,
+  onChange: PropTypes.func.isRequired
+};
+
+function NumberFormatYear(props) {
+  const { inputRef, onChange, ...other } = props;
+
+  return (
+    <NumberFormat
+      {...other}
+      getInputRef={inputRef}
+      onValueChange={(values, event) => {
+        onChange({
+          target: {
+            value: values.value,
+            floatValue: values.floatValue,
+            id: event.target.id
+          }
+        });
+      }}
+      format="####"
+    />
+  );
+}
+
+NumberFormatYear.propTypes = {
+  inputRef: PropTypes.func.isRequired,
+  onChange: PropTypes.func.isRequired
+};
+
 class Settings extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      isRemoveModalOpen: false
-    };
+    this.state = {};
+
+    props.setAppBarTitle('Settings');
   }
 
   render() {
-    const { classes } = this.props;
+    const { classes, settings, changeSetting } = this.props;
 
     return (
-      <Paper className={classes.root}>
-        <Typography variant="title" id="modal-title">
-          Settings
-        </Typography>
-        age_retire = 67 age_die = 100 year_born = 1982 year_start = 2014 #
-        10/27/2013 inflation_base = 3.0 tax_income = 20.0 tax_capitalgains =
-        15.0 retirement_costofliving = 85.0 # setting this to 100% will cover
-        all of the expense category items which currently does
-      </Paper>
+      <div>
+        <Paper className={classes.paper}>
+          <Typography variant="title" id="modal-title">
+            Time
+          </Typography>
+
+          <Tooltip title="Calendar year when you will start pulling from retirement accounts">
+            <TextField
+              id="age_retire"
+              label="Retirement Age"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.age_retire}
+              InputProps={{ inputComponent: NumberFormatYear }}
+              onChange={event => {
+                changeSetting(event.target.id, parseFloat(event.target.value));
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+
+          <Tooltip title="Age at which you will no longer need to pull money from your retirement accounts">
+            <TextField
+              id="age_die"
+              label="Termination Age"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.age_die}
+              InputProps={{ inputComponent: NumberFormatYear }}
+              onChange={event => {
+                changeSetting(event.target.id, parseFloat(event.target.value));
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+
+          <Tooltip title="Year in which you were born">
+            <TextField
+              id="year_born"
+              label="Birth Year"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.year_born}
+              InputProps={{ inputComponent: NumberFormatYear }}
+              onChange={event => {
+                changeSetting(event.target.id, parseFloat(event.target.value));
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+
+          <Tooltip title="Current calendar year">
+            <TextField
+              id="year_start"
+              label="Beginning Year"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.year_start}
+              InputProps={{ inputComponent: NumberFormatYear }}
+              onChange={event => {
+                changeSetting(event.target.id, parseFloat(event.target.value));
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+        </Paper>
+
+        <Paper className={classes.paper}>
+          <Typography variant="title" id="modal-title">
+            Inflation
+          </Typography>
+          <Tooltip title="Inflation rate as a percentage. (Used to increase the cost of living)">
+            <TextField
+              id="inflation_base"
+              label="Inflation %"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.inflation_base}
+              InputProps={{ inputComponent: NumberFormatPercentage }}
+              onChange={event => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Percent of income which goes to taxes">
+            <TextField
+              id="tax_income"
+              label="Income Tax Rate %"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.tax_income}
+              InputProps={{ inputComponent: NumberFormatPercentage }}
+              onChange={event => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Capital gains taxes (tax on interest earned)">
+            <TextField
+              id="tax_capitalgains"
+              label="Capital Gains Tax Rate %"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.tax_capitalgains}
+              InputProps={{ inputComponent: NumberFormatPercentage }}
+              onChange={event => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Cost of living during retirement relative to current cost of living as a percentage. Note that it is already accounted for that you will not be saving for retirement or college funds.  This is a blanket decrease in the amount of money spent on all expenses (including food, housing, medical, travel, etc.)">
+            <TextField
+              id="retirement_costofliving"
+              label="Cost of Living %"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.retirement_costofliving}
+              InputProps={{ inputComponent: NumberFormatPercentage }}
+              onChange={event => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+        </Paper>
+      </div>
     );
   }
 }
-
 Settings.propTypes = {
-  classes: PropTypes.objectOf(PropTypes.string).isRequired
+  classes: PropTypes.objectOf(PropTypes.string).isRequired,
+  setAppBarTitle: PropTypes.func.isRequired
 };
 
 Settings.defaultProps = {};
 
-const mapStateToProps = state => ({});
+const mapStateToProps = state => ({
+  settings: state.data.settings
+});
 
-const mapDispatchToProps = dispatch => ({});
+const mapDispatchToProps = dispatch => ({
+  setAppBarTitle: titleInput =>
+    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  changeSetting: (nameInput, valueInput) =>
+    dispatch({ type: UPDATE_SETTING, name: nameInput, value: valueInput })
+});
 
 export default compose(
   withStyles(styles),

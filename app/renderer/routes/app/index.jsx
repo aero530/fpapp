@@ -139,7 +139,7 @@ class AppRoute extends React.Component {
   };
 
   render() {
-    const { classes } = this.props;
+    const { classes, appBarTitle } = this.props;
 
     return (
       <div className={classes.root}>
@@ -168,7 +168,7 @@ class AppRoute extends React.Component {
               noWrap
               className={classes.title}
             >
-              {' '}
+              {appBarTitle}
             </Typography>
             <IconButton color="inherit">
               <Badge badgeContent={4} color="secondary">
@@ -219,7 +219,9 @@ AppRoute.propTypes = {};
 
 AppRoute.defaultProps = {};
 
-const mapStateToProps = state => ({});
+const mapStateToProps = state => ({
+  appBarTitle: state.app.appBarTitle
+});
 
 const mapDispatchToProps = dispatch => ({});
 

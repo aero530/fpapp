@@ -5,23 +5,15 @@ import compose from 'recompose/compose';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
-import Paper from '@material-ui/core/Paper';
-import Typography from '@material-ui/core/Typography';
 
-const styles = theme => ({
+import { SET_APP_BAR_TITLE } from '../../../actions/app';
+import { UPDATE_ACCOUNT } from '../../../actions/data';
+
+import Account from '../../../components/account';
+
+const styles = () => ({
   root: {
-    width: '100%',
-    marginTop: theme.spacing.unit * 3
-  },
-  paper: {
-    position: 'absolute',
-    width: theme.spacing.unit * 50,
-    backgroundColor: theme.palette.background.paper,
-    boxShadow: theme.shadows[5],
-    padding: theme.spacing.unit * 4
-  },
-  button: {
-    margin: theme.spacing.unit
+    width: '100%'
   }
 });
 
@@ -29,33 +21,63 @@ class Accounts extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      isRemoveModalOpen: false
-    };
+    this.state = {};
   }
 
   render() {
-    const { classes, match } = this.props;
+    const {
+      classes,
+      match,
+      accounts,
+      onAccountChange,
+      setAppBarTitle
+    } = this.props;
+
+    setAppBarTitle(match.params.type);
 
     return (
-      <Paper className={classes.root}>
-        <Typography variant="title" id="modal-title">
-          {match.params.type}
-        </Typography>
-      </Paper>
+      <div>
+        {Object.keys(accounts).map((name, index) => {
+          if (accounts[name].type === match.params.type) {
+            const key = `account-${name}-${index}`;
+            return (
+              <Account
+                key={key}
+                account={accounts[name]}
+                onAccountChange={onAccountChange}
+              />
+            );
+          }
+          return null;
+        })}
+      </div>
     );
   }
 }
 
 Accounts.propTypes = {
-  classes: PropTypes.objectOf(PropTypes.string).isRequired
+  classes: PropTypes.objectOf(PropTypes.string).isRequired,
+  setAppBarTitle: PropTypes.func.isRequired,
+  onAccountChange: PropTypes.func.isRequired
 };
 
 Accounts.defaultProps = {};
 
-const mapStateToProps = state => ({});
+const mapStateToProps = state => ({
+  accounts: state.data.accounts
+});
 
-const mapDispatchToProps = dispatch => ({});
+const mapDispatchToProps = dispatch => ({
+  setAppBarTitle: titleInput =>
+    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  onAccountChange: (accountNameInput, fieldNameInput, fieldValueInput) =>
+    dispatch({
+      type: UPDATE_ACCOUNT,
+      accountName: accountNameInput,
+      fieldName: fieldNameInput,
+      fieldValue: fieldValueInput
+    })
+});
 
 export default compose(
   withStyles(styles),
