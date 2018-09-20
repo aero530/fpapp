@@ -29,6 +29,7 @@ class Accounts extends React.Component {
       classes,
       match,
       accounts,
+      incomeAccounts,
       onAccountChange,
       setAppBarTitle
     } = this.props;
@@ -44,6 +45,7 @@ class Accounts extends React.Component {
               <Account
                 key={key}
                 account={accounts[name]}
+                incomeAccounts={incomeAccounts}
                 onAccountChange={onAccountChange}
               />
             );
@@ -64,7 +66,8 @@ Accounts.propTypes = {
 Accounts.defaultProps = {};
 
 const mapStateToProps = state => ({
-  accounts: state.data.accounts
+  accounts: state.data.accounts,
+  incomeAccounts: state.data.incomeAccounts
 });
 
 const mapDispatchToProps = dispatch => ({

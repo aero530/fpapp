@@ -6,11 +6,17 @@ export const EDIT_DATA_FILE_STATE_CONTENT = 'EDIT_DATA_FILE_STATE_CONTENT';
 export const UPDATE_SETTING = 'UPDATE_SETTING';
 export const UPDATE_ACCOUNT = 'UPDATE_ACCOUNT';
 
-function openFileReducer(settingsInput, accountsInput, filenameInput) {
+function openFileReducer(
+  settingsInput,
+  accountsInput,
+  incomeAccountsInput,
+  filenameInput
+) {
   return {
     type: OPEN_DATA_FILE,
     settings: settingsInput,
     accounts: accountsInput,
+    incomeAccounts: incomeAccountsInput,
     filename: filenameInput
   };
 }
@@ -21,6 +27,23 @@ function saveFileReducer() {
   };
 }
 
+function getIncomeAccounts(accounts) {
+  const incomeAccounts = [];
+  incomeAccounts.push({ value: 'none', label: 'not linked' });
+
+  Object.keys(accounts).forEach(name => {
+    if (accounts[name].type === 'income') {
+      const account = {
+        value: name,
+        label: name
+      };
+
+      incomeAccounts.push(account);
+    }
+  });
+  return incomeAccounts;
+}
+
 export function openFile(filePath) {
   return dispatch => {
     fs.readFile(filePath, 'utf8', (err, data) => {
@@ -29,8 +52,16 @@ export function openFile(filePath) {
 
       const settingsFromFile = result.settings ? result.settings : {};
       const accountsFromFile = result.accounts ? result.accounts : {};
+      const incomeAccounts = getIncomeAccounts(accountsFromFile);
 
-      dispatch(openFileReducer(settingsFromFile, accountsFromFile, filePath));
+      dispatch(
+        openFileReducer(
+          settingsFromFile,
+          accountsFromFile,
+          incomeAccounts,
+          filePath
+        )
+      );
     });
   };
 }

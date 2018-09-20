@@ -21,28 +21,28 @@ import SettingsIcon from '@material-ui/icons/Settings';
 
 export const mainListItems = (
   <div>
-    <ListItem button component={Link} to="/app">
+    <ListItem dense button component={Link} to="/app">
       <ListItemIcon>
         <DashboardIcon />
       </ListItemIcon>
       <ListItemText primary="Dashboard" />
     </ListItem>
 
-    <ListItem button component={Link} to="/app/settings">
+    <ListItem dense button component={Link} to="/app/settings">
       <ListItemIcon>
         <SettingsIcon />
       </ListItemIcon>
       <ListItemText primary="Settings" />
     </ListItem>
 
-    <ListItem button component={Link} to="/app/graphs">
+    <ListItem dense button component={Link} to="/app/graphs">
       <ListItemIcon>
         <BarChartIcon />
       </ListItemIcon>
       <ListItemText primary="Graphs" />
     </ListItem>
 
-    <ListItem button component={Link} to="/app/results">
+    <ListItem dense button component={Link} to="/app/results">
       <ListItemIcon>
         <TableChartIcon />
       </ListItemIcon>
@@ -54,49 +54,49 @@ export const mainListItems = (
 export const accountListItems = (
   <div>
     <ListSubheader inset>Accounts</ListSubheader>
-    <ListItem button component={Link} to="/app/accounts/income">
+    <ListItem dense button component={Link} to="/app/accounts/income">
       <ListItemIcon>
         <AttachMoneyIcon />
       </ListItemIcon>
       <ListItemText primary="Income" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/retirement">
+    <ListItem dense button component={Link} to="/app/accounts/retirement">
       <ListItemIcon>
         <HotTubIcon />
       </ListItemIcon>
       <ListItemText primary="Retirement" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/college">
+    <ListItem dense button component={Link} to="/app/accounts/college">
       <ListItemIcon>
         <SchoolIcon />
       </ListItemIcon>
       <ListItemText primary="College" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/expense">
+    <ListItem dense button component={Link} to="/app/accounts/expense">
       <ListItemIcon>
         <CreditCardIcon />
       </ListItemIcon>
       <ListItemText primary="Expense" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/loan">
+    <ListItem dense button component={Link} to="/app/accounts/loan">
       <ListItemIcon>
         <ShareIcon />
       </ListItemIcon>
       <ListItemText primary="Loan" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/mortgage">
+    <ListItem dense button component={Link} to="/app/accounts/mortgage">
       <ListItemIcon>
         <HomeIcon />
       </ListItemIcon>
       <ListItemText primary="Mortgage" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/savings">
+    <ListItem dense button component={Link} to="/app/accounts/savings">
       <ListItemIcon>
         <SaveAltIcon />
       </ListItemIcon>
       <ListItemText primary="Savings" />
     </ListItem>
-    <ListItem button component={Link} to="/app/accounts/hsa">
+    <ListItem dense button component={Link} to="/app/accounts/hsa">
       <ListItemIcon>
         <LocalPharmacyIcon />
       </ListItemIcon>
@@ -109,14 +109,14 @@ export const secondaryListItems = (
   <div>
     <ListSubheader inset>test stuff</ListSubheader>
 
-    <ListItem button component={Link} to="/app/counter">
+    <ListItem dense button component={Link} to="/app/counter">
       <ListItemIcon>
         <ShoppingCartIcon />
       </ListItemIcon>
       <ListItemText primary="Counter" />
     </ListItem>
 
-    <ListItem button component={Link} to="/app/filetest">
+    <ListItem dense button component={Link} to="/app/filetest">
       <ListItemIcon>
         <FolderOpenIcon />
       </ListItemIcon>

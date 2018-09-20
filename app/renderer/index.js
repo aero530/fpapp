@@ -35,7 +35,7 @@ function showOpen() {
       title: 'Open file',
       buttonLabel: 'open the file',
       filters: [
-        { name: 'Text', extensions: ['txt', 'json'] },
+        { name: 'Text', extensions: ['json'] },
         { name: 'All Files', extensions: [] }
       ]
     },

@@ -9,6 +9,7 @@ import {
 const initialState = {
   settings: {},
   accounts: {},
+  incomeAccounts: [],
   filename: '',
   modified: false
 };
@@ -20,6 +21,7 @@ export default function(state = initialState, action) {
         ...state,
         settings: action.settings,
         accounts: action.accounts,
+        incomeAccounts: action.incomeAccounts,
         filename: action.filename,
         modified: false
       };
