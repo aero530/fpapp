@@ -1,4 +1,4 @@
-export const taxStatusOptions = [
+export const taxStatusTypeOptions = [
   {
     value: 0,
     label: 'contribute taxed income - earnings taxed deferred',

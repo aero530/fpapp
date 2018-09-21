@@ -1,10 +1,23 @@
+// cSpell: ignore Formaters, autofill
+
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import classNames from 'classnames';
 
-import Paper from '@material-ui/core/Paper';
-import Typography from '@material-ui/core/Typography';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+
+import Button from '@material-ui/core/Button';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 import Tooltip from '@material-ui/core/Tooltip';
 import HelpIcon from '@material-ui/icons/HelpOutline';
@@ -25,12 +38,14 @@ import {
 } from './numberFormaters';
 
 import {
-  taxStatusOptions,
+  taxStatusTypeOptions,
   contributionTypeOptions,
   expenseTypeOptions,
   withdrawalTypeOptions,
   paymentTypeOptions
 } from './autofillTypeOptions';
+
+import { show } from './accountStructure';
 
 const percentSuggestions = [{ label: 'inflation_base' }];
 
@@ -51,13 +66,19 @@ const styles = theme => ({
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5],
     padding: theme.spacing.unit * 4,
-    marginBottom: theme.spacing.unit * 4
+    marginBottom: theme.spacing.unit * 4,
+    overflow: 'visible'
   },
   margin: {
     margin: theme.spacing.unit
   },
   textField: {
     flexBasis: 200
+  },
+  deleteFloatingActionButton: {
+    position: 'absolute',
+    bottom: theme.spacing.unit * 0,
+    right: theme.spacing.unit * 0
   }
 });
 
@@ -65,710 +86,609 @@ class Account extends Component {
   constructor(props, context) {
     super(props, context);
     // initialize the state
-    this.state = {};
-  }
-
-  render() {
-    const { classes, account, incomeAccounts, onAccountChange } = this.props;
-
-    const show = {
-      income: {
-        name: true,
-        table: true,
-        startin: true,
-        endin: true,
-        raise: true,
-        base: true
-      },
-      retirement: {
-        name: true,
-        table: true,
-        startin: true,
-        endin: true,
-        startout: true,
-        endout: true,
-        yearlycontribution: true,
-        contributiontype: true,
-        yearlyreturn: true,
-        withdrawaltype: true,
-        withdrawalvalue: true,
-        taxstatus: true,
-        incomelink: true,
-        employermatch: true,
-        matchlimit: true
-      },
-      hsa: {
-        name: true,
-        table: true,
-        startin: true,
-        endin: true,
-        startout: true,
-        endout: true,
-        yearlycontribution: true,
-        employercontribution: true,
-        contributiontype: true,
-        yearlyreturn: true,
-        taxstatus: true
-      },
-      college: {
-        name: true,
-        table: true,
-        startin: true,
-        endin: true,
-        startout: true,
-        endout: true,
-        yearlycontribution: true,
-        contributiontype: true,
-        yearlyreturn: true,
-        withdrawaltype: true,
-        withdrawalvalue: true,
-        taxstatus: true
-      },
-      expense: {
-        name: true,
-        table: true,
-        startout: true,
-        endout: true,
-        expensetype: true,
-        expensevalue: true
-      },
-      loan: {
-        name: true,
-        table: true,
-        startout: true,
-        endout: true,
-        paymenttype: true,
-        paymentvalue: true,
-        rate: true
-      },
-      mortgage: {
-        name: true,
-        table: true,
-        startout: true,
-        endout: true,
-        paymenttype: true,
-        paymentvalue: true,
-        rate: true,
-        compoundtime: true,
-        mortgageinsurance: true,
-        ltvlimit: true,
-        escrowvalue: true,
-        value: true
-      }
+    this.state = {
+      account: { ...props.account },
+      open: false
     };
 
+    console.log(props.account.type);
+    console.log(show[props.account.type].name);
+  }
+
+  handleDialogOpen = () => {
+    this.setState({ open: true });
+  };
+
+  handleDialogClose = () => {
+    this.setState({ open: false });
+  };
+
+  handleDeleteTrue = () => {
+    const { onDelete } = this.props;
+    this.handleDialogClose();
+    onDelete();
+  };
+
+  handleChange = (fieldNameInput, fieldValueInput) => {
+    const { onUpdate } = this.props;
+    const { account } = this.state;
+    const newAccount = { ...account, [fieldNameInput]: fieldValueInput };
+    this.setState({
+      account: newAccount
+    });
+    onUpdate(newAccount);
+  };
+
+  render() {
+    const { classes, incomeAccounts } = this.props;
+    const { account } = this.state;
+
+    console.log(show[account.type].name);
+    console.log(show);
+
     return (
-      <Paper className={classes.paper}>
-        <Typography variant="title" id="modal-title">
-          {account.name}
-        </Typography>
+      <Card className={classes.paper}>
+        <CardHeader
+          title={account.name}
+          action={
+            <IconButton onClick={this.handleDialogOpen}>
+              <DeleteIcon />
+            </IconButton>
+          }
+        />
 
-        <div>
-          {show[account.type].name ? (
-            <Tooltip title="String describing this income source">
-              <TextField
-                id="name"
-                label="Account Name"
+        <Dialog
+          open={this.state.open}
+          onClose={this.handleDialogClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{account.name}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this account?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleDeleteTrue} color="primary">
+              Delete
+            </Button>
+            <Button onClick={this.handleDialogClose} color="primary" autoFocus>
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <CardContent>
+          <div>
+            {show[account.type].name ? (
+              <Tooltip title="String describing this income source">
+                <TextField
+                  id="name"
+                  label="Account Name"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.name}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.value);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+
+            {show[account.type].incomelink ? (
+              <Select
+                inputProps={{
+                  name: 'incomelink',
+                  id: 'incomelink'
+                }}
+                label="Income Link"
                 className={classNames(classes.margin, classes.textField)}
-                value={account.name}
+                value={account.incomelink ? account.incomelink : 'none'}
                 onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.value
-                  );
+                  this.handleChange(event.target.name, event.target.value);
+                }}
+              >
+                {incomeAccounts.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            ) : null}
+            {show[account.type].incomelink ? (
+              <Tooltip title="Link this account to an income source">
+                <HelpIcon />
+              </Tooltip>
+            ) : null}
+          </div>
+
+          <div>
+            {show[account.type].employermatch ? (
+              <Tooltip title="Percent of your contribution that your employer matches">
+                <TextField
+                  id="employermatch"
+                  label="Employer Match %"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.employermatch}
+                  disabled={
+                    account.incomelink === 'none' || !('incomelink' in account)
+                  }
+                  InputProps={{ inputComponent: NumberFormatPercentage }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+
+            {show[account.type].matchlimit ? (
+              <Tooltip title="Employer match applies to up to this percentage of your base income">
+                <TextField
+                  id="matchlimit"
+                  label="Match Limit %"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.matchlimit}
+                  disabled={
+                    account.incomelink === 'none' || !('incomelink' in account)
+                  }
+                  InputProps={{ inputComponent: NumberFormatPercentage }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+          </div>
+
+          <div>
+            {show[account.type].startin ? (
+              <SuggestedInput
+                className={classNames(classes.margin, classes.textField)}
+                value={account.startin}
+                id="startin"
+                label="Begin Contributions"
+                helperText="can be based on 'year' strings"
+                title="Calendar year when money starts coming out of income and going into this account"
+                titleLocation="right"
+                suggestionsList={yearSuggestions}
+                onInputChange={(fieldName, fieldValue) => {
+                  this.handleChange(fieldName, fieldValue);
                 }}
               />
-            </Tooltip>
-          ) : null}
+            ) : null}
 
-          {show[account.type].incomelink ? (
-            <Select
-              inputProps={{
-                name: 'incomelink',
-                id: 'incomelink'
-              }}
-              label="Income Link"
-              className={classNames(classes.margin, classes.textField)}
-              value={account.incomelink ? account.incomelink : 'none'}
-              onChange={event => {
-                onAccountChange(
-                  account.name,
-                  event.target.name,
-                  event.target.value
-                );
-              }}
-            >
-              {incomeAccounts.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          ) : null}
-          {show[account.type].incomelink ? (
-            <Tooltip title="Link this account to an income source">
-              <HelpIcon />
-            </Tooltip>
-          ) : null}
-        </div>
-
-        <div>
-          {show[account.type].employermatch ? (
-            <Tooltip title="Percent of your contribution that your employer matches">
-              <TextField
-                id="employermatch"
-                label="Employer Match %"
+            {show[account.type].endin ? (
+              <SuggestedInput
                 className={classNames(classes.margin, classes.textField)}
-                value={account.employermatch}
-                disabled={
-                  account.incomelink === 'none' || !('incomelink' in account)
+                value={account.endin}
+                id="endin"
+                label="End Contributions"
+                helperText="can be based on 'year' strings"
+                title="Calendar year when money no longer goes to this account (this is inclusive so it will generally be year_retire-1)"
+                titleLocation="right"
+                suggestionsList={yearSuggestions}
+                onInputChange={(fieldName, fieldValue) => {
+                  this.handleChange(fieldName, fieldValue);
+                }}
+              />
+            ) : null}
+          </div>
+
+          <div>
+            {show[account.type].startout ? (
+              <SuggestedInput
+                className={classNames(classes.margin, classes.textField)}
+                value={account.startout}
+                id="startout"
+                label="Begin Withdrawals"
+                helperText="can be based on 'year' strings"
+                title="Calendar year when money starts coming out of this account and acts as income"
+                titleLocation="right"
+                suggestionsList={yearSuggestions}
+                onInputChange={(fieldName, fieldValue) => {
+                  this.handleChange(fieldName, fieldValue);
+                }}
+              />
+            ) : null}
+            {show[account.type].endout ? (
+              <SuggestedInput
+                className={classNames(classes.margin, classes.textField)}
+                value={account.endout}
+                id="endout"
+                label="End Withdrawals"
+                helperText="can be based on 'year' strings"
+                title="Calendar year when money no longer is taken out of this account"
+                titleLocation="right"
+                suggestionsList={yearSuggestions}
+                onInputChange={(fieldName, fieldValue) => {
+                  this.handleChange(fieldName, fieldValue);
+                }}
+              />
+            ) : null}
+          </div>
+
+          <div>
+            {show[account.type].yearlycontribution ? (
+              <Tooltip title="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.">
+                <TextField
+                  id="yearlycontribution"
+                  label="Yearly Contribution"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.yearlycontribution}
+                  InputProps={
+                    'incomelink' in account && account.incomelink !== 'none'
+                      ? { inputComponent: NumberFormatDollarPercentage }
+                      : { inputComponent: NumberFormatDollar }
+                  }
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+
+            {show[account.type].contributiontype ? (
+              <TextField
+                select
+                id="contributiontype"
+                label="Contribution Type"
+                className={classNames(classes.margin, classes.textField)}
+                value={account.contributiontype}
+                onChange={event => {
+                  this.handleChange('contributiontype', event.target.value);
+                }}
+              >
+                {contributionTypeOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+            {show[account.type].contributiontype ? (
+              <Tooltip
+                title={
+                  <List>
+                    {contributionTypeOptions.map(option => (
+                      <ListItem key={`contributionTypeToolTip${option.value}`}>
+                        {option.value} - {option.description}
+                      </ListItem>
+                    ))}
+                  </List>
                 }
-                InputProps={{ inputComponent: NumberFormatPercentage }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
+              >
+                <HelpIcon />
+              </Tooltip>
+            ) : null}
+
+            {show[account.type].yearlyreturn ? (
+              <Tooltip title="Percent interest earned each year">
+                <TextField
+                  id="yearlyreturn"
+                  label="Interest %"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.yearlyreturn}
+                  InputProps={{ inputComponent: NumberFormatPercentage }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+
+            {show[account.type].base ? (
+              <Tooltip title="Base pay (with bonuses)">
+                <TextField
+                  id="base"
+                  label="Base"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.base}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+
+            {show[account.type].raise ? (
+              <SuggestedInput
+                className={classNames(classes.margin, classes.textField)}
+                value={account.raise}
+                id="raise"
+                label="% Raise"
+                helperText="can be based on 'year' strings"
+                title="Yearly increase in income as a percent"
+                titleLocation="right"
+                suggestionsList={percentSuggestions}
+                onInputChange={(fieldName, fieldValue) => {
+                  this.handleChange(fieldName, fieldValue);
                 }}
               />
-            </Tooltip>
-          ) : null}
+            ) : null}
+          </div>
 
-          {show[account.type].matchlimit ? (
-            <Tooltip title="Employer match applies to up to this percentage of your base income">
+          <div>
+            {show[account.type].withdrawaltype ? (
               <TextField
-                id="matchlimit"
-                label="Match Limit %"
+                select
+                id="withdrawaltype"
+                label="Withdrawal Type"
                 className={classNames(classes.margin, classes.textField)}
-                value={account.matchlimit}
-                disabled={
-                  account.incomelink === 'none' || !('incomelink' in account)
+                value={account.withdrawaltype}
+                onChange={event => {
+                  this.handleChange('withdrawaltype', event.target.value);
+                }}
+              >
+                {withdrawalTypeOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+            {show[account.type].withdrawaltype ? (
+              <Tooltip
+                title={
+                  <List>
+                    {withdrawalTypeOptions.map(option => (
+                      <ListItem key={`withdrawalTypeToolTip${option.value}`}>
+                        {option.value} - {option.description}
+                      </ListItem>
+                    ))}
+                  </List>
                 }
-                InputProps={{ inputComponent: NumberFormatPercentage }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-        </div>
+              >
+                <HelpIcon />
+              </Tooltip>
+            ) : null}
 
-        <div>
-          {show[account.type].startin ? (
-            <SuggestedInput
-              className={classNames(classes.margin, classes.textField)}
-              value={account.startin}
-              id="startin"
-              label="Begin Contributions"
-              helperText="can be based on 'year' strings"
-              title="Calendar year when money starts coming out of income and going into this account"
-              titleLocation="right"
-              suggestionsList={yearSuggestions}
-              onInputChange={(fieldName, fieldValue) => {
-                onAccountChange(account.name, fieldName, fieldValue);
-              }}
-            />
-          ) : null}
+            {show[account.type].withdrawalvalue ? (
+              <Tooltip title="How much money should be take out per year (either as a percentage or a fixed dollar amount)">
+                <TextField
+                  id="withdrawalvalue"
+                  label="Withdrawal Amount"
+                  disabled={
+                    account.withdrawaltype === 'end_at_zero' ||
+                    account.withdrawaltype === 'col_frac_of_savings'
+                  }
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.withdrawalvalue}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+          </div>
 
-          {show[account.type].endin ? (
-            <SuggestedInput
-              className={classNames(classes.margin, classes.textField)}
-              value={account.endin}
-              id="endin"
-              label="End Contributions"
-              helperText="can be based on 'year' strings"
-              title="Calendar year when money no longer goes to this account (this is inclusive so it will generally be year_retire-1)"
-              titleLocation="right"
-              suggestionsList={yearSuggestions}
-              onInputChange={(fieldName, fieldValue) => {
-                onAccountChange(account.name, fieldName, fieldValue);
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div>
-          {show[account.type].startout ? (
-            <SuggestedInput
-              className={classNames(classes.margin, classes.textField)}
-              value={account.startout}
-              id="startout"
-              label="Begin Withdrawals"
-              helperText="can be based on 'year' strings"
-              title="Calendar year when money starts coming out of this account and acts as income"
-              titleLocation="right"
-              suggestionsList={yearSuggestions}
-              onInputChange={(fieldName, fieldValue) => {
-                onAccountChange(account.name, fieldName, fieldValue);
-              }}
-            />
-          ) : null}
-          {show[account.type].endout ? (
-            <SuggestedInput
-              className={classNames(classes.margin, classes.textField)}
-              value={account.endout}
-              id="endout"
-              label="End Withdrawals"
-              helperText="can be based on 'year' strings"
-              title="Calendar year when money no longer is taken out of this account"
-              titleLocation="right"
-              suggestionsList={yearSuggestions}
-              onInputChange={(fieldName, fieldValue) => {
-                onAccountChange(account.name, fieldName, fieldValue);
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div>
-          {show[account.type].yearlycontribution ? (
-            <Tooltip title="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.">
+          <div>
+            {show[account.type].paymenttype ? (
               <TextField
-                id="yearlycontribution"
-                label="Yearly Contribution"
+                select
+                id="paymenttype"
+                label="Payment Type"
                 className={classNames(classes.margin, classes.textField)}
-                value={account.yearlycontribution}
-                InputProps={
-                  'incomelink' in account && account.incomelink !== 'none'
-                    ? { inputComponent: NumberFormatDollarPercentage }
-                    : { inputComponent: NumberFormatDollar }
+                value={account.paymenttype}
+                onChange={event => {
+                  this.handleChange('paymenttype', event.target.value);
+                }}
+              >
+                {paymentTypeOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+            {show[account.type].paymenttype ? (
+              <Tooltip
+                title={
+                  <List>
+                    {paymentTypeOptions.map(option => (
+                      <ListItem key={`paymentTypeToolTip${option.value}`}>
+                        {option.value} - {option.description}
+                      </ListItem>
+                    ))}
+                  </List>
                 }
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
+              >
+                <HelpIcon />
+              </Tooltip>
+            ) : null}
 
-          {show[account.type].contributiontype ? (
-            <TextField
-              select
-              id="contributiontype"
-              label="Contribution Type"
-              className={classNames(classes.margin, classes.textField)}
-              value={account.contributiontype}
-              onChange={event => {
-                onAccountChange(
-                  account.name,
-                  'contributiontype',
-                  event.target.value
-                );
-              }}
-            >
-              {contributionTypeOptions.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : null}
-          {show[account.type].contributiontype ? (
-            <Tooltip
-              title={
-                <List>
-                  {contributionTypeOptions.map(option => (
-                    <ListItem key={`contributionTypeToolTip${option.value}`}>
-                      {option.value} - {option.description}
-                    </ListItem>
-                  ))}
-                </List>
-              }
-            >
-              <HelpIcon />
-            </Tooltip>
-          ) : null}
+            {show[account.type].paymentvalue ? (
+              <Tooltip title="How much money should be payed each year (either as a percentage or a fixed dollar amount)">
+                <TextField
+                  id="paymentvalue"
+                  label="Payment Amount"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.paymentvalue}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+          </div>
 
-          {show[account.type].yearlyreturn ? (
-            <Tooltip title="Percent interest earned each year">
+          <div>
+            {show[account.type].taxstatus ? (
               <TextField
-                id="yearlyreturn"
-                label="Interest %"
+                select
+                label="Tax Status"
                 className={classNames(classes.margin, classes.textField)}
-                value={account.yearlyreturn}
-                InputProps={{ inputComponent: NumberFormatPercentage }}
+                value={account.taxstatus}
                 onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
+                  this.handleChange('taxstatus', event.target.value);
                 }}
-              />
-            </Tooltip>
-          ) : null}
-
-          {show[account.type].base ? (
-            <Tooltip title="Base pay (with bonuses)">
-              <TextField
-                id="base"
-                label="Base"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.base}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-
-          {show[account.type].raise ? (
-            <SuggestedInput
-              className={classNames(classes.margin, classes.textField)}
-              value={account.raise}
-              id="raise"
-              label="% Raise"
-              helperText="can be based on 'year' strings"
-              title="Yearly increase in income as a percent"
-              titleLocation="right"
-              suggestionsList={percentSuggestions}
-              onInputChange={(fieldName, fieldValue) => {
-                onAccountChange(account.name, fieldName, fieldValue);
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div>
-          {show[account.type].withdrawaltype ? (
-            <TextField
-              select
-              id="withdrawaltype"
-              label="Withdrawal Type"
-              className={classNames(classes.margin, classes.textField)}
-              value={account.withdrawaltype}
-              onChange={event => {
-                onAccountChange(
-                  account.name,
-                  'withdrawaltype',
-                  event.target.value
-                );
-              }}
-            >
-              {withdrawalTypeOptions.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : null}
-          {show[account.type].withdrawaltype ? (
-            <Tooltip
-              title={
-                <List>
-                  {withdrawalTypeOptions.map(option => (
-                    <ListItem key={`withdrawalTypeToolTip${option.value}`}>
-                      {option.value} - {option.description}
-                    </ListItem>
-                  ))}
-                </List>
-              }
-            >
-              <HelpIcon />
-            </Tooltip>
-          ) : null}
-
-          {show[account.type].withdrawalvalue ? (
-            <Tooltip title="How much money should be take out per year (either as a percentage or a fixed dollar amount)">
-              <TextField
-                id="withdrawalvalue"
-                label="Withdrawal Amount"
-                disabled={
-                  account.withdrawaltype === 'end_at_zero' ||
-                  account.withdrawaltype === 'col_frac_of_savings'
+              >
+                {taxStatusTypeOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+            {show[account.type].taxstatus ? (
+              <Tooltip
+                title={
+                  <List>
+                    {taxStatusTypeOptions.map(option => (
+                      <ListItem key={`taxStatusToolTip${option.value}`}>
+                        {option.value} - {option.description}
+                      </ListItem>
+                    ))}
+                  </List>
                 }
-                className={classNames(classes.margin, classes.textField)}
-                value={account.withdrawalvalue}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-        </div>
+              >
+                <HelpIcon />
+              </Tooltip>
+            ) : null}
+          </div>
 
-        <div>
-          {show[account.type].paymenttype ? (
-            <TextField
-              select
-              id="paymenttype"
-              label="Payment Type"
-              className={classNames(classes.margin, classes.textField)}
-              value={account.paymenttype}
-              onChange={event => {
-                onAccountChange(
-                  account.name,
-                  'paymenttype',
-                  event.target.value
-                );
-              }}
-            >
-              {paymentTypeOptions.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : null}
-          {show[account.type].paymenttype ? (
-            <Tooltip
-              title={
-                <List>
-                  {paymentTypeOptions.map(option => (
-                    <ListItem key={`paymentTypeToolTip${option.value}`}>
-                      {option.value} - {option.description}
-                    </ListItem>
-                  ))}
-                </List>
-              }
-            >
-              <HelpIcon />
-            </Tooltip>
-          ) : null}
+          <div>
+            {show[account.type].rate ? (
+              <Tooltip title="Interest rate on borrowed money. This is an APR this is then compounded based on the compound time setting.  Used for LOAN and MORTGAGE account types.">
+                <TextField
+                  id="rate"
+                  label="Interest Rate %"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.rate}
+                  InputProps={{ inputComponent: NumberFormatPercentage }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+            {show[account.type].compoundtime ? (
+              <Tooltip title="Number of times per year that interest is compounded. (1=yearly, 12=monthly) Used for MORTGAGE account types.">
+                <TextField
+                  id="compoundtime"
+                  label="Compound Time"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.compoundtime}
+                  InputProps={{ inputComponent: NumberFormatYear }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+            {show[account.type].mortgageinsurance ? (
+              <Tooltip title="Mortgage insurance payment expressed as a yearly fixed number in todays dollars">
+                <TextField
+                  id="mortgageinsurance"
+                  label="Mortgage Insurance"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.mortgageinsurance}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+            {show[account.type].ltvlimit ? (
+              <Tooltip title="Loan to Value amount when mortgage insurance is no longer pulled from payment.  Since monthly payment does not change over time, after the insurance is done there is more money going to the principal each payment">
+                <TextField
+                  id="ltvlimit"
+                  label="Loan to Value"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.ltvlimit}
+                  InputProps={{ inputComponent: NumberFormatPercentage }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+            {show[account.type].escrow ? (
+              <Tooltip title="Amount of money going into escrow every year to pay for property tax.  This number is currently assumed to be constant (ie property taxes do not increase)">
+                <TextField
+                  id="escrow"
+                  label="Escrow"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.escrow}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
 
-          {show[account.type].paymentvalue ? (
-            <Tooltip title="How much money should be payed each year (either as a percentage or a fixed dollar amount)">
-              <TextField
-                id="paymentvalue"
-                label="Payment Amount"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.paymentvalue}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-        </div>
+            {show[account.type].value ? (
+              <Tooltip title="Current value of the home.  This is used to compute loan to value">
+                <TextField
+                  id="value"
+                  label="Value"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.value}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+          </div>
 
-        <div>
-          {show[account.type].taxstatus ? (
-            <TextField
-              select
-              label="Tax Status"
-              className={classNames(classes.margin, classes.textField)}
-              value={account.taxstatus}
-              onChange={() => {}}
-            >
-              {taxStatusOptions.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : null}
-          {show[account.type].taxstatus ? (
-            <Tooltip
-              title={
-                <List>
-                  {taxStatusOptions.map(option => (
-                    <ListItem key={`taxStatusToolTip${option.value}`}>
-                      {option.value} - {option.description}
-                    </ListItem>
-                  ))}
-                </List>
-              }
-            >
-              <HelpIcon />
-            </Tooltip>
-          ) : null}
-        </div>
+          <div>
+            {show[account.type].expensetype ? (
+              <TextField
+                select
+                id="expensetype"
+                label="Expense Type"
+                className={classNames(classes.margin, classes.textField)}
+                value={account.expensetype}
+                onChange={event => {
+                  this.handleChange('expensetype', event.target.value);
+                }}
+              >
+                {expenseTypeOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+            {show[account.type].expensetype ? (
+              <Tooltip
+                title={
+                  <List>
+                    {expenseTypeOptions.map(option => (
+                      <ListItem key={`expenseTypeToolTip${option.value}`}>
+                        {option.value} - {option.description}
+                      </ListItem>
+                    ))}
+                  </List>
+                }
+              >
+                <HelpIcon />
+              </Tooltip>
+            ) : null}
 
-        <div>
-          {show[account.type].rate ? (
-            <Tooltip title="Interest rate on borrowed money. This is an APR this is then compounded based on the compound time setting.  Used for LOAN and MORTGAGE account types.">
-              <TextField
-                id="rate"
-                label="Interest Rate %"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.rate}
-                InputProps={{ inputComponent: NumberFormatPercentage }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-          {show[account.type].compoundtime ? (
-            <Tooltip title="Number of times per year that interest is compounded. (1=yearly, 12=monthly) Used for MORTGAGE account types.">
-              <TextField
-                id="compoundtime"
-                label="Compound Time"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.compoundtime}
-                InputProps={{ inputComponent: NumberFormatYear }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-          {show[account.type].mortgageinsurance ? (
-            <Tooltip title="Mortgage insurance payment expressed as a yearly fixed number in todays dollars">
-              <TextField
-                id="mortgageinsurance"
-                label="Mortgage Insurance"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.mortgageinsurance}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-          {show[account.type].ltvlimit ? (
-            <Tooltip title="Loan to Value amount when mortgage insurance is no longer pulled from payment.  Since monthly payment does not change over time, after the insurance is done there is more money going to the principal each payment">
-              <TextField
-                id="ltvlimit"
-                label="Loan to Value"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.ltvlimit}
-                InputProps={{ inputComponent: NumberFormatPercentage }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-          {show[account.type].escrow ? (
-            <Tooltip title="Amount of money going into escrow every year to pay for property tax.  This number is currently assumed to be constant (ie property taxes do not increase)">
-              <TextField
-                id="escrow"
-                label="Escrow"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.escrow}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-
-          {show[account.type].value ? (
-            <Tooltip title="Current value of the home.  This is used to compute loan to value">
-              <TextField
-                id="value"
-                label="Value"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.value}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-        </div>
-
-        <div>
-          {show[account.type].expensetype ? (
-            <TextField
-              select
-              id="expensetype"
-              label="Expense Type"
-              className={classNames(classes.margin, classes.textField)}
-              value={account.expensetype}
-              onChange={event => {
-                onAccountChange(
-                  account.name,
-                  'expensetype',
-                  event.target.value
-                );
-              }}
-            >
-              {expenseTypeOptions.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : null}
-          {show[account.type].expensetype ? (
-            <Tooltip
-              title={
-                <List>
-                  {expenseTypeOptions.map(option => (
-                    <ListItem key={`expenseTypeToolTip${option.value}`}>
-                      {option.value} - {option.description}
-                    </ListItem>
-                  ))}
-                </List>
-              }
-            >
-              <HelpIcon />
-            </Tooltip>
-          ) : null}
-
-          {show[account.type].expensevalue ? (
-            <Tooltip title="Yearly cost of the expense">
-              <TextField
-                id="expensevalue"
-                label="Expense Amount"
-                className={classNames(classes.margin, classes.textField)}
-                value={account.expensevalue}
-                InputProps={{ inputComponent: NumberFormatDollar }}
-                onChange={event => {
-                  onAccountChange(
-                    account.name,
-                    event.target.id,
-                    event.target.floatValue
-                  );
-                }}
-              />
-            </Tooltip>
-          ) : null}
-        </div>
-      </Paper>
+            {show[account.type].expensevalue ? (
+              <Tooltip title="Yearly cost of the expense">
+                <TextField
+                  id="expensevalue"
+                  label="Expense Amount"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.expensevalue}
+                  InputProps={{ inputComponent: NumberFormatDollar }}
+                  onChange={event => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 }
@@ -777,7 +697,8 @@ Account.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   account: PropTypes.object.isRequired,
   incomeAccounts: PropTypes.arrayOf(PropTypes.object).isRequired,
-  onAccountChange: PropTypes.func.isRequired
+  onDelete: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func.isRequired
 };
 
 Account.defaultProps = {};

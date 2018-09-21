@@ -3,8 +3,14 @@ import {
   SAVE_DATA_FILE,
   EDIT_DATA_FILE_STATE_CONTENT,
   UPDATE_SETTING,
-  UPDATE_ACCOUNT
+  UPDATE_ACCOUNT,
+  DELETE_ACCOUNT,
+  ADD_ACCOUNT
 } from '../actions/data';
+
+import show from '../components/accountStructure';
+
+import { v1 as uuidv1 } from 'uuid';
 
 const initialState = {
   settings: {},
@@ -50,11 +56,38 @@ export default function(state = initialState, action) {
     }
 
     case UPDATE_ACCOUNT: {
-      const prevAccount = { ...state.accounts[action.accountName] };
-      prevAccount[action.fieldName] = action.fieldValue;
       return {
         ...state,
-        accounts: { ...state.accounts, [action.accountName]: prevAccount }
+        accounts: { ...state.accounts, [action.name]: action.data }
+      };
+    }
+
+    case DELETE_ACCOUNT: {
+      const prevAccounts = state.accounts;
+      delete prevAccounts[action.name];
+      console.log(action.name);
+      return {
+        ...state,
+        accounts: prevAccounts
+      };
+    }
+
+    case ADD_ACCOUNT: {
+      const prevAccounts = state.accounts;
+      const id = uuidv1();
+
+      // Create new account object and populate with keys from imported show object
+      let newAccount = { ...show[action.accountType] };
+      Object.keys(newAccount).forEach(key => {
+        newAccount[key] = '';
+      });
+
+      newAccount.type = action.accountType; // set account type
+
+      const newAccounts = { ...prevAccounts, [id]: newAccount };
+      return {
+        ...state,
+        accounts: newAccounts
       };
     }
 

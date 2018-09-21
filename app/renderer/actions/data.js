@@ -5,6 +5,8 @@ export const SAVE_DATA_FILE = 'SAVE_DATA_FILE';
 export const EDIT_DATA_FILE_STATE_CONTENT = 'EDIT_DATA_FILE_STATE_CONTENT';
 export const UPDATE_SETTING = 'UPDATE_SETTING';
 export const UPDATE_ACCOUNT = 'UPDATE_ACCOUNT';
+export const DELETE_ACCOUNT = 'DELETE_ACCOUNT';
+export const ADD_ACCOUNT = 'ADD_ACCOUNT';
 
 function openFileReducer(
   settingsInput,

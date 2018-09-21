@@ -7,21 +7,39 @@ import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
-import { UPDATE_ACCOUNT } from '../../../actions/data';
+import {
+  UPDATE_ACCOUNT,
+  DELETE_ACCOUNT,
+  ADD_ACCOUNT
+} from '../../../actions/data';
 
 import Account from '../../../components/account';
+import FloatingActionButton from '../../../components/floatingActionButton';
 
-const styles = () => ({
+const styles = theme => ({
   root: {
     width: '100%'
+  },
+  addFloatingActionButton: {
+    position: 'absolute',
+    bottom: theme.spacing.unit * 4,
+    right: theme.spacing.unit * 4
   }
 });
 
 class Accounts extends React.Component {
   constructor(props) {
     super(props);
-
     this.state = {};
+    this.props.setAppBarTitle(this.props.match.params.type);
+  }
+
+  componentDidUpdate(prevProps) {
+    const { match, setAppBarTitle } = this.props;
+    if (match.params.type !== prevProps.match.params.type) {
+      // if location changed
+      setAppBarTitle(match.params.type);
+    }
   }
 
   render() {
@@ -30,11 +48,10 @@ class Accounts extends React.Component {
       match,
       accounts,
       incomeAccounts,
-      onAccountChange,
-      setAppBarTitle
+      onUpdate,
+      onDelete,
+      onAdd
     } = this.props;
-
-    setAppBarTitle(match.params.type);
 
     return (
       <div>
@@ -46,12 +63,24 @@ class Accounts extends React.Component {
                 key={key}
                 account={accounts[name]}
                 incomeAccounts={incomeAccounts}
-                onAccountChange={onAccountChange}
+                onUpdate={account => {
+                  onUpdate(name, account);
+                }}
+                onDelete={() => {
+                  onDelete(name);
+                  this.forceUpdate();
+                }}
               />
             );
           }
           return null;
         })}
+        <FloatingActionButton
+          className={classes.addFloatingActionButton}
+          onClick={() => {
+            onAdd(match.params.type);
+          }}
+        />
       </div>
     );
   }
@@ -73,13 +102,14 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
   setAppBarTitle: titleInput =>
     dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
-  onAccountChange: (accountNameInput, fieldNameInput, fieldValueInput) =>
+  onUpdate: (accountNameInput, accountInput) =>
     dispatch({
       type: UPDATE_ACCOUNT,
-      accountName: accountNameInput,
-      fieldName: fieldNameInput,
-      fieldValue: fieldValueInput
-    })
+      name: accountNameInput,
+      data: accountInput
+    }),
+  onDelete: nameInput => dispatch({ type: DELETE_ACCOUNT, name: nameInput }),
+  onAdd: typeInput => dispatch({ type: ADD_ACCOUNT, accountType: typeInput })
 });
 
 export default compose(
