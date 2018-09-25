@@ -6,13 +6,14 @@ import Root from './root';
 import { configureStore, history } from './store/configureStore';
 
 import { openFile, saveFile } from './actions/data';
+import { loadResults } from './actions/results';
 
 const { dialog } = require('electron').remote;
 
 const store = configureStore();
 
 ipcRenderer.on('to-renderer', (event, arg) => {
-  console.log(`renderer ${arg}`);
+  store.dispatch(loadResults(arg));
 });
 
 ipcRenderer.on('fileOpen', (event, arg) => {

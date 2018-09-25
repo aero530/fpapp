@@ -109,10 +109,10 @@ class Settings extends React.Component {
 
           <Tooltip title="Calendar year when you will start pulling from retirement accounts">
             <TextField
-              id="age_retire"
+              id="ageRetire"
               label="Retirement Age"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.age_retire}
+              value={settings.ageRetire}
               InputProps={{ inputComponent: NumberFormatYear }}
               onChange={event => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
@@ -123,10 +123,10 @@ class Settings extends React.Component {
 
           <Tooltip title="Age at which you will no longer need to pull money from your retirement accounts">
             <TextField
-              id="age_die"
+              id="ageDie"
               label="Termination Age"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.age_die}
+              value={settings.ageDie}
               InputProps={{ inputComponent: NumberFormatYear }}
               onChange={event => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
@@ -137,10 +137,10 @@ class Settings extends React.Component {
 
           <Tooltip title="Year in which you were born">
             <TextField
-              id="year_born"
+              id="yearBorn"
               label="Birth Year"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.year_born}
+              value={settings.yearBorn}
               InputProps={{ inputComponent: NumberFormatYear }}
               onChange={event => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
@@ -151,10 +151,10 @@ class Settings extends React.Component {
 
           <Tooltip title="Current calendar year">
             <TextField
-              id="year_start"
+              id="yearStart"
               label="Beginning Year"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.year_start}
+              value={settings.yearStart}
               InputProps={{ inputComponent: NumberFormatYear }}
               onChange={event => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
@@ -170,10 +170,10 @@ class Settings extends React.Component {
           </Typography>
           <Tooltip title="Inflation rate as a percentage. (Used to increase the cost of living)">
             <TextField
-              id="inflation_base"
+              id="inflationBase"
               label="Inflation %"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.inflation_base}
+              value={settings.inflationBase}
               InputProps={{ inputComponent: NumberFormatPercentage }}
               onChange={event => {
                 changeSetting(event.target.id, event.target.floatValue);
@@ -183,10 +183,10 @@ class Settings extends React.Component {
           </Tooltip>
           <Tooltip title="Percent of income which goes to taxes">
             <TextField
-              id="tax_income"
+              id="taxIncome"
               label="Income Tax Rate %"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.tax_income}
+              value={settings.taxIncome}
               InputProps={{ inputComponent: NumberFormatPercentage }}
               onChange={event => {
                 changeSetting(event.target.id, event.target.floatValue);
@@ -196,10 +196,10 @@ class Settings extends React.Component {
           </Tooltip>
           <Tooltip title="Capital gains taxes (tax on interest earned)">
             <TextField
-              id="tax_capitalgains"
+              id="taxCapitalGains"
               label="Capital Gains Tax Rate %"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.tax_capitalgains}
+              value={settings.taxCapitalGains}
               InputProps={{ inputComponent: NumberFormatPercentage }}
               onChange={event => {
                 changeSetting(event.target.id, event.target.floatValue);
@@ -209,10 +209,10 @@ class Settings extends React.Component {
           </Tooltip>
           <Tooltip title="Cost of living during retirement relative to current cost of living as a percentage. Note that it is already accounted for that you will not be saving for retirement or college funds.  This is a blanket decrease in the amount of money spent on all expenses (including food, housing, medical, travel, etc.)">
             <TextField
-              id="retirement_costofliving"
+              id="retirementCostOfLiving"
               label="Cost of Living %"
               className={classNames(classes.margin, classes.textField)}
-              value={settings.retirement_costofliving}
+              value={settings.retirementCostOfLiving}
               InputProps={{ inputComponent: NumberFormatPercentage }}
               onChange={event => {
                 changeSetting(event.target.id, event.target.floatValue);

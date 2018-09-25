@@ -1,3 +1,5 @@
+import { v1 as uuidv1 } from 'uuid';
+
 import {
   OPEN_DATA_FILE,
   SAVE_DATA_FILE,
@@ -9,8 +11,6 @@ import {
 } from '../actions/data';
 
 import show from '../components/accountStructure';
-
-import { v1 as uuidv1 } from 'uuid';
 
 const initialState = {
   settings: {},

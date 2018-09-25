@@ -43,6 +43,8 @@ import Counter from './Counter';
 import FileTest from './FileTest';
 import Accounts from './accounts';
 import Settings from './settings';
+import Results from './results';
+import Graphs from './graphs';
 
 const drawerWidth = 240;
 
@@ -206,6 +208,8 @@ class AppRoute extends React.Component {
             <Route exact path="/app" component={Dashboard} />
             <Route exact path="/app/counter" component={Counter} />
             <Route exact path="/app/filetest" component={FileTest} />
+            <Route exact path="/app/results" component={Results} />
+            <Route exact path="/app/graphs" component={Graphs} />
             <Route exact path="/app/settings" component={Settings} />
             <Route exact path="/app/accounts/:type" component={Accounts} />
           </Switch>

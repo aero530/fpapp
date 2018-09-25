@@ -1,5 +1,7 @@
 import { ipcRenderer } from 'electron';
 
+import accountComputation from './accountComputation';
+
 // Send logs as messages to the main thread to show on the console
 // function log(value) {
 //   ipcRenderer.send('to-main', `${process.pid} : ${value}`);
@@ -29,8 +31,16 @@ ipcRenderer.on('to-background', (event, arg) => {
     'for-renderer',
     `${process.pid} : processing reply to ${arg}`
   );
-  const result = work();
-  ipcRenderer.send('for-renderer', `${process.pid} : ${result}`);
+  // const result = work();
+  const result = accountComputation();
+  ipcRenderer.send('for-renderer', result);
+});
+
+ipcRenderer.on('backgroundCompute', (event, accounts, settings) => {
+  console.log(`background computation`);
+  // const result = work();
+  const result = accountComputation(accounts, settings);
+  ipcRenderer.send('for-renderer', result);
 });
 
 ready();

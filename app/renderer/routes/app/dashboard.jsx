@@ -23,7 +23,7 @@ class Dashboard extends React.Component {
   }
 
   render() {
-    const { classes } = this.props;
+    const { classes, accounts, settings } = this.props;
 
     return (
       <Grid container className={classes.root} spacing={16}>
@@ -41,6 +41,16 @@ class Dashboard extends React.Component {
         >
           test
         </Button>
+        <Button
+          className={classes.button}
+          variant="contained"
+          onClick={() => {
+            ipcRenderer.send('backgroundCompute', accounts, settings);
+          }}
+          type="button"
+        >
+          compute
+        </Button>
       </Grid>
     );
   }
@@ -54,7 +64,8 @@ Dashboard.propTypes = {
 Dashboard.defaultProps = {};
 
 const mapStateToProps = state => ({
-  accounts: state.data.accounts
+  accounts: state.data.accounts,
+  settings: state.data.settings
 });
 
 const mapDispatchToProps = dispatch => ({

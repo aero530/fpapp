@@ -132,4 +132,8 @@ app.on('ready', async () => {
   ipcMain.on('for-background', (event, arg) => {
     backgroundWindow.webContents.send('to-background', arg);
   });
+
+  ipcMain.on('backgroundCompute', (event, arg1, arg2) => {
+    backgroundWindow.webContents.send('backgroundCompute', arg1, arg2);
+  });
 });

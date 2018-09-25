@@ -47,13 +47,13 @@ import {
 
 import { show } from './accountStructure';
 
-const percentSuggestions = [{ label: 'inflation_base' }];
+const percentSuggestions = [{ label: 'inflationBase' }];
 
 const yearSuggestions = [
-  { label: 'year_start' },
-  { label: 'year_retire' },
-  { label: 'year_die' },
-  { label: 'year_end' }
+  { label: 'yearStart' },
+  { label: 'yearRetire' },
+  { label: 'yearDie' },
+  { label: 'yearEnd' }
 ];
 
 const styles = theme => ({
@@ -264,7 +264,7 @@ class Account extends Component {
                 id="endin"
                 label="End Contributions"
                 helperText="can be based on 'year' strings"
-                title="Calendar year when money no longer goes to this account (this is inclusive so it will generally be year_retire-1)"
+                title="Calendar year when money no longer goes to this account (this is inclusive so it will generally be yearRetire-1)"
                 titleLocation="right"
                 suggestionsList={yearSuggestions}
                 onInputChange={(fieldName, fieldValue) => {
@@ -722,7 +722,7 @@ export default withStyles(styles)(Account);
 # account.name : String describing this income source
 # account.table(1) : Starting balance.  For LOAN and MORTGAGE this should be a negative number (money is owed)
 # account.startin : Calendar year when money starts coming out of income and going into this account
-# account.endin : Calendar year when money no longer goes to this account (this is inclusive so it will generally be year_retire-1)
+# account.endin : Calendar year when money no longer goes to this account (this is inclusive so it will generally be yearRetire-1)
 # account.startout : Calendar year when money starts coming out of this account and acts as income
 # account.endout : Calendar year when money no longer is taken out of this account
 # account.yearlycontribution : Amount put into this account every year
