@@ -16,23 +16,13 @@ CheckNodeEnv('production');
 
 export default merge.smart(baseConfig, {
   devtool: 'source-map',
-
   mode: 'production',
-
   target: 'electron-renderer',
-
-  // entry: './app/renderer/index',
 
   entry: {
     main: './app/renderer/index',
     background: './app/background/index'
   },
-
-  // output: {
-  //   path: path.join(__dirname, 'app/dist'),
-  //   publicPath: './dist/',
-  //   filename: 'renderer.prod.js'
-  // },
 
   output: {
     filename: '[name].entry.js',

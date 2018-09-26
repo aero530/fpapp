@@ -40,17 +40,8 @@ if (!requiredByDLLConfig && !(fs.existsSync(dll) && fs.existsSync(manifest))) {
 
 export default merge.smart(baseConfig, {
   devtool: 'inline-source-map',
-
   mode: 'development',
-
   target: 'electron-renderer',
-
-  // entry: [
-  //   'react-hot-loader/patch',
-  //   `webpack-dev-server/client?http://localhost:${port}/`,
-  //   'webpack/hot/only-dev-server',
-  //   path.join(__dirname, 'app/renderer/index.js')
-  // ],
 
   entry: {
     main: [
@@ -66,11 +57,6 @@ export default merge.smart(baseConfig, {
       path.join(__dirname, 'app/background/index.js')
     ]
   },
-
-  // output: {
-  //   publicPath: `http://localhost:${port}/dist/`,
-  //   filename: 'renderer.dev.js'
-  // },
 
   output: {
     filename: '[name].entry.js',

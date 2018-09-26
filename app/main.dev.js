@@ -97,9 +97,6 @@ app.on('ready', async () => {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
-
   // ------------------------------------------------
   // Background Window
   // ------------------------------------------------
@@ -112,6 +109,13 @@ app.on('ready', async () => {
   backgroundWindow.on('closed', () => {
     backgroundWindow = null;
   });
+
+  // ------------------------------------------------
+  // Make menu
+  // ------------------------------------------------
+
+  const menuBuilder = new MenuBuilder(mainWindow, backgroundWindow);
+  menuBuilder.buildMenu();
 
   // ------------------------------------------------
   // Setup IPC Communication

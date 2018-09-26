@@ -13,11 +13,8 @@ CheckNodeEnv('production');
 
 export default merge.smart(baseConfig, {
   devtool: 'source-map',
-
   mode: 'production',
-
   target: 'electron-main',
-
   entry: './app/main.dev',
 
   output: {

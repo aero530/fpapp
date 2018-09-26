@@ -1,12 +1,12 @@
 import { app, Menu, shell, dialog } from 'electron';
 
 export default class MenuBuilder {
-  constructor(mainWindow) {
+  constructor(mainWindow, backgroundWindow) {
     this.mainWindow = mainWindow;
+    this.backgroundWindow = backgroundWindow;
   }
 
   buildMenu() {
-
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
@@ -46,14 +46,14 @@ export default class MenuBuilder {
       label: 'Electron',
       submenu: [
         {
-          label: 'About ElectronReact',
+          label: 'About',
           selector: 'orderFrontStandardAboutPanel:'
         },
         { type: 'separator' },
         { label: 'Services', submenu: [] },
         { type: 'separator' },
         {
-          label: 'Hide ElectronReact',
+          label: 'Hide',
           accelerator: 'Command+H',
           selector: 'hide:'
         },
@@ -172,8 +172,8 @@ export default class MenuBuilder {
       ]
     };
 
-    const subMenuView =
-      process.env.NODE_ENV === 'development' ? subMenuViewDev : subMenuViewProd;
+    // const subMenuView = process.env.NODE_ENV === 'development' ? subMenuViewDev : subMenuViewProd;
+    const subMenuView = subMenuViewDev;
 
     return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp];
   }
@@ -210,10 +210,12 @@ export default class MenuBuilder {
                     { name: 'All Files', extensions: [] }
                   ]
                 },
-                (filePath) => {
-                  this.mainWindow.webContents.send('fileSaveAs', { filename: filePath });
+                filePath => {
+                  this.mainWindow.webContents.send('fileSaveAs', {
+                    filename: filePath
+                  });
                 }
-              )
+              );
             }
           },
           {
@@ -272,27 +274,13 @@ export default class MenuBuilder {
           {
             label: 'Learn More',
             click() {
-              shell.openExternal('http://electron.atom.io');
-            }
-          },
-          {
-            label: 'Documentation',
-            click() {
-              shell.openExternal(
-                'https://github.com/atom/electron/tree/master/docs#readme'
-              );
-            }
-          },
-          {
-            label: 'Community Discussions',
-            click() {
-              shell.openExternal('https://discuss.atom.io/c/electron');
+              shell.openExternal('https://github.com/aero530/fpapp');
             }
           },
           {
             label: 'Search Issues',
             click() {
-              shell.openExternal('https://github.com/atom/electron/issues');
+              shell.openExternal('https://github.com/aero530/fpapp/issues');
             }
           }
         ]
