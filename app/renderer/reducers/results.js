@@ -14,8 +14,6 @@ const initialState = {
 export default function(state = initialState, action) {
   switch (action.type) {
     case LOAD_RESULTS: {
-      console.log('loading results reducer');
-      console.log(action);
       return {
         ...state,
         accounts: { ...action.accounts },

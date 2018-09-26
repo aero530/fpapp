@@ -1,10 +1,12 @@
 import React from 'react';
 import compose from 'recompose/compose';
+import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 
 import classNames from 'classnames';
+import * as ResultsActions from '../../../actions/results';
 
 //const {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend} = Recharts;
 import {
@@ -45,12 +47,10 @@ const styles = theme => ({
 });
 
 class Graphs extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {};
-
-    props.setAppBarTitle('Graphs');
+  componentDidMount() {
+    const { setAppBarTitle, analyze } = this.props;
+    setAppBarTitle('Graphs');
+    analyze();
   }
 
   formatData = (years, dataIn) => {
@@ -378,7 +378,8 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({
   setAppBarTitle: titleInput =>
-    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput })
+    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  ...bindActionCreators(ResultsActions, dispatch)
 });
 
 export default compose(

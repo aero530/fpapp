@@ -16,10 +16,9 @@ const styles = () => ({
 });
 
 class Dashboard extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-    props.setAppBarTitle('');
+  componentDidMount() {
+    const { setAppBarTitle } = this.props;
+    setAppBarTitle('');
   }
 
   render() {

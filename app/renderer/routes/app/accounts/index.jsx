@@ -28,10 +28,9 @@ const styles = theme => ({
 });
 
 class Accounts extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-    this.props.setAppBarTitle(this.props.match.params.type);
+  componentDidMount() {
+    const { match, setAppBarTitle } = this.props;
+    setAppBarTitle(match.params.type);
   }
 
   componentDidUpdate(prevProps) {

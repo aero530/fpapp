@@ -130,8 +130,6 @@ class AppRoute extends React.Component {
     };
   }
 
-  componentDidMount() {}
-
   handleDrawerOpen = () => {
     this.setState({ open: true });
   };

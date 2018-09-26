@@ -1,5 +1,6 @@
 import React from 'react';
 import compose from 'recompose/compose';
+import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
@@ -15,6 +16,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
+import * as ResultsActions from '../../../actions/results';
 
 const styles = theme => ({
   root: {
@@ -34,27 +36,11 @@ const styles = theme => ({
   }
 });
 
-// Year    Net     Income  Taxable Income  Income After Taxes      Expenses        Total Savings (retirement, college, etc)
-
-// 2017      -610.13       133636.00       118917.84       109852.43       110462.56       234411.32
-// 2018      -173.43       137645.08       122485.38       113148.00       112711.30       260961.04
-// 2019      3728.02       141774.43       126159.94       116542.45       112641.00       289283.13
-// 2020      9966.59       146027.67       129944.73       120038.72       113800.15       319479.54
-// 2021     17361.20       150408.50       133843.08       123639.88       116245.27       351657.74
-// 2022     25934.14       154920.75       137858.37       127349.08       118776.13       385930.97
-// 2023     31422.06       154195.14       136620.88       126870.96       121383.04       422418.57
-// 2024     39874.84       158820.99       140719.51       130677.09       122224.30       461246.29
-// 2025     49598.94       163585.62       144941.10       134597.40       124873.31       502546.60
-// 2026     60516.40       168493.19       149289.33       138635.32       127717.87       546459.06
-// 2027     64057.89       162796.65       143016.68       134193.32       130651.82       593130.70
-
 class Results extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {};
-
-    props.setAppBarTitle('Results');
+  componentDidMount() {
+    const { setAppBarTitle, analyze } = this.props;
+    setAppBarTitle('Results');
+    analyze();
   }
 
   cumulativeSum = a => {
@@ -99,36 +85,36 @@ class Results extends React.Component {
             <TableBody>
               {year.map((yearValue, index) => {
                 return (
-                  <TableRow key={yearValue}>
-                    <TableCell component="th" scope="row">
+                  <TableRow key={yearValue} hover>
+                    <TableCell component="th" scope="row" padding="dense">
                       {yearValue}
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric padding="dense">
                       {net[index].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric padding="dense">
                       {incomeTotal[index].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric padding="dense">
                       {incomeTaxable[index].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric padding="dense">
                       {incomeAfterTax[index].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric padding="dense">
                       {this.cumulativeSum(
                         Object.values(expenses[index])
                       ).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric padding="dense">
                       {savings[index].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
@@ -149,10 +135,27 @@ class Results extends React.Component {
 
 Results.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
-  setAppBarTitle: PropTypes.func.isRequired
+  setAppBarTitle: PropTypes.func.isRequired,
+  accounts: PropTypes.arrayOf(PropTypes.object),
+  savings: PropTypes.arrayOf(PropTypes.number),
+  expenses: PropTypes.arrayOf(PropTypes.object),
+  incomeTaxable: PropTypes.arrayOf(PropTypes.number),
+  incomeTotal: PropTypes.arrayOf(PropTypes.number),
+  incomeAfterTax: PropTypes.arrayOf(PropTypes.number),
+  net: PropTypes.arrayOf(PropTypes.number),
+  year: PropTypes.arrayOf(PropTypes.number)
 };
 
-Results.defaultProps = {};
+Results.defaultProps = {
+  accounts: [],
+  savings: [],
+  expenses: [],
+  incomeTaxable: [],
+  incomeTotal: [],
+  incomeAfterTax: [],
+  net: [],
+  year: []
+};
 
 const mapStateToProps = state => ({
   accounts: state.results.accounts,
@@ -167,7 +170,8 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({
   setAppBarTitle: titleInput =>
-    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput })
+    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  ...bindActionCreators(ResultsActions, dispatch)
 });
 
 export default compose(

@@ -89,12 +89,9 @@ NumberFormatYear.propTypes = {
 };
 
 class Settings extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {};
-
-    props.setAppBarTitle('Settings');
+  componentDidMount() {
+    const { setAppBarTitle } = this.props;
+    setAppBarTitle('Settings');
   }
 
   render() {

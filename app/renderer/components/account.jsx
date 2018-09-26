@@ -90,9 +90,6 @@ class Account extends Component {
       account: { ...props.account },
       open: false
     };
-
-    console.log(props.account.type);
-    console.log(show[props.account.type].name);
   }
 
   handleDialogOpen = () => {
@@ -122,9 +119,6 @@ class Account extends Component {
   render() {
     const { classes, incomeAccounts } = this.props;
     const { account } = this.state;
-
-    console.log(show[account.type].name);
-    console.log(show);
 
     return (
       <Card className={classes.paper}>
