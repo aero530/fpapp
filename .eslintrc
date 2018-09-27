@@ -5,7 +5,7 @@
     "allowImportExportEverywhere": true
   },
   //"extends": ["airbnb", "prettier", "prettier/react"],
-  "extends": ["airbnb"],
+  "extends": "airbnb",
   "env": {
     "browser": true,
     "node": true
@@ -34,7 +34,8 @@
     ],
     "react/jsx-no-bind": "off",
     "react/jsx-filename-extension": ["error", { "extensions": [".js", ".jsx"] }],
-    "react/prefer-stateless-function": "off"
+    "react/prefer-stateless-function": "off",
+    "max-len": ["error", {"code": 500}]
   },
   "plugins": ["import", "promise", "compat", "react"],
   "settings": {

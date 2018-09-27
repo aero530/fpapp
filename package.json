@@ -19,7 +19,6 @@
     "package-linux": "yarn build && electron-builder build --linux",
     "package-win": "yarn build && electron-builder build --win --x64",
     "postinstall": "node -r babel-register internals/scripts/CheckNativeDep.js && yarn build-dll && electron-builder install-app-deps package.json",
-    "postlint-fix": "prettier --ignore-path .eslintignore --single-quote --write '**/*.js'",
     "precommit": "lint-staged",
     "prestart": "yarn build",
     "start": "cross-env NODE_ENV=production electron ./app/",
@@ -29,11 +28,9 @@
   "browserslist": "electron 1.6",
   "lint-staged": {
     "*.(js|jsx)": [
-      "prettier --ignore-path .eslintignore --single-quote --write",
       "git add"
     ],
-    "*.(json|css|scss|md)|.(babelrc|prettierrc|eslintrc)": [
-      "prettier --ignore-path .eslintignore --write",
+    "*.(json|css|scss|md)|.(babelrc|eslintrc)": [
       "git add"
     ]
   },
@@ -124,7 +121,6 @@
     "electron-rebuild": "^1.8.2",
     "eslint": "^5.5.0",
     "eslint-config-airbnb": "^17.1.0",
-    "eslint-config-prettier": "^2.10.0",
     "eslint-formatter-pretty": "^1.3.0",
     "eslint-import-resolver-webpack": "^0.10.1",
     "eslint-plugin-compat": "^2.5.1",
@@ -144,7 +140,6 @@
     "node-sass": "^4.9.3",
     "npm-logical-tree": "^1.2.1",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
-    "prettier": "^1.14.2",
     "react-test-renderer": "^16.5.0",
     "redux-logger": "^3.0.6",
     "rimraf": "^2.6.2",
