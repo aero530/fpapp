@@ -14,8 +14,8 @@ export function NumberFormatPercentage(props) {
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id
-          }
+            id: event.target.id,
+          },
         });
       }}
       suffix="%"
@@ -25,7 +25,7 @@ export function NumberFormatPercentage(props) {
 
 NumberFormatPercentage.propTypes = {
   inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };
 
 function formatDollarPercentage(val) {
@@ -47,8 +47,8 @@ export function NumberFormatDollarPercentage(props) {
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id
-          }
+            id: event.target.id,
+          },
         });
       }}
       format={formatDollarPercentage}
@@ -59,7 +59,7 @@ export function NumberFormatDollarPercentage(props) {
 
 NumberFormatDollarPercentage.propTypes = {
   inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };
 
 export function NumberFormatDollar(props) {
@@ -74,8 +74,8 @@ export function NumberFormatDollar(props) {
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id
-          }
+            id: event.target.id,
+          },
         });
       }}
       thousandSeparator
@@ -86,7 +86,7 @@ export function NumberFormatDollar(props) {
 
 NumberFormatDollar.propTypes = {
   inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };
 
 export function NumberFormatYear(props) {
@@ -101,8 +101,8 @@ export function NumberFormatYear(props) {
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id
-          }
+            id: event.target.id,
+          },
         });
       }}
       format="####"
@@ -112,5 +112,5 @@ export function NumberFormatYear(props) {
 
 NumberFormatYear.propTypes = {
   inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };

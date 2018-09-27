@@ -12,20 +12,20 @@ function openFileReducer(
   settingsInput,
   accountsInput,
   incomeAccountsInput,
-  filenameInput
+  filenameInput,
 ) {
   return {
     type: OPEN_DATA_FILE,
     settings: settingsInput,
     accounts: accountsInput,
     incomeAccounts: incomeAccountsInput,
-    filename: filenameInput
+    filename: filenameInput,
   };
 }
 
 function saveFileReducer() {
   return {
-    type: SAVE_DATA_FILE
+    type: SAVE_DATA_FILE,
   };
 }
 
@@ -33,11 +33,11 @@ function getIncomeAccounts(accounts) {
   const incomeAccounts = [];
   incomeAccounts.push({ value: 'none', label: 'not linked' });
 
-  Object.keys(accounts).forEach(name => {
+  Object.keys(accounts).forEach((name) => {
     if (accounts[name].type === 'income') {
       const account = {
         value: name,
-        label: name
+        label: name,
       };
 
       incomeAccounts.push(account);
@@ -47,7 +47,7 @@ function getIncomeAccounts(accounts) {
 }
 
 export function openFile(filePath) {
-  return dispatch => {
+  return (dispatch) => {
     fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) throw err;
       const result = JSON.parse(data);
@@ -61,8 +61,8 @@ export function openFile(filePath) {
           settingsFromFile,
           accountsFromFile,
           incomeAccounts,
-          filePath
-        )
+          filePath,
+        ),
       );
     });
   };
@@ -79,7 +79,7 @@ export function saveFile(filePathInput = null) {
     const data = { accounts, settings };
     const result = JSON.stringify(data, null, '  ');
 
-    fs.writeFile(filename, result, err => {
+    fs.writeFile(filename, result, (err) => {
       if (err) throw err;
       dispatch(saveFileReducer());
     });

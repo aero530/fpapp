@@ -39,19 +39,19 @@ function showOpen() {
       buttonLabel: 'open the file',
       filters: [
         { name: 'Text', extensions: ['json'] },
-        { name: 'All Files', extensions: [] }
-      ]
+        { name: 'All Files', extensions: [] },
+      ],
     },
-    filePaths => {
+    (filePaths) => {
       if (filePaths) {
         store.dispatch(openFile(filePaths[0]));
       }
-    }
+    },
   );
 }
 
 ipcRenderer.on('fileOpenOnClick', () => {
-  const { modified } = store.getState().file;
+  const { modified } = store.getState().data;
 
   if (modified) {
     dialog.showMessageBox(
@@ -61,9 +61,9 @@ ipcRenderer.on('fileOpenOnClick', () => {
         defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
         title: 'File has not been saved', // Title of the message box, some platforms will not show it.
         message: 'Unsaved file', // Content of the message box.
-        detail: 'Do you want to save or discard your current edits?' // extra information of the message.
+        detail: 'Do you want to save or discard your current edits?', // extra information of the message.
       },
-      selection => {
+      (selection) => {
         if (selection === 0) {
           store.dispatch(saveFile());
           showOpen();
@@ -72,7 +72,7 @@ ipcRenderer.on('fileOpenOnClick', () => {
         } else if (selection === 2) {
           return null;
         }
-      }
+      },
     );
   } else {
     showOpen();
@@ -80,7 +80,7 @@ ipcRenderer.on('fileOpenOnClick', () => {
 });
 
 ipcRenderer.on('closeOnClick', () => {
-  const { modified } = store.getState().file;
+  const { modified } = store.getState().data;
   if (modified) {
     // if file has been modified
     dialog.showMessageBox(
@@ -91,9 +91,9 @@ ipcRenderer.on('closeOnClick', () => {
         defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
         title: 'File has not been saved', // Title of the message box, some platforms will not show it.
         message: 'Unsaved file', // Content of the message box.
-        detail: 'Do you want to save or discard your current edits?' // extra information of the message.
+        detail: 'Do you want to save or discard your current edits?', // extra information of the message.
       },
-      selection => {
+      (selection) => {
         if (selection === 0) {
           // user chose to save
           store.dispatch(saveFile()); // save file
@@ -102,7 +102,7 @@ ipcRenderer.on('closeOnClick', () => {
           // user chose not to save
           ipcRenderer.send('quitApp'); // tell main process to quit
         }
-      }
+      },
     );
   } else {
     // file was not modified
@@ -114,7 +114,7 @@ render(
   <AppContainer>
     <Root store={store} history={history} />
   </AppContainer>,
-  document.getElementById('root')
+  document.getElementById('root'),
 );
 
 if (module.hot) {
@@ -124,7 +124,7 @@ if (module.hot) {
       <AppContainer>
         <NextRoot store={store} history={history} />
       </AppContainer>,
-      document.getElementById('root')
+      document.getElementById('root'),
     );
   });
 }

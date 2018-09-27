@@ -40,7 +40,7 @@ import {
   NumberFormatPercentage,
   NumberFormatDollarPercentage,
   NumberFormatDollar,
-  NumberFormatYear
+  NumberFormatYear,
 } from './numberFormaters';
 
 import {
@@ -48,7 +48,7 @@ import {
   contributionTypeOptions,
   expenseTypeOptions,
   withdrawalTypeOptions,
-  paymentTypeOptions
+  paymentTypeOptions,
 } from './autofillTypeOptions';
 
 import { show } from './accountStructure';
@@ -59,13 +59,13 @@ const yearSuggestions = [
   { label: 'yearStart' },
   { label: 'yearRetire' },
   { label: 'yearDie' },
-  { label: 'yearEnd' }
+  { label: 'yearEnd' },
 ];
 
 const styles = theme => ({
   root: {
     width: '100%',
-    marginTop: theme.spacing.unit * 3
+    marginTop: theme.spacing.unit * 3,
   },
   paper: {
     width: '100%',
@@ -73,19 +73,19 @@ const styles = theme => ({
     boxShadow: theme.shadows[5],
     padding: theme.spacing.unit * 4,
     marginBottom: theme.spacing.unit * 4,
-    overflow: 'visible'
+    overflow: 'visible',
   },
   margin: {
-    margin: theme.spacing.unit
+    margin: theme.spacing.unit,
   },
   textField: {
-    flexBasis: 200
+    flexBasis: 200,
   },
   deleteFloatingActionButton: {
     position: 'absolute',
     bottom: theme.spacing.unit * 0,
-    right: theme.spacing.unit * 0
-  }
+    right: theme.spacing.unit * 0,
+  },
 });
 
 class Account extends Component {
@@ -94,7 +94,7 @@ class Account extends Component {
     // initialize the state
     this.state = {
       account: { ...props.account },
-      open: false
+      open: false,
     };
   }
 
@@ -117,7 +117,7 @@ class Account extends Component {
     const { account } = this.state;
     const newAccount = { ...account, [fieldNameInput]: fieldValueInput };
     this.setState({
-      account: newAccount
+      account: newAccount,
     });
     onUpdate(newAccount);
   };
@@ -130,11 +130,11 @@ class Account extends Component {
       <Card className={classes.paper}>
         <CardHeader
           title={account.name}
-          action={
+          action={(
             <IconButton onClick={this.handleDialogOpen}>
               <DeleteIcon />
             </IconButton>
-          }
+          )}
         />
 
         <Dialog
@@ -168,7 +168,7 @@ class Account extends Component {
                   label="Account Name"
                   className={classNames(classes.margin, classes.textField)}
                   value={account.name}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.value);
                   }}
                 />
@@ -179,12 +179,12 @@ class Account extends Component {
               <Select
                 inputProps={{
                   name: 'incomelink',
-                  id: 'incomelink'
+                  id: 'incomelink',
                 }}
                 label="Income Link"
                 className={classNames(classes.margin, classes.textField)}
                 value={account.incomelink ? account.incomelink : 'none'}
-                onChange={event => {
+                onChange={(event) => {
                   this.handleChange(event.target.name, event.target.value);
                 }}
               >
@@ -214,7 +214,7 @@ class Account extends Component {
                     account.incomelink === 'none' || !('incomelink' in account)
                   }
                   InputProps={{ inputComponent: NumberFormatPercentage }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -232,7 +232,7 @@ class Account extends Component {
                     account.incomelink === 'none' || !('incomelink' in account)
                   }
                   InputProps={{ inputComponent: NumberFormatPercentage }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -320,7 +320,7 @@ class Account extends Component {
                       ? { inputComponent: NumberFormatDollarPercentage }
                       : { inputComponent: NumberFormatDollar }
                   }
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -334,7 +334,7 @@ class Account extends Component {
                 label="Contribution Type"
                 className={classNames(classes.margin, classes.textField)}
                 value={account.contributiontype}
-                onChange={event => {
+                onChange={(event) => {
                   this.handleChange('contributiontype', event.target.value);
                 }}
               >
@@ -347,15 +347,17 @@ class Account extends Component {
             ) : null}
             {show[account.type].contributiontype ? (
               <Tooltip
-                title={
+                title={(
                   <List>
                     {contributionTypeOptions.map(option => (
                       <ListItem key={`contributionTypeToolTip${option.value}`}>
-                        {option.value} - {option.description}
+                        {option.value}
+                        -
+                        {option.description}
                       </ListItem>
                     ))}
                   </List>
-                }
+                )}
               >
                 <HelpIcon />
               </Tooltip>
@@ -369,7 +371,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.yearlyreturn}
                   InputProps={{ inputComponent: NumberFormatPercentage }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -384,7 +386,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.base}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -441,7 +443,7 @@ class Account extends Component {
                 label="Withdrawal Type"
                 className={classNames(classes.margin, classes.textField)}
                 value={account.withdrawaltype}
-                onChange={event => {
+                onChange={(event) => {
                   this.handleChange('withdrawaltype', event.target.value);
                 }}
               >
@@ -454,15 +456,17 @@ class Account extends Component {
             ) : null}
             {show[account.type].withdrawaltype ? (
               <Tooltip
-                title={
+                title={(
                   <List>
                     {withdrawalTypeOptions.map(option => (
                       <ListItem key={`withdrawalTypeToolTip${option.value}`}>
-                        {option.value} - {option.description}
+                        {option.value}
+                        -
+                        {option.description}
                       </ListItem>
                     ))}
                   </List>
-                }
+                )}
               >
                 <HelpIcon />
               </Tooltip>
@@ -473,14 +477,11 @@ class Account extends Component {
                 <TextField
                   id="withdrawalvalue"
                   label="Withdrawal Amount"
-                  disabled={
-                    account.withdrawaltype === 'end_at_zero' ||
-                    account.withdrawaltype === 'col_frac_of_savings'
-                  }
+                  disabled={account.withdrawaltype === 'end_at_zero' || account.withdrawaltype === 'col_frac_of_savings'}
                   className={classNames(classes.margin, classes.textField)}
                   value={account.withdrawalvalue}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -496,7 +497,7 @@ class Account extends Component {
                 label="Payment Type"
                 className={classNames(classes.margin, classes.textField)}
                 value={account.paymenttype}
-                onChange={event => {
+                onChange={(event) => {
                   this.handleChange('paymenttype', event.target.value);
                 }}
               >
@@ -509,15 +510,17 @@ class Account extends Component {
             ) : null}
             {show[account.type].paymenttype ? (
               <Tooltip
-                title={
+                title={(
                   <List>
                     {paymentTypeOptions.map(option => (
                       <ListItem key={`paymentTypeToolTip${option.value}`}>
-                        {option.value} - {option.description}
+                        {option.value}
+                        -
+                        {option.description}
                       </ListItem>
                     ))}
                   </List>
-                }
+                )}
               >
                 <HelpIcon />
               </Tooltip>
@@ -531,7 +534,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.paymentvalue}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -546,7 +549,7 @@ class Account extends Component {
                 label="Tax Status"
                 className={classNames(classes.margin, classes.textField)}
                 value={account.taxstatus}
-                onChange={event => {
+                onChange={(event) => {
                   this.handleChange('taxstatus', event.target.value);
                 }}
               >
@@ -559,15 +562,17 @@ class Account extends Component {
             ) : null}
             {show[account.type].taxstatus ? (
               <Tooltip
-                title={
+                title={(
                   <List>
                     {taxStatusTypeOptions.map(option => (
                       <ListItem key={`taxStatusToolTip${option.value}`}>
-                        {option.value} - {option.description}
+                        {option.value}
+                        -
+                        {option.description}
                       </ListItem>
                     ))}
                   </List>
-                }
+                )}
               >
                 <HelpIcon />
               </Tooltip>
@@ -583,7 +588,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.rate}
                   InputProps={{ inputComponent: NumberFormatPercentage }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -597,7 +602,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.compoundtime}
                   InputProps={{ inputComponent: NumberFormatYear }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -611,7 +616,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.mortgageinsurance}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -625,7 +630,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.ltvlimit}
                   InputProps={{ inputComponent: NumberFormatPercentage }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -639,7 +644,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.escrow}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -654,7 +659,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.value}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -670,7 +675,7 @@ class Account extends Component {
                 label="Expense Type"
                 className={classNames(classes.margin, classes.textField)}
                 value={account.expensetype}
-                onChange={event => {
+                onChange={(event) => {
                   this.handleChange('expensetype', event.target.value);
                 }}
               >
@@ -683,15 +688,17 @@ class Account extends Component {
             ) : null}
             {show[account.type].expensetype ? (
               <Tooltip
-                title={
+                title={(
                   <List>
                     {expenseTypeOptions.map(option => (
                       <ListItem key={`expenseTypeToolTip${option.value}`}>
-                        {option.value} - {option.description}
+                        {option.value}
+                        -
+                        {option.description}
                       </ListItem>
                     ))}
                   </List>
-                }
+                )}
               >
                 <HelpIcon />
               </Tooltip>
@@ -705,7 +712,7 @@ class Account extends Component {
                   className={classNames(classes.margin, classes.textField)}
                   value={account.expensevalue}
                   InputProps={{ inputComponent: NumberFormatDollar }}
-                  onChange={event => {
+                  onChange={(event) => {
                     this.handleChange(event.target.id, event.target.floatValue);
                   }}
                 />
@@ -723,7 +730,7 @@ Account.propTypes = {
   account: PropTypes.object.isRequired,
   incomeAccounts: PropTypes.arrayOf(PropTypes.object).isRequired,
   onDelete: PropTypes.func.isRequired,
-  onUpdate: PropTypes.func.isRequired
+  onUpdate: PropTypes.func.isRequired,
 };
 
 Account.defaultProps = {};
@@ -732,16 +739,16 @@ export default withStyles(styles)(Account);
 
 /*
 # account.type : Type of account
-#      SAVINGS : Savings accounts should be used for any account where you 
+#      SAVINGS : Savings accounts should be used for any account where you
 #            accumulate wealth such as a bank savings account, money market account,
 #            Roth IRA, or 401K.  Withdrawals from this account go into income
-#            or net depending on what the tax status setting is.  Can have employer 
+#            or net depending on what the tax status setting is.  Can have employer
 #            matching on these accounts
-#      EXPENSE : Expense accounts account for daily expenses such as grocery, car 
+#      EXPENSE : Expense accounts account for daily expenses such as grocery, car
 #            insurance, clothes, travel, entertainment, etc.  Money to pay for these
 #            things comes out of after tax income then out of net.
 #      MORTGAGE : Home mortgage
-#      LOAN : General loan type.  Can be used for things like car loans or school 
+#      LOAN : General loan type.  Can be used for things like car loans or school
 #            loans...anything with a balance due, interest rate, and consistent payments
 #      COLLEGE : 529 account.  Withdrawals from this account will not go toward income or net
 # account.name : String describing this income source
@@ -754,42 +761,42 @@ export default withStyles(styles)(Account);
 # account.contributiontype : Type of contribution
 #      fixed : fixed dollar amount
 #      percent_of_income : percent of cost of current living
-#      fixed_with_inflation : fixed dollar amount compensated for inflation from year 
+#      fixed_with_inflation : fixed dollar amount compensated for inflation from year
 #            start (ie dollar amount is in current dollars)
 # account.yearlyreturn : Percent interest earned each year
 # account.withdrawaltype : How money should be removed from the account
-#      end_at_zero : take money out in equal amounts each year such that the 
+#      end_at_zero : take money out in equal amounts each year such that the
 #            balance at endout is zero
 #      fixed : Take out a fixed dollar amount
 #      COL_fraction_of_total_savings : Take out the current cost of living * (this accounts value / total savings)
-# account.withdrawalvalue : How much money should be take out per year 
+# account.withdrawalvalue : How much money should be take out per year
 #      (either as a percentage or a fixed dollar amount)
 # account.paymenttype : How money should be removed from the account
 #      fixed : fixed dollar amount
-#      fixed_with_inflation : fixed dollar amount compensated for inflation from year 
+#      fixed_with_inflation : fixed dollar amount compensated for inflation from year
 #            start (ie dollar amount is in current dollars)
 # account.paymentvalue : How much money should be payed each year
 #      (either as a percentage or a fixed dollar amount)
-# account.taxstatus : 
+# account.taxstatus :
 #      0=payed with taxed income, earnings are tax deferred, withdrawals are not taxed
 #      1=payed with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed
 #            (tax free as long as used for intended purpose)
 #      ## NOT IMPLIMENTED ## 2=payed with taxed income, earnings are taxed in year taken out as capital gains, withdrawals are not taxed
 #      3=payed pretax and taxed in year of use as income
 #      4=payed pretax and not taxed as income (use with HSA)
-# account.rate : Interest rate on borrowed money. This is an APR this is 
-#      then compounded based on the compound time setting.  Used for LOAN and 
+# account.rate : Interest rate on borrowed money. This is an APR this is
+#      then compounded based on the compound time setting.  Used for LOAN and
 #      MORTGAGE account types.
 # account.compoundtime : Number of times per year that interest
 #       is compounded. (1=yearly, 12=monthly) Used for MORTGAGE account types.
-# account.mortgageinsurance : Mortgage insurance payment expressed as 
+# account.mortgageinsurance : Mortgage insurance payment expressed as
 #      a yearly fixed number in today's dollars
-# account.ltvlimit : Loan to Value amount when mortgage insurance is no 
-#      longer pulled from payment.  Since monthly payment does not change over 
-#      time, after the insurance is done there is more money going to the 
+# account.ltvlimit : Loan to Value amount when mortgage insurance is no
+#      longer pulled from payment.  Since monthly payment does not change over
+#      time, after the insurance is done there is more money going to the
 #      principal each payment
-# account.escrow : Amount of money going into escrow every year to pay 
-#      for property tax.  This number is currently assumed to be constant 
+# account.escrow : Amount of money going into escrow every year to pay
+#      for property tax.  This number is currently assumed to be constant
 #      (ie property taxes do not increase)
 # account.value : Current value of the home.  This is used to compute loan to value
 # account.raise : Yearly increase in income as a percent

@@ -4,11 +4,10 @@ import { createHashHistory } from 'history';
 import { routerMiddleware, routerActions } from 'react-router-redux';
 import { createLogger } from 'redux-logger';
 import rootReducer from '../reducers';
-import * as counterActions from '../actions/counter';
 
 const history = createHashHistory();
 
-const configureStore = initialState => {
+const configureStore = (initialState) => {
   // Redux Configuration
   const middleware = [];
   const enhancers = [];
@@ -19,7 +18,7 @@ const configureStore = initialState => {
   // Logging Middleware
   const logger = createLogger({
     level: 'info',
-    collapsed: true
+    collapsed: true,
   });
 
   // Skip redux logs in console during the tests
@@ -33,16 +32,15 @@ const configureStore = initialState => {
 
   // Redux DevTools Configuration
   const actionCreators = {
-    ...counterActions,
-    ...routerActions
+    ...routerActions,
   };
   // If Redux DevTools Extension is installed use it, otherwise use Redux compose
   /* eslint-disable no-underscore-dangle */
   const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
     ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
-        // Options: http://extension.remotedev.io/docs/API/Arguments.html
-        actionCreators
-      })
+      // Options: http://extension.remotedev.io/docs/API/Arguments.html
+      actionCreators,
+    })
     : compose;
   /* eslint-enable no-underscore-dangle */
 
@@ -56,7 +54,7 @@ const configureStore = initialState => {
   if (module.hot) {
     module.hot.accept(
       '../reducers',
-      () => store.replaceReducer(require('../reducers')) // eslint-disable-line global-require
+      () => store.replaceReducer(require('../reducers')), // eslint-disable-line global-require
     );
   }
 

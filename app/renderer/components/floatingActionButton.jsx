@@ -7,8 +7,8 @@ import AddIcon from '@material-ui/icons/Add';
 
 const styles = theme => ({
   button: {
-    margin: theme.spacing.unit
-  }
+    margin: theme.spacing.unit,
+  },
 });
 
 function FloatingActionButton(props) {
@@ -30,7 +30,7 @@ function FloatingActionButton(props) {
 
 FloatingActionButton.propTypes = {
   classes: PropTypes.object.isRequired,
-  onClick: PropTypes.func.isRequired
+  onClick: PropTypes.func.isRequired,
 };
 
 export default withStyles(styles)(FloatingActionButton);

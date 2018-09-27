@@ -22,13 +22,13 @@ function renderInputComponent(inputProps) {
     <Tooltip title={title} placement={titleLocation}>
       <TextField
         InputProps={{
-          inputRef: node => {
+          inputRef: (node) => {
             ref(node);
             inputRef(node);
           },
           classes: {
-            input: classes.input
-          }
+            input: classes.input,
+          },
         }}
         {...other}
       />
@@ -51,17 +51,13 @@ function getSuggestions(value, suggestionsList) {
 
   return inputLength === 0
     ? []
-    : suggestionsList.filter(suggestion => {
-        const keep =
-          count < 5 &&
-          suggestion.label.slice(0, inputLength).toLowerCase() === inputValue;
-
-        if (keep) {
-          count += 1;
-        }
-
-        return keep;
-      });
+    : suggestionsList.filter((suggestion) => {
+      const keep = (count < 5) && (suggestion.label.slice(0, inputLength).toLowerCase() === inputValue);
+      if (keep) {
+        count += 1;
+      }
+      return keep;
+    });
 }
 
 function getSuggestionValue(suggestion) {
@@ -71,30 +67,30 @@ function getSuggestionValue(suggestion) {
 const styles = theme => ({
   root: {
     height: 250,
-    flexGrow: 1
+    flexGrow: 1,
   },
   container: {
     position: 'relative',
-    display: 'inline-flex'
+    display: 'inline-flex',
   },
   suggestionsContainerOpen: {
     position: 'absolute',
     zIndex: 1500,
     marginTop: theme.spacing.unit * 7,
     left: 0,
-    right: 0
+    right: 0,
   },
   suggestion: {
-    display: 'block'
+    display: 'block',
   },
   suggestionsList: {
     margin: 0,
     padding: 0,
-    listStyleType: 'none'
+    listStyleType: 'none',
   },
   divider: {
-    height: theme.spacing.unit * 2
-  }
+    height: theme.spacing.unit * 2,
+  },
 });
 
 class SuggestedInput extends React.Component {
@@ -104,27 +100,27 @@ class SuggestedInput extends React.Component {
     // initialize the state
     this.state = {
       enteredText: this.props.value,
-      suggestions: []
+      suggestions: [],
     };
   }
 
   handleSuggestionsFetchRequested = ({ value }) => {
     const { suggestionsList } = this.props;
     this.setState({
-      suggestions: getSuggestions(value, suggestionsList)
+      suggestions: getSuggestions(value, suggestionsList),
     });
   };
 
   handleSuggestionsClearRequested = () => {
     this.setState({
-      suggestions: []
+      suggestions: [],
     });
   };
 
   handleChange = id => (event, { newValue }) => {
     const { onInputChange } = this.props;
     this.setState({
-      enteredText: newValue
+      enteredText: newValue,
     });
 
     onInputChange(id, newValue);
@@ -138,7 +134,7 @@ class SuggestedInput extends React.Component {
       label,
       helperText,
       title,
-      titleLocation
+      titleLocation,
     } = this.props;
 
     const autosuggestProps = {
@@ -147,7 +143,7 @@ class SuggestedInput extends React.Component {
       onSuggestionsFetchRequested: this.handleSuggestionsFetchRequested,
       onSuggestionsClearRequested: this.handleSuggestionsClearRequested,
       getSuggestionValue,
-      renderSuggestion
+      renderSuggestion,
     };
 
     return (
@@ -162,13 +158,13 @@ class SuggestedInput extends React.Component {
           onChange: this.handleChange(id),
           label,
           title,
-          titleLocation
+          titleLocation,
         }}
         theme={{
           container: classes.container,
           suggestionsContainerOpen: classes.suggestionsContainerOpen,
           suggestionsList: classes.suggestionsList,
-          suggestion: classes.suggestion
+          suggestion: classes.suggestion,
         }}
         renderSuggestionsContainer={options => (
           <Paper {...options.containerProps} square>
@@ -185,14 +181,14 @@ SuggestedInput.propTypes = {
   onInputChange: PropTypes.func,
   helperText: PropTypes.string,
   value: PropTypes.string,
-  label: PropTypes.string
+  label: PropTypes.string,
 };
 
 SuggestedInput.defaultProps = {
   onInputChange: () => null,
   helperText: 'helper text',
   value: '',
-  label: ''
+  label: '',
 };
 
 export default withStyles(styles)(SuggestedInput);

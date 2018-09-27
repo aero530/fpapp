@@ -22,18 +22,18 @@ import { UPDATE_SETTING } from '../../../actions/data';
 const styles = theme => ({
   root: {
     width: '100%',
-    marginTop: theme.spacing.unit * 3
+    marginTop: theme.spacing.unit * 3,
   },
   paper: {
     width: '100%',
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5],
     padding: theme.spacing.unit * 4,
-    marginBottom: theme.spacing.unit * 4
+    marginBottom: theme.spacing.unit * 4,
   },
   button: {
-    margin: theme.spacing.unit
-  }
+    margin: theme.spacing.unit,
+  },
 });
 
 function NumberFormatPercentage(props) {
@@ -48,8 +48,8 @@ function NumberFormatPercentage(props) {
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id
-          }
+            id: event.target.id,
+          },
         });
       }}
       suffix="%"
@@ -59,7 +59,7 @@ function NumberFormatPercentage(props) {
 
 NumberFormatPercentage.propTypes = {
   inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };
 
 function NumberFormatYear(props) {
@@ -74,8 +74,8 @@ function NumberFormatYear(props) {
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id
-          }
+            id: event.target.id,
+          },
         });
       }}
       format="####"
@@ -85,7 +85,7 @@ function NumberFormatYear(props) {
 
 NumberFormatYear.propTypes = {
   inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
 };
 
 class Settings extends React.Component {
@@ -111,7 +111,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.ageRetire}
               InputProps={{ inputComponent: NumberFormatYear }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
                 this.forceUpdate();
               }}
@@ -125,7 +125,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.ageDie}
               InputProps={{ inputComponent: NumberFormatYear }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
                 this.forceUpdate();
               }}
@@ -139,7 +139,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.yearBorn}
               InputProps={{ inputComponent: NumberFormatYear }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
                 this.forceUpdate();
               }}
@@ -153,7 +153,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.yearStart}
               InputProps={{ inputComponent: NumberFormatYear }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, parseFloat(event.target.value));
                 this.forceUpdate();
               }}
@@ -172,7 +172,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.inflationBase}
               InputProps={{ inputComponent: NumberFormatPercentage }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, event.target.floatValue);
                 this.forceUpdate();
               }}
@@ -185,7 +185,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.taxIncome}
               InputProps={{ inputComponent: NumberFormatPercentage }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, event.target.floatValue);
                 this.forceUpdate();
               }}
@@ -198,7 +198,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.taxCapitalGains}
               InputProps={{ inputComponent: NumberFormatPercentage }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, event.target.floatValue);
                 this.forceUpdate();
               }}
@@ -211,7 +211,7 @@ class Settings extends React.Component {
               className={classNames(classes.margin, classes.textField)}
               value={settings.retirementCostOfLiving}
               InputProps={{ inputComponent: NumberFormatPercentage }}
-              onChange={event => {
+              onChange={(event) => {
                 changeSetting(event.target.id, event.target.floatValue);
                 this.forceUpdate();
               }}
@@ -224,26 +224,24 @@ class Settings extends React.Component {
 }
 Settings.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
-  setAppBarTitle: PropTypes.func.isRequired
+  setAppBarTitle: PropTypes.func.isRequired,
 };
 
 Settings.defaultProps = {};
 
 const mapStateToProps = state => ({
-  settings: state.data.settings
+  settings: state.data.settings,
 });
 
 const mapDispatchToProps = dispatch => ({
-  setAppBarTitle: titleInput =>
-    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
-  changeSetting: (nameInput, valueInput) =>
-    dispatch({ type: UPDATE_SETTING, name: nameInput, value: valueInput })
+  setAppBarTitle: titleInput => dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  changeSetting: (nameInput, valueInput) => dispatch({ type: UPDATE_SETTING, name: nameInput, value: valueInput }),
 });
 
 export default compose(
   withStyles(styles),
   connect(
     mapStateToProps,
-    mapDispatchToProps
-  )
+    mapDispatchToProps,
+  ),
 )(Settings);

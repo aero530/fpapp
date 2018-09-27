@@ -5,13 +5,23 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 
-import classNames from 'classnames';
-import * as ResultsActions from '../../../actions/results';
-
-import { AreaChart, Area, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import {
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
+
+import * as ResultsActions from '../../../actions/results';
 
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
 
@@ -20,18 +30,18 @@ const chartHeight = 300;
 const styles = theme => ({
   root: {
     width: '100%',
-    marginTop: theme.spacing.unit * 3
+    marginTop: theme.spacing.unit * 3,
   },
   paper: {
     width: '100%',
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5],
     padding: theme.spacing.unit * 4,
-    marginBottom: theme.spacing.unit * 4
+    marginBottom: theme.spacing.unit * 4,
   },
   button: {
-    margin: theme.spacing.unit
-  }
+    margin: theme.spacing.unit,
+  },
 });
 
 class Graphs extends React.Component {
@@ -49,18 +59,16 @@ class Graphs extends React.Component {
     return output;
   };
 
-  formatDataObject = dataIn => {
+  formatDataObject = (dataIn) => {
     const output = [];
-    const years = Object.keys(dataIn).sort((a, b) => {
-      return a - b;
-    });
-    years.forEach(year => {
+    const years = Object.keys(dataIn).sort((a, b) => a - b);
+    years.forEach((year) => {
       output.push({ x: year, y: dataIn[year] });
     });
     return output;
   };
 
-  cumulativeSum = a => {
+  cumulativeSum = (a) => {
     const result = [a[0]];
     for (let i = 1; i < a.length; i += 1) {
       result[i] = result[i - 1] + a[i];
@@ -69,14 +77,22 @@ class Graphs extends React.Component {
   };
 
   arraySubtract = (a, b) => {
-    const x = a.map((item, index) => {
-      return item - b[index];
-    });
+    const x = a.map((item, index) => item - b[index]);
     return x;
   };
 
   render() {
-    const { classes, accounts, savings, expenses, incomeTaxable, incomeTotal, incomeAfterTax, net, year } = this.props;
+    const {
+      classes,
+      accounts,
+      savings,
+      expenses,
+      incomeTaxable,
+      incomeTotal,
+      incomeAfterTax,
+      net,
+      year,
+    } = this.props;
 
     return (
       <div>
@@ -99,7 +115,7 @@ class Graphs extends React.Component {
           <Typography variant="title" id="modal-title">
             College
           </Typography>
-          {Object.values(accounts).map(account => {
+          {Object.values(accounts).map((account) => {
             if (account.type === 'college') {
               return (
                 <div>
@@ -126,7 +142,7 @@ class Graphs extends React.Component {
           <Typography variant="title" id="modal-title">
             Mortgage
           </Typography>
-          {Object.values(accounts).map(account => {
+          {Object.values(accounts).map((account) => {
             if (account.type === 'mortgage') {
               return (
                 <div>
@@ -182,7 +198,7 @@ class Graphs extends React.Component {
           <Typography variant="title" id="modal-title">
             Loan
           </Typography>
-          {Object.values(accounts).map(account => {
+          {Object.values(accounts).map((account) => {
             if (account.type === 'loan') {
               return (
                 <div>
@@ -256,7 +272,7 @@ class Graphs extends React.Component {
 
 Graphs.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
-  setAppBarTitle: PropTypes.func.isRequired
+  setAppBarTitle: PropTypes.func.isRequired,
 };
 
 Graphs.defaultProps = {};
@@ -269,18 +285,18 @@ const mapStateToProps = state => ({
   incomeTotal: state.results.incomeTotal,
   incomeAfterTax: state.results.incomeAfterTax,
   net: state.results.net,
-  year: state.results.year
+  year: state.results.year,
 });
 
 const mapDispatchToProps = dispatch => ({
   setAppBarTitle: titleInput => dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
-  ...bindActionCreators(ResultsActions, dispatch)
+  ...bindActionCreators(ResultsActions, dispatch),
 });
 
 export default compose(
   withStyles(styles),
   connect(
     mapStateToProps,
-    mapDispatchToProps
-  )
+    mapDispatchToProps,
+  ),
 )(Graphs);

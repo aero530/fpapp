@@ -20,7 +20,7 @@ import * as ResultsActions from '../../../actions/results';
 
 const styles = theme => ({
   root: {
-    width: '100%'
+    width: '100%',
   },
   paper: {
     width: '100%',
@@ -29,11 +29,11 @@ const styles = theme => ({
     padding: theme.spacing.unit * 4,
     marginBottom: theme.spacing.unit * 4,
     marginTop: theme.spacing.unit * 3,
-    overflow: 'auto'
+    overflow: 'auto',
   },
   button: {
-    margin: theme.spacing.unit
-  }
+    margin: theme.spacing.unit,
+  },
 });
 
 class Results extends React.Component {
@@ -43,7 +43,7 @@ class Results extends React.Component {
     analyze();
   }
 
-  cumulativeSum = a => {
+  cumulativeSum = (a) => {
     let result = a[0];
     for (let i = 1; i < a.length; i += 1) {
       result += a[i];
@@ -70,7 +70,7 @@ class Results extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {year.map((yearValue, index) => {
+              {year.map((yearValue) => {
                 return (
                   <TableRow key={yearValue} hover>
                     <TableCell component="th" scope="row" padding="dense">
@@ -118,7 +118,7 @@ Results.propTypes = {
   incomeTotal: PropTypes.arrayOf(PropTypes.number),
   incomeAfterTax: PropTypes.arrayOf(PropTypes.number),
   net: PropTypes.arrayOf(PropTypes.number),
-  year: PropTypes.arrayOf(PropTypes.number)
+  year: PropTypes.arrayOf(PropTypes.number),
 };
 
 Results.defaultProps = {
@@ -129,7 +129,7 @@ Results.defaultProps = {
   incomeTotal: [],
   incomeAfterTax: [],
   net: [],
-  year: []
+  year: [],
 };
 
 const mapStateToProps = state => ({
@@ -140,18 +140,18 @@ const mapStateToProps = state => ({
   incomeTotal: state.results.incomeTotal,
   incomeAfterTax: state.results.incomeAfterTax,
   net: state.results.net,
-  year: state.results.year
+  year: state.results.year,
 });
 
 const mapDispatchToProps = dispatch => ({
   setAppBarTitle: titleInput => dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
-  ...bindActionCreators(ResultsActions, dispatch)
+  ...bindActionCreators(ResultsActions, dispatch),
 });
 
 export default compose(
   withStyles(styles),
   connect(
     mapStateToProps,
-    mapDispatchToProps
-  )
+    mapDispatchToProps,
+  ),
 )(Results);

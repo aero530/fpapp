@@ -9,10 +9,10 @@ const initialState = {
   incomeAfterTax: {},
   net: {},
   year: [],
-  errors: []
+  errors: [],
 };
 
-export default function(state = initialState, action) {
+export default function (state = initialState, action) {
   switch (action.type) {
     case LOAD_RESULTS: {
       return {
@@ -24,7 +24,7 @@ export default function(state = initialState, action) {
         incomeTotal: action.incomeTotal,
         incomeAfterTax: action.incomeAfterTax,
         net: action.net,
-        year: action.year
+        year: action.year,
       };
     }
 
@@ -35,7 +35,7 @@ export default function(state = initialState, action) {
       return {
         ...state,
         errors: prevErrors,
-        errorCount: count
+        errorCount: count,
       };
     }
 
@@ -43,7 +43,7 @@ export default function(state = initialState, action) {
       return {
         ...state,
         errors: [],
-        errorCount: 0
+        errorCount: 0,
       };
     }
 

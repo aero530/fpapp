@@ -10,7 +10,7 @@ import { SET_APP_BAR_TITLE } from '../../../actions/app';
 import {
   UPDATE_ACCOUNT,
   DELETE_ACCOUNT,
-  ADD_ACCOUNT
+  ADD_ACCOUNT,
 } from '../../../actions/data';
 
 import Account from '../../../components/account';
@@ -18,13 +18,13 @@ import FloatingActionButton from '../../../components/floatingActionButton';
 
 const styles = theme => ({
   root: {
-    width: '100%'
+    width: '100%',
   },
   addFloatingActionButton: {
     position: 'absolute',
     bottom: theme.spacing.unit * 4,
-    right: theme.spacing.unit * 4
-  }
+    right: theme.spacing.unit * 4,
+  },
 });
 
 class Accounts extends React.Component {
@@ -49,7 +49,7 @@ class Accounts extends React.Component {
       incomeAccounts,
       onUpdate,
       onDelete,
-      onAdd
+      onAdd,
     } = this.props;
 
     return (
@@ -62,7 +62,7 @@ class Accounts extends React.Component {
                 key={key}
                 account={accounts[name]}
                 incomeAccounts={incomeAccounts}
-                onUpdate={account => {
+                onUpdate={(account) => {
                   onUpdate(name, account);
                 }}
                 onDelete={() => {
@@ -88,33 +88,27 @@ class Accounts extends React.Component {
 Accounts.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   setAppBarTitle: PropTypes.func.isRequired,
-  onAccountChange: PropTypes.func.isRequired
+  onAccountChange: PropTypes.func.isRequired,
 };
 
 Accounts.defaultProps = {};
 
 const mapStateToProps = state => ({
   accounts: state.data.accounts,
-  incomeAccounts: state.data.incomeAccounts
+  incomeAccounts: state.data.incomeAccounts,
 });
 
 const mapDispatchToProps = dispatch => ({
-  setAppBarTitle: titleInput =>
-    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
-  onUpdate: (accountNameInput, accountInput) =>
-    dispatch({
-      type: UPDATE_ACCOUNT,
-      name: accountNameInput,
-      data: accountInput
-    }),
+  setAppBarTitle: titleInput => dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  onUpdate: (accountNameInput, accountInput) => dispatch({ type: UPDATE_ACCOUNT, name: accountNameInput, data: accountInput }),
   onDelete: nameInput => dispatch({ type: DELETE_ACCOUNT, name: nameInput }),
-  onAdd: typeInput => dispatch({ type: ADD_ACCOUNT, accountType: typeInput })
+  onAdd: typeInput => dispatch({ type: ADD_ACCOUNT, accountType: typeInput }),
 });
 
 export default compose(
   withStyles(styles),
   connect(
     mapStateToProps,
-    mapDispatchToProps
-  )
+    mapDispatchToProps,
+  ),
 )(Accounts);

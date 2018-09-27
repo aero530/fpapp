@@ -7,7 +7,7 @@ function ready() {
 }
 
 ipcRenderer.on('backgroundCompute', (event, accounts, settings) => {
-  console.log(`background computation`);
+  console.log('background computation');
   // const result = work();
   const result = accountComputation(accounts, settings);
   ipcRenderer.send('analysisResults', result);

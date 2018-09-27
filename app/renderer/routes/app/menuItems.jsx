@@ -5,8 +5,6 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import ListSubheader from '@material-ui/core/ListSubheader';
 import DashboardIcon from '@material-ui/icons/Dashboard';
-import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
-import FolderOpenIcon from '@material-ui/icons/FolderOpen';
 import BarChartIcon from '@material-ui/icons/BarChart';
 import TableChartIcon from '@material-ui/icons/TableChart';
 import HomeIcon from '@material-ui/icons/Home';
@@ -101,26 +99,6 @@ export const accountListItems = (
         <LocalPharmacyIcon />
       </ListItemIcon>
       <ListItemText primary="HSA" />
-    </ListItem>
-  </div>
-);
-
-export const secondaryListItems = (
-  <div>
-    <ListSubheader inset>test stuff</ListSubheader>
-
-    <ListItem dense button component={Link} to="/app/counter">
-      <ListItemIcon>
-        <ShoppingCartIcon />
-      </ListItemIcon>
-      <ListItemText primary="Counter" />
-    </ListItem>
-
-    <ListItem dense button component={Link} to="/app/filetest">
-      <ListItemIcon>
-        <FolderOpenIcon />
-      </ListItemIcon>
-      <ListItemText primary="File Test" />
     </ListItem>
   </div>
 );

@@ -7,7 +7,7 @@ import {
   UPDATE_SETTING,
   UPDATE_ACCOUNT,
   DELETE_ACCOUNT,
-  ADD_ACCOUNT
+  ADD_ACCOUNT,
 } from '../actions/data';
 
 import show from '../components/accountStructure';
@@ -17,10 +17,10 @@ const initialState = {
   accounts: {},
   incomeAccounts: [],
   filename: '',
-  modified: false
+  modified: false,
 };
 
-export default function(state = initialState, action) {
+export default function (state = initialState, action) {
   switch (action.type) {
     case OPEN_DATA_FILE:
       return {
@@ -29,13 +29,13 @@ export default function(state = initialState, action) {
         accounts: action.accounts,
         incomeAccounts: action.incomeAccounts,
         filename: action.filename,
-        modified: false
+        modified: false,
       };
 
     case SAVE_DATA_FILE:
       return {
         ...state,
-        modified: false
+        modified: false,
       };
 
     case EDIT_DATA_FILE_STATE_CONTENT:
@@ -43,7 +43,7 @@ export default function(state = initialState, action) {
         ...state,
         modified: true,
         settings: action.settings,
-        accounts: action.accounts
+        accounts: action.accounts,
       };
 
     case UPDATE_SETTING: {
@@ -51,14 +51,14 @@ export default function(state = initialState, action) {
       prevSettings[action.name] = action.value;
       return {
         ...state,
-        settings: prevSettings
+        settings: prevSettings,
       };
     }
 
     case UPDATE_ACCOUNT: {
       return {
         ...state,
-        accounts: { ...state.accounts, [action.name]: action.data }
+        accounts: { ...state.accounts, [action.name]: action.data },
       };
     }
 
@@ -68,7 +68,7 @@ export default function(state = initialState, action) {
       console.log(action.name);
       return {
         ...state,
-        accounts: prevAccounts
+        accounts: prevAccounts,
       };
     }
 
@@ -78,7 +78,7 @@ export default function(state = initialState, action) {
 
       // Create new account object and populate with keys from imported show object
       let newAccount = { ...show[action.accountType] };
-      Object.keys(newAccount).forEach(key => {
+      Object.keys(newAccount).forEach((key) => {
         newAccount[key] = '';
       });
 
@@ -87,7 +87,7 @@ export default function(state = initialState, action) {
       const newAccounts = { ...prevAccounts, [id]: newAccount };
       return {
         ...state,
-        accounts: newAccounts
+        accounts: newAccounts,
       };
     }
 

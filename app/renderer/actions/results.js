@@ -8,14 +8,14 @@ export const CLEAR_ERRORS = 'CLEAR_ERRORS';
 export function loadResults(arg) {
   return {
     type: LOAD_RESULTS,
-    ...arg
+    ...arg,
   };
 }
 
 export function loadError(arg) {
   return {
     type: LOAD_ERROR,
-    error: arg
+    error: arg,
   };
 }
 

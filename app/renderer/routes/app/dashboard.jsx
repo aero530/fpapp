@@ -12,7 +12,7 @@ import { ipcRenderer } from 'electron';
 import { SET_APP_BAR_TITLE } from '../../actions/app';
 
 const styles = () => ({
-  root: {}
+  root: {},
 });
 
 class Dashboard extends React.Component {
@@ -31,19 +31,6 @@ class Dashboard extends React.Component {
           className={classes.button}
           variant="contained"
           onClick={() => {
-            ipcRenderer.send(
-              'for-background',
-              'do something for a few seconds'
-            );
-          }}
-          type="button"
-        >
-          test
-        </Button>
-        <Button
-          className={classes.button}
-          variant="contained"
-          onClick={() => {
             ipcRenderer.send('backgroundCompute', accounts, settings);
           }}
           type="button"
@@ -57,25 +44,24 @@ class Dashboard extends React.Component {
 
 Dashboard.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
-  setAppBarTitle: PropTypes.func.isRequired
+  setAppBarTitle: PropTypes.func.isRequired,
 };
 
 Dashboard.defaultProps = {};
 
 const mapStateToProps = state => ({
   accounts: state.data.accounts,
-  settings: state.data.settings
+  settings: state.data.settings,
 });
 
 const mapDispatchToProps = dispatch => ({
-  setAppBarTitle: titleInput =>
-    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput })
+  setAppBarTitle: titleInput => dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
 });
 
 export default compose(
   withStyles(styles),
   connect(
     mapStateToProps,
-    mapDispatchToProps
-  )
+    mapDispatchToProps,
+  ),
 )(Dashboard);

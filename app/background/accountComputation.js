@@ -2,17 +2,16 @@ import { ipcRenderer } from 'electron';
 
 const math = require('mathjs'); // load math.js (using node.js)
 
-const arrayToObject = (array, value) =>
-  array.reduce((obj, item) => {
-    if (value && Array.isArray(value)) {
-      obj[item] = [...value];
-    } else if (value && typeof value === 'object') {
-      obj[item] = { ...value };
-    } else {
-      obj[item] = 0;
-    }
-    return obj;
-  }, {});
+const arrayToObject = (array, value) => array.reduce((obj, item) => {
+  if (value && Array.isArray(value)) {
+    obj[item] = [...value];
+  } else if (value && typeof value === 'object') {
+    obj[item] = { ...value };
+  } else {
+    obj[item] = 0;
+  }
+  return obj;
+}, {});
 
 export default function accountComputation(accounts, settings) {
   const {
@@ -50,7 +49,7 @@ export default function accountComputation(accounts, settings) {
   // # ----------------------------------------------------------------------
   // # Loop through accounts to determine what order they should be processed in
   // # ----------------------------------------------------------------------
-  const accountOrderIndex = []; //[0]*numberAccounts // make accountOrderIndex an array of the correct size
+  const accountOrderIndex = []; // [0]*numberAccounts // make accountOrderIndex an array of the correct size
   const accountOrderTable = [
     'income',
     'hsa',
@@ -59,13 +58,13 @@ export default function accountComputation(accounts, settings) {
     'loan',
     'college',
     'retirement',
-    'savings'
+    'savings',
   ]; // define the order in which accounts should be processed
 
   console.log('Number of accounts ', numberAccounts);
   console.log('Number of account types ', accountOrderTable.length);
 
-  accountOrderTable.forEach(accountType => {
+  accountOrderTable.forEach((accountType) => {
     // loop through each account type in order listed in accountOrderTable
     Object.entries(accounts).forEach(([accountName, accountData]) => {
       // for each account
@@ -128,10 +127,10 @@ export default function accountComputation(accounts, settings) {
     // # Initialize the earnings table in SAVINGS, COLLEGE, and RETIREMENT
     // # ----------------------------------------------------------------------
     if (
-      account.type === 'savings' ||
-      account.type === 'college' ||
-      account.type === 'retirement' ||
-      account.type === 'hsa'
+      account.type === 'savings'
+      || account.type === 'college'
+      || account.type === 'retirement'
+      || account.type === 'hsa'
     ) {
       account.earnings = [...emptyYearTable];
       account.withdrawal = [...emptyYearTable];
@@ -154,50 +153,35 @@ export default function accountComputation(accounts, settings) {
     // # ----------------------------------------------------------------------
     // # Initialize input values based on computation
     // # ----------------------------------------------------------------------
-    if (
-      Object.prototype.hasOwnProperty.call(account, 'startin') &&
-      typeof account.startin !== 'number'
-    ) {
+    if (Object.prototype.hasOwnProperty.call(account, 'startin') && typeof account.startin !== 'number') {
       if (account.startin === 'incomelink') {
         account.startin = accounts[account.incomelink].startin;
       } else {
         account.startin = eval(account.startin);
       }
     }
-    if (
-      Object.prototype.hasOwnProperty.call(account, 'endin') &&
-      typeof account.endin !== 'number'
-    ) {
+    if (Object.prototype.hasOwnProperty.call(account, 'endin') && typeof account.endin !== 'number') {
       if (account.endin === 'incomelink') {
         account.endin = accounts[account.incomelink].endin;
       } else {
         account.endin = eval(account.endin);
       }
     }
-    if (
-      Object.prototype.hasOwnProperty.call(account, 'startout') &&
-      typeof account.startout !== 'number'
-    ) {
+    if (Object.prototype.hasOwnProperty.call(account, 'startout') && typeof account.startout !== 'number') {
       if (account.startout === 'incomelink') {
         account.startout = accounts[account.incomelink].startout;
       } else {
         account.startout = eval(account.startout);
       }
     }
-    if (
-      Object.prototype.hasOwnProperty.call(account, 'endout') &&
-      typeof account.endout !== 'number'
-    ) {
+    if (Object.prototype.hasOwnProperty.call(account, 'endout') && typeof account.endout !== 'number') {
       if (account.endout === 'incomelink') {
         account.endout = accounts[account.incomelink].endout;
       } else {
         account.endout = eval(account.endout);
       }
     }
-    if (
-      Object.prototype.hasOwnProperty.call(account, 'raise') &&
-      typeof account.raise !== 'number'
-    ) {
+    if (Object.prototype.hasOwnProperty.call(account, 'raise') && typeof account.raise !== 'number') {
       account.raise = eval(account.raise);
     }
     // console.log(JSON.stringify(account));
@@ -206,7 +190,7 @@ export default function accountComputation(accounts, settings) {
   // # ----------------------------------------------------------------------
   // # Main loop to loop through each year
   // # ----------------------------------------------------------------------
-  yearDelta.forEach(yearIndex => {
+  yearDelta.forEach((yearIndex) => {
     // loop through all years
 
     const yearCurrent = yearTable[yearIndex]; // set the current year to this year
@@ -222,7 +206,7 @@ export default function accountComputation(accounts, settings) {
     // # ----------------------------------------------------------------------
     // # Loop through accounts to make contributions and withdrawals
     // # ---------------------------------------------------------------------
-    accountOrderIndex.forEach(accountName => {
+    accountOrderIndex.forEach((accountName) => {
       // # ----------------------------------------------------------------------
       // # Initialize temp variables to zero
       // # ----------------------------------------------------------------------
@@ -253,10 +237,10 @@ export default function accountComputation(accounts, settings) {
       // # Calculate earnings
       // # ----------------------------------------------------------------------
       if (
-        account.type === 'savings' ||
-        account.type === 'college' ||
-        account.type === 'retirement' ||
-        account.type === 'hsa'
+        account.type === 'savings'
+        || account.type === 'college'
+        || account.type === 'retirement'
+        || account.type === 'hsa'
       ) {
         // if this is a SAVINGS or COLLEGE etc account
         earnings = (account.table[yearCurrent] * account.yearlyreturn) / 100; // calculate earnings from interest
@@ -265,9 +249,7 @@ export default function accountComputation(accounts, settings) {
         // Otherwise if this is an INCOME account
         if (account.startin <= yearCurrent && account.endin >= yearCurrent) {
           // if this income object is active this year
-          earnings =
-            account.base *
-            Math.pow(1 + account.raise / 100, yearCurrent - account.startin); // calculate this years income
+          earnings = account.base * Math.pow(1 + account.raise / 100, yearCurrent - account.startin); // calculate this years income
         }
       }
 
@@ -281,32 +263,14 @@ export default function accountComputation(accounts, settings) {
         account.interest[yearIndex] = interest;
       } else if (account.type === 'mortgage') {
         // Otherwise if this is a MORTGAGE account
-        if (
-          (account.table[yearCurrent] * 100.0) / account.value >
-          account.ltvlimit
-        ) {
+        if ((account.table[yearCurrent] * 100.0) / account.value > account.ltvlimit) {
           // if the current loan to value is more than the cutoff limit
           //account[accountindex]['table'][yearIndex] = account[accountindex]['table'][yearIndex]*(1+(account[accountindex]['rate']/100)/account[accountindex]['compoundtime'])^account[accountindex]['compoundtime'] - account[accountindex]['mortgageinsurance'] - account[accountindex]['escrow'] # add this years interest to the mortgage then decrease mortgage by payment amount but reduce payment by the escrow and mortgage insurance values
-          interest =
-            account.table[yearCurrent] *
-              Math.pow(
-                1 + account.rate / 100.0 / account.compoundtime,
-                account.compoundtime
-              ) +
-            account.mortgageinsurance +
-            account.escrowvalue -
-            account.table[yearCurrent]; // add this years interest to the mortgage then decrease mortgage by payment amount but reduce payment by the escrow and mortgage insurance values
+          interest = account.table[yearCurrent] * Math.pow(1 + account.rate / 100.0 / account.compoundtime, account.compoundtime) + account.mortgageinsurance + account.escrowvalue - account.table[yearCurrent]; // add this years interest to the mortgage then decrease mortgage by payment amount but reduce payment by the escrow and mortgage insurance values
         } else {
           // otherwise if the current loan to value is less than the cutoff limit
           //account[accountindex]['table'][yearIndex] = account[accountindex]['table'][yearIndex]*(1+(account[accountindex]['rate']/100)/account[accountindex]['compoundtime'])^account[accountindex]['compoundtime'] - account[accountindex]['escrow'] # add this years interest to the mortgage athe make payment on mortgage but but reduce payment by escrow value
-          interest =
-            account.table[yearCurrent] *
-              Math.pow(
-                1 + account.rate / 100.0 / account.compoundtime,
-                account.compoundtime
-              ) +
-            account.escrowvalue -
-            account.table[yearCurrent]; // add this years interest to the mortgage athe make payment on mortgage but but reduce payment by escrow value
+          interest = account.table[yearCurrent] * Math.pow(1 + account.rate / 100.0 / account.compoundtime, account.compoundtime) + account.escrowvalue - account.table[yearCurrent]; // add this years interest to the mortgage athe make payment on mortgage but but reduce payment by escrow value
           account.interest[yearIndex] = interest;
           account.escrow[yearIndex] = account.escrowvalue;
         }
@@ -325,27 +289,18 @@ export default function accountComputation(accounts, settings) {
 
           if (account.contributiontype === 'fixed_with_inflation') {
             // if inflation needs to be accounted for in the contribution
-            contribution =
-              account.yearlycontribution *
-              Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // increase the value by inflation
+            contribution = account.yearlycontribution * Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // increase the value by inflation
           } else if (account.contributiontype === 'fixed') {
             // otherwise if the contribution is a fixed value
             contribution = account.yearlycontribution; // set the contribution amount to the value input
           } else if (account.contributiontype === 'percent_of_income') {
             // otherwise if the contribution is a percent of income
-            if (
-              Object.prototype.hasOwnProperty.call(account, 'incomelink') &&
-              account.incomelink.length > 0
-            ) {
+            if (Object.prototype.hasOwnProperty.call(account, 'incomelink') && account.incomelink.length > 0) {
               // and if the account has an income object linked to it
-              contribution =
-                accounts[account.incomelink].table[yearCurrent] *
-                (account.yearlycontribution / 100); // calculate the contribution value using that income account and the percentage input
+              contribution = accounts[account.incomelink].table[yearCurrent] * (account.yearlycontribution / 100); // calculate the contribution value using that income account and the percentage input
             } else {
               // otherwise
-              contribution =
-                incomeTotalTaxableTable[yearCurrent] *
-                (account.yearlycontribution / 100); // calculate the contribution using the total income for the year
+              contribution = incomeTotalTaxableTable[yearCurrent] * (account.yearlycontribution / 100); // calculate the contribution using the total income for the year
             }
           }
 
@@ -355,7 +310,7 @@ export default function accountComputation(accounts, settings) {
             console.log('Error contribution < 0');
             ipcRenderer.send('analysisError', {
               title: `${accountName} ${yearCurrent}`,
-              message: 'contribution < 0'
+              message: 'contribution < 0',
             });
           }
 
@@ -364,9 +319,9 @@ export default function accountComputation(accounts, settings) {
           // # ----------------------------------------------------------------------
 
           if (
-            Object.prototype.hasOwnProperty.call(account, 'incomelink') &&
-            Object.prototype.hasOwnProperty.call(account, 'employermatch') &&
-            Object.prototype.hasOwnProperty.call(account, 'matchlimit')
+            Object.prototype.hasOwnProperty.call(account, 'incomelink')
+            && Object.prototype.hasOwnProperty.call(account, 'employermatch')
+            && Object.prototype.hasOwnProperty.call(account, 'matchlimit')
           ) {
             if (account.incomelink.length >= 0) {
               // if there is an incomelink for this account
@@ -384,89 +339,48 @@ export default function accountComputation(accounts, settings) {
               if (account.employermatch[0] >= 0 && account.matchlimit[0] >= 0) {
                 if (account.matchlimit.length > 1) {
                   // and if it is a complex employer matching (more than one level)
-                  if (
-                    contribution >=
-                    (account.matchlimit[0] / 100 +
-                      account.matchlimit[1] / 100) *
-                      accounts[account.incomelink].table[yearCurrent]
-                  ) {
+                  if (contribution >= (account.matchlimit[0] / 100 + account.matchlimit[1] / 100) * accounts[account.incomelink].table[yearCurrent]) {
                     // and if the contribution is above the highest employer matching level
-                    employermatch =
-                      accounts[account.incomelink].table[yearCurrent] *
-                      ((account.employermatch[1] / 100) *
-                        (account.matchlimit[1] / 100) +
-                        (account.employermatch[0] / 100) *
-                          (account.matchlimit[0] / 100)); // calculate the employer matching based on the match limits
-                  } else if (
-                    contribution >=
-                    (account.matchlimit[0] / 100) *
-                      accounts[account.incomelink].table[yearCurrent]
-                  ) {
+                    employermatch = accounts[account.incomelink].table[yearCurrent] * ((account.employermatch[1] / 100) * (account.matchlimit[1] / 100) + (account.employermatch[0] / 100) * (account.matchlimit[0] / 100)); // calculate the employer matching based on the match limits
+                  } else if (contribution >= (account.matchlimit[0] / 100) * accounts[account.incomelink].table[yearCurrent]) {
                     // otherwise if the contribution is between the employer matching levels ) {
                     employermatch =
-                      accounts[account.incomelink].table[yearCurrent] *
-                      ((account.employermatch[0] / 100) *
-                        (account.matchlimit[0] / 100) +
-                        (account.employermatch[1] / 100) *
-                          (account.matchlimit[1] / 100) *
-                          (contribution /
-                            accounts[account.incomelink].table[yearCurrent] -
-                            account.matchlimit[0] / 100)); // calculate the employer matching with all the first level and part of the second level
+                      accounts[account.incomelink].table[yearCurrent] * ((account.employermatch[0] / 100) * (account.matchlimit[0] / 100) + (account.employermatch[1] / 100) * (account.matchlimit[1] / 100) * (contribution / accounts[account.incomelink].table[yearCurrent] - account.matchlimit[0] / 100)); // calculate the employer matching with all the first level and part of the second level
                   } else {
-                    employermatch =
-                      contribution * (account.employermatch[0] / 100); // the employer contribution is computed based on the entire contribution
+                    employermatch = contribution * (account.employermatch[0] / 100); // the employer contribution is computed based on the entire contribution
                   }
                 } else {
                   // if it is a simple employer matching (only one level)
-                  if (
-                    contribution >=
-                    account.matchlimit[0] *
-                      accounts[account.incomelink].table[yearCurrent]
-                  ) {
+                  if (contribution >= account.matchlimit[0] * accounts[account.incomelink].table[yearCurrent]) {
                     // and if the contribution is above the highest employer matching level
-                    employermatch =
-                      accounts[account.incomelink].table[yearCurrent] *
-                      (account.employermatch[0] / 100) *
-                      (account.matchlimit[0] / 100); // calculate the employer matching based on the match limits
+                    employermatch = accounts[account.incomelink].table[yearCurrent] * (account.employermatch[0] / 100) * (account.matchlimit[0] / 100); // calculate the employer matching based on the match limits
                   } else {
                     // otherwise  if below the employer match limit
-                    employermatch =
-                      contribution * (account.employermatch[0] / 100); // the employer contribution is computed based on the entire contribution
+                    employermatch = contribution * (account.employermatch[0] / 100); // the employer contribution is computed based on the entire contribution
                   }
                 }
               }
             } else {
               console.log(
                 'Employer Match defined for account but incomelink length <= 0 ',
-                account.name
+                account.name,
               );
               ipcRenderer.send('analysisError', {
                 title: `${accountName} ${yearCurrent}`,
                 message:
-                  'employer match defined for account but incomelink length <= 0'
+                  'employer match defined for account but incomelink length <= 0',
               });
             }
-          } else if (
-            Object.prototype.hasOwnProperty.call(
-              account,
-              'employercontribution'
-            ) &&
-            yearCurrent <= yearRetire
-          ) {
+          } else if (Object.prototype.hasOwnProperty.call(account, 'employercontribution') && yearCurrent <= yearRetire) {
             if (account.contributiontype === 'fixed_with_inflation') {
               // if inflation needs to be accounted for in the contribution
-              employermatch =
-                account.employercontribution *
-                Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // increase the value by inflation
+              employermatch = account.employercontribution * Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // increase the value by inflation
             } else if (account.contributiontype === 'fixed') {
               // otherwise if the contribution is a fixed value
               employermatch = account.employercontribution; // set the contribution amount to the value input
             } else {
               console.log('Employer Contribution type not implimented');
-              ipcRenderer.send('analysisError', {
-                title: `${accountName} ${yearCurrent}`,
-                message: 'employer contribution type not implemented'
-              });
+              ipcRenderer.send('analysisError', { title: `${accountName} ${yearCurrent}`, message: 'employer contribution type not implemented' });
             }
           }
         }
@@ -527,17 +441,10 @@ export default function accountComputation(accounts, settings) {
               if (account.table[yearCurrent - 1] > 0) {
                 // if there is money left in the account (python gives error on zero / anything)
                 // withdrawal from this account = total expenses this year  * fraction of total savings this account represents
-                let totalExpensesThisYear = Object.values(
-                  expenseTotal[yearCurrent]
-                ).reduce((acc, cur) => acc + cur, 0);
-                withdrawal =
-                  (totalExpensesThisYear * account.table[yearCurrent - 1]) /
-                  savingsTotalTable[yearCurrent - 1];
-                if (
-                  Object.prototype.hasOwnProperty.call(account, 'taxstatus') &&
-                  account.taxstatus === 3
-                ) {
-                  withdrawal = withdrawal * (taxIncome / 100 + 1); // add extra to amount withdrawal value to account for taxes.
+                let totalExpensesThisYear = Object.values(expenseTotal[yearCurrent]).reduce((acc, cur) => acc + cur, 0);
+                withdrawal = (totalExpensesThisYear * account.table[yearCurrent - 1]) / savingsTotalTable[yearCurrent - 1];
+                if (Object.prototype.hasOwnProperty.call(account, 'taxstatus') && account.taxstatus === 3) {
+                  withdrawal *= (taxIncome / 100 + 1); // add extra to amount withdrawal value to account for taxes.
                 }
                 //print('{0:f}\t{1:f}\t{2:f}\t{3:f}'.format(expensetotal_table.sum(axis=1)[yearindex],withdrawal,account[accountindex]['table'][yearindex-1],savingstotal_table[yearindex-1]))
               }
@@ -545,7 +452,7 @@ export default function accountComputation(accounts, settings) {
               console.log('ERROR - Can not compute withdrawal amount');
               ipcRenderer.send('analysisError', {
                 title: `${accountName} ${yearCurrent}`,
-                message: 'can not compute withdrawal amount < 0'
+                message: 'can not compute withdrawal amount < 0',
               });
             }
           } else if (account.withdrawaltype === 'fixed') {
@@ -553,22 +460,19 @@ export default function accountComputation(accounts, settings) {
             withdrawal = account.withdrawalvalue; // set withdrawal to the value
           } else if (account.withdrawaltype === 'fixed_with_inflation') {
             // otherwise if type is a fixed number but should be compensated for with inflation
-            withdrawal =
-              account.withdrawalvalue *
-              Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // set withdrawal to the value multiplied by an increase due to inflation
+            withdrawal = account.withdrawalvalue * Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // set withdrawal to the value multiplied by an increase due to inflation
           } else if (account.withdrawaltype === 'end_at_zero') {
             // otherwise if the type is end at zero
             if (account.endout >= yearCurrent) {
               // and if the year to stop taking money out of the account is beyond or equal to the current year
-              withdrawal =
-                account.table[yearCurrent] / (account.endout - yearCurrent + 1); // calculate the fraction of the account balance to withdraw
+              withdrawal = account.table[yearCurrent] / (account.endout - yearCurrent + 1); // calculate the fraction of the account balance to withdraw
             }
           } else {
             // otherwise if a different type is specified
             console.log('Invalid withdrawal type');
             ipcRenderer.send('analysisError', {
               title: `${accountName} ${yearCurrent}`,
-              message: 'invalid withdrawal type'
+              message: 'invalid withdrawal type',
             });
             withdrawal = 0; // set withdrawal to zero (this is for accounts that you dont remove money from such as expense accounts)
           }
@@ -582,7 +486,7 @@ export default function accountComputation(accounts, settings) {
           console.log('Error withdrawal < 0');
           ipcRenderer.send('analysisError', {
             title: `${accountName} ${yearCurrent}`,
-            message: 'withdrawal < 0'
+            message: 'withdrawal < 0',
           });
         }
         account.withdrawal[yearIndex] = withdrawal;
@@ -604,9 +508,7 @@ export default function accountComputation(accounts, settings) {
             expense = account.expensevalue; // set expense to the value
           } else if (account.expensetype === 'fixed_with_inflation') {
             // otherwise if type is a fixed number but should be compensated for with inflation
-            expense =
-              account.expensevalue *
-              Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // set expense to the value multiplied by an increase due to inflation
+            expense = account.expensevalue * Math.pow(1 + inflationBase / 100, yearDelta[yearIndex]); // set expense to the value multiplied by an increase due to inflation
           } else {
             // otherwise if a different type is specified
             expense = 0; // set expense to zero (this is for accounts that you dont remove money from such as expense accounts)
@@ -619,7 +521,7 @@ export default function accountComputation(accounts, settings) {
           console.log('Error expense < 0');
           ipcRenderer.send('analysisError', {
             title: `${accountName} ${yearCurrent}`,
-            message: 'expense < 0'
+            message: 'expense < 0',
           });
         }
       }
@@ -658,12 +560,8 @@ export default function accountComputation(accounts, settings) {
       // # Add contribution and employermatch to the account for the year
       // # ----------------------------------------------------------------------
 
-      account.table[yearCurrent] =
-        account.table[yearCurrent] + contribution + employermatch;
-      if (
-        Object.prototype.hasOwnProperty.call(account, 'taxstatus') &&
-        (account.taxstatus === 3 || account.taxstatus === 4)
-      ) {
+      account.table[yearCurrent] = account.table[yearCurrent] + contribution + employermatch;
+      if (Object.prototype.hasOwnProperty.call(account, 'taxstatus') && (account.taxstatus === 3 || account.taxstatus === 4)) {
         // if contributions should be taken out of taxable income for the year
         incomeTotalTaxableTable[yearCurrent] -= contribution; // take the contribution value out of taxable income for the year
       }
