@@ -6,20 +6,22 @@ import Root from './root';
 import { configureStore, history } from './store/configureStore';
 
 import { openFile, saveFile } from './actions/data';
-import { loadResults } from './actions/results';
+import { loadResults, loadError } from './actions/results';
 
 const { dialog } = require('electron').remote;
 
 const store = configureStore();
 
-ipcRenderer.on('to-renderer', (event, arg) => {
+ipcRenderer.on('analysisError', (event, arg) => {
+  store.dispatch(loadError(arg));
+});
+
+ipcRenderer.on('analysisResults', (event, arg) => {
   store.dispatch(loadResults(arg));
 });
 
 ipcRenderer.on('fileOpen', (event, arg) => {
-  //const { contents } = store.getState();
   store.dispatch(openFile(arg.filename[0]));
-  //ipcRenderer.send('for-background', contents);
 });
 
 ipcRenderer.on('fileSave', () => {

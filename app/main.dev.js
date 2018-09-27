@@ -129,12 +129,12 @@ app.on('ready', async () => {
   });
 
   // Windows can talk to each other via main
-  ipcMain.on('for-renderer', (event, arg) => {
-    mainWindow.webContents.send('to-renderer', arg);
+  ipcMain.on('analysisResults', (event, arg) => {
+    mainWindow.webContents.send('analysisResults', arg);
   });
 
-  ipcMain.on('for-background', (event, arg) => {
-    backgroundWindow.webContents.send('to-background', arg);
+  ipcMain.on('analysisError', (event, arg) => {
+    mainWindow.webContents.send('analysisError', arg);
   });
 
   ipcMain.on('backgroundCompute', (event, arg1, arg2) => {

@@ -21,6 +21,8 @@ import classNames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
 
 import Divider from '@material-ui/core/Divider';
 import AppBar from '@material-ui/core/AppBar';
@@ -30,6 +32,8 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import Badge from '@material-ui/core/Badge';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Dialog from '@material-ui/core/Dialog';
 import Typography from '@material-ui/core/Typography';
 
 import {
@@ -126,9 +130,18 @@ class AppRoute extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      open: false
+      open: false,
+      dialogOpen: false
     };
   }
+
+  handleDialogOpen = () => {
+    this.setState({ dialogOpen: true });
+  };
+
+  handleDialogClose = () => {
+    this.setState({ dialogOpen: false });
+  };
 
   handleDrawerOpen = () => {
     this.setState({ open: true });
@@ -139,7 +152,7 @@ class AppRoute extends React.Component {
   };
 
   render() {
-    const { classes, appBarTitle } = this.props;
+    const { classes, appBarTitle, errorCount, errors } = this.props;
 
     return (
       <div className={classes.root}>
@@ -170,11 +183,16 @@ class AppRoute extends React.Component {
             >
               {appBarTitle}
             </Typography>
-            <IconButton color="inherit">
-              <Badge badgeContent={4} color="secondary">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
+
+            {errorCount > 0 ? (
+              <IconButton color="inherit" onClick={this.handleDialogOpen}>
+                <Badge badgeContent={errorCount} color="secondary">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            ) : (
+              <span />
+            )}
           </Toolbar>
         </AppBar>
         <Drawer
@@ -212,6 +230,28 @@ class AppRoute extends React.Component {
             <Route exact path="/app/accounts/:type" component={Accounts} />
           </Switch>
         </main>
+
+        <Dialog
+          onClose={this.handleDialogClose}
+          aria-labelledby="simple-dialog-title"
+          open={this.state.dialogOpen}
+        >
+          <DialogTitle id="simple-dialog-title">Analysis Errors</DialogTitle>
+          <div>
+            <List>
+              {errors.map((error, index) => {
+                return (
+                  <ListItem>
+                    <ListItemText
+                      primary={error.title}
+                      secondary={error.message}
+                    />
+                  </ListItem>
+                );
+              })}
+            </List>
+          </div>
+        </Dialog>
       </div>
     );
   }
@@ -222,7 +262,9 @@ AppRoute.propTypes = {};
 AppRoute.defaultProps = {};
 
 const mapStateToProps = state => ({
-  appBarTitle: state.app.appBarTitle
+  appBarTitle: state.app.appBarTitle,
+  errorCount: state.results.errorCount,
+  errors: state.results.errors
 });
 
 const mapDispatchToProps = dispatch => ({});

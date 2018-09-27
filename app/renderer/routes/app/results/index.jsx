@@ -44,7 +44,6 @@ class Results extends React.Component {
   }
 
   cumulativeSum = a => {
-    console.log(a);
     let result = a[0];
     for (let i = 1; i < a.length; i += 1) {
       result += a[i];

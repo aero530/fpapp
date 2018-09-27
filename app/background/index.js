@@ -1,46 +1,16 @@
 import { ipcRenderer } from 'electron';
-
 import accountComputation from './accountComputation';
-
-// Send logs as messages to the main thread to show on the console
-// function log(value) {
-//   ipcRenderer.send('to-main', `${process.pid} : ${value}`);
-// }
 
 // let the main thread know this thread is ready to process something
 function ready() {
   ipcRenderer.send('ready');
 }
 
-// do some work that will tie up the processor for a while
-function work() {
-  // see https://gist.github.com/tkrueger/3500612 for generating load
-  const start = new Date().getTime();
-  let result = 0;
-  let finished = false;
-  while (!finished) {
-    result += Math.random() * Math.random();
-    finished = new Date().getTime() > start + 5000;
-  }
-  return result;
-}
-
-ipcRenderer.on('to-background', (event, arg) => {
-  console.log(`background ${arg}`);
-  ipcRenderer.send(
-    'for-renderer',
-    `${process.pid} : processing reply to ${arg}`
-  );
-  // const result = work();
-  const result = accountComputation();
-  ipcRenderer.send('for-renderer', result);
-});
-
 ipcRenderer.on('backgroundCompute', (event, accounts, settings) => {
   console.log(`background computation`);
   // const result = work();
   const result = accountComputation(accounts, settings);
-  ipcRenderer.send('for-renderer', result);
+  ipcRenderer.send('analysisResults', result);
 });
 
 ready();

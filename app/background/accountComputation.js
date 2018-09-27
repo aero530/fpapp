@@ -1,5 +1,6 @@
-// load math.js (using node.js)
-const math = require('mathjs');
+import { ipcRenderer } from 'electron';
+
+const math = require('mathjs'); // load math.js (using node.js)
 
 const arrayToObject = array =>
   array.reduce((obj, item) => {
@@ -76,7 +77,9 @@ export default function accountComputation(accounts, settings) {
   const accountsArray = Object.keys(accounts);
   const accountsYearlyObject = arrayToObject(accountsArray);
 
-  const expenseTotal = Array.from(yearDelta, () => accountsYearlyObject);
+  const expenseTotal = Array.from(yearDelta, () => {
+    return { ...accountsYearlyObject };
+  });
 
   const savingsTotalTable = [...emptyYearTable];
   const incomeTotalTaxableTable = [...emptyYearTable];
@@ -333,6 +336,10 @@ export default function accountComputation(accounts, settings) {
 
           if (contribution < 0) {
             console.log('Error contribution < 0');
+            ipcRenderer.send('analysisError', {
+              title: `${accountName} ${yearCurrent}`,
+              message: 'contribution < 0'
+            });
           }
 
           // # ----------------------------------------------------------------------
@@ -416,6 +423,11 @@ export default function accountComputation(accounts, settings) {
                 'Employer Match defined for account but incomelink length <= 0 ',
                 account.name
               );
+              ipcRenderer.send('analysisError', {
+                title: `${accountName} ${yearCurrent}`,
+                message:
+                  'employer match defined for account but incomelink length <= 0'
+              });
             }
           } else if (
             Object.prototype.hasOwnProperty.call(
@@ -434,6 +446,10 @@ export default function accountComputation(accounts, settings) {
               employermatch = account.employercontribution; // set the contribution amount to the value input
             } else {
               console.log('Employer Contribution type not implimented');
+              ipcRenderer.send('analysisError', {
+                title: `${accountName} ${yearCurrent}`,
+                message: 'employer contribution type not implemented'
+              });
             }
           }
         }
@@ -469,6 +485,10 @@ export default function accountComputation(accounts, settings) {
         }
         if (payment < 0) {
           console.log('Error payment < 0');
+          ipcRenderer.send('analysisError', {
+            title: `${accountName} ${yearCurrent}`,
+            message: 'payment < 0'
+          });
         }
       }
 
@@ -506,6 +526,10 @@ export default function accountComputation(accounts, settings) {
               }
             } else {
               console.log('ERROR - Can not compute withdrawal amount');
+              ipcRenderer.send('analysisError', {
+                title: `${accountName} ${yearCurrent}`,
+                message: 'can not compute withdrawal amount < 0'
+              });
             }
           } else if (account.withdrawaltype === 'fixed') {
             // otherwise if type is a fixed value
@@ -525,6 +549,10 @@ export default function accountComputation(accounts, settings) {
           } else {
             // otherwise if a different type is specified
             console.log('Invalid withdrawal type');
+            ipcRenderer.send('analysisError', {
+              title: `${accountName} ${yearCurrent}`,
+              message: 'invalid withdrawal type'
+            });
             withdrawal = 0; // set withdrawal to zero (this is for accounts that you dont remove money from such as expense accounts)
           }
         }
@@ -535,6 +563,10 @@ export default function accountComputation(accounts, settings) {
         }
         if (withdrawal < 0) {
           console.log('Error withdrawal < 0');
+          ipcRenderer.send('analysisError', {
+            title: `${accountName} ${yearCurrent}`,
+            message: 'withdrawal < 0'
+          });
         }
         account.withdrawal[yearIndex] = withdrawal;
       }
@@ -568,6 +600,10 @@ export default function accountComputation(accounts, settings) {
         }
         if (expense < 0) {
           console.log('Error expense < 0');
+          ipcRenderer.send('analysisError', {
+            title: `${accountName} ${yearCurrent}`,
+            message: 'expense < 0'
+          });
         }
       }
 

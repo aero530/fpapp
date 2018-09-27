@@ -1,4 +1,4 @@
-import { LOAD_RESULTS } from '../actions/results';
+import { LOAD_RESULTS, LOAD_ERROR, CLEAR_ERRORS } from '../actions/results';
 
 const initialState = {
   accounts: {},
@@ -8,7 +8,8 @@ const initialState = {
   incomeTotal: [],
   incomeAfterTax: [],
   net: [],
-  year: []
+  year: [],
+  errors: []
 };
 
 export default function(state = initialState, action) {
@@ -24,6 +25,25 @@ export default function(state = initialState, action) {
         incomeAfterTax: action.incomeAfterTax,
         net: action.net,
         year: action.year
+      };
+    }
+
+    case LOAD_ERROR: {
+      const prevErrors = state.errors;
+      prevErrors.push(action.error);
+      const count = prevErrors.length;
+      return {
+        ...state,
+        errors: prevErrors,
+        errorCount: count
+      };
+    }
+
+    case CLEAR_ERRORS: {
+      return {
+        ...state,
+        errors: [],
+        errorCount: 0
       };
     }
 
