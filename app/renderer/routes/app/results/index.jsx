@@ -52,17 +52,7 @@ class Results extends React.Component {
   };
 
   render() {
-    const {
-      classes,
-      accounts,
-      savings,
-      expenses,
-      incomeTaxable,
-      incomeTotal,
-      incomeAfterTax,
-      net,
-      year
-    } = this.props;
+    const { classes, accounts, savings, expenses, incomeTaxable, incomeTotal, incomeAfterTax, net, year } = this.props;
 
     return (
       <div>
@@ -76,9 +66,7 @@ class Results extends React.Component {
                 <TableCell numeric>Taxable Income</TableCell>
                 <TableCell numeric>Income After Taxes</TableCell>
                 <TableCell numeric>Expenses</TableCell>
-                <TableCell numeric>
-                  Total Savings (retirement, college, etc)
-                </TableCell>
+                <TableCell numeric>Total Savings (retirement, college, etc)</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -109,14 +97,10 @@ class Results extends React.Component {
                       })}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {this.cumulativeSum(
-                        Object.values(expenses[yearValue])
-                      ).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                      {this.cumulativeSum(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {savings[yearValue].toLocaleString('en-US', {
-                        maximumFractionDigits: 0
-                      })}
+                      {savings[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </TableCell>
                   </TableRow>
                 );
@@ -168,8 +152,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-  setAppBarTitle: titleInput =>
-    dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
+  setAppBarTitle: titleInput => dispatch({ type: SET_APP_BAR_TITLE, title: titleInput }),
   ...bindActionCreators(ResultsActions, dispatch)
 });
 
