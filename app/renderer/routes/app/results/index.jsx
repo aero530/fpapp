@@ -89,32 +89,32 @@ class Results extends React.Component {
                       {yearValue}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {net[index].toLocaleString('en-US', {
+                      {net[yearValue].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {incomeTotal[index].toLocaleString('en-US', {
+                      {incomeTotal[yearValue].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {incomeTaxable[index].toLocaleString('en-US', {
+                      {incomeTaxable[yearValue].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {incomeAfterTax[index].toLocaleString('en-US', {
+                      {incomeAfterTax[yearValue].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>
                     <TableCell numeric padding="dense">
                       {this.cumulativeSum(
-                        Object.values(expenses[index])
+                        Object.values(expenses[yearValue])
                       ).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </TableCell>
                     <TableCell numeric padding="dense">
-                      {savings[index].toLocaleString('en-US', {
+                      {savings[yearValue].toLocaleString('en-US', {
                         maximumFractionDigits: 0
                       })}
                     </TableCell>

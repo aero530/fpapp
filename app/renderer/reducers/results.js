@@ -2,12 +2,12 @@ import { LOAD_RESULTS, LOAD_ERROR, CLEAR_ERRORS } from '../actions/results';
 
 const initialState = {
   accounts: {},
-  savings: [],
+  savings: {},
   expenses: [],
-  incomeTaxable: [],
-  incomeTotal: [],
-  incomeAfterTax: [],
-  net: [],
+  incomeTaxable: {},
+  incomeTotal: {},
+  incomeAfterTax: {},
+  net: {},
   year: [],
   errors: []
 };

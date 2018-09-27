@@ -8,7 +8,6 @@ import { withStyles } from '@material-ui/core/styles';
 import classNames from 'classnames';
 import * as ResultsActions from '../../../actions/results';
 
-//const {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend} = Recharts;
 import {
   AreaChart,
   Area,
@@ -61,6 +60,17 @@ class Graphs extends React.Component {
     return output;
   };
 
+  formatDataObject = dataIn => {
+    const output = [];
+    const years = Object.keys(dataIn).sort((a, b) => {
+      return a - b;
+    });
+    years.forEach(year => {
+      output.push({ x: year, y: dataIn[year] });
+    });
+    return output;
+  };
+
   cumulativeSum = a => {
     const result = [a[0]];
     for (let i = 1; i < a.length; i += 1) {
@@ -97,7 +107,7 @@ class Graphs extends React.Component {
           </Typography>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart
-              data={this.formatData(year, net)}
+              data={this.formatDataObject(net)}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <XAxis dataKey="x" />
@@ -126,7 +136,7 @@ class Graphs extends React.Component {
                   </Typography>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart
-                      data={this.formatData(year, account.table)}
+                      data={this.formatDataObject(account.table)}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <XAxis dataKey="x" />
@@ -165,7 +175,7 @@ class Graphs extends React.Component {
                   </Typography>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart
-                      data={this.formatData(year, account.table)}
+                      data={this.formatDataObject(account.table)}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <XAxis dataKey="x" />
@@ -260,7 +270,7 @@ class Graphs extends React.Component {
                   </Typography>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart
-                      data={this.formatData(year, account.table)}
+                      data={this.formatDataObject(account.table)}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <XAxis dataKey="x" />

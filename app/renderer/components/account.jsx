@@ -28,6 +28,12 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import Select from '@material-ui/core/Select';
 
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+
 import SuggestedInput from './suggestedInput';
 
 import {
@@ -399,6 +405,31 @@ class Account extends Component {
                   this.handleChange(fieldName, fieldValue);
                 }}
               />
+            ) : null}
+          </div>
+
+          <div>
+            {show[account.type].table ? (
+              <div>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell numeric>Year</TableCell>
+                      <TableCell numeric>Value</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(account.table).map(([key, value]) => {
+                      return (
+                        <TableRow key={key}>
+                          <TableCell numeric>{key}</TableCell>
+                          <TableCell numeric>{value}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             ) : null}
           </div>
 
