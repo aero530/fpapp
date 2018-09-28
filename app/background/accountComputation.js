@@ -78,13 +78,9 @@ export default function accountComputation(accounts, settings) {
   // # ----------------------------------------------------------------------
   // # initialize tables to the correct sizes
   // # ----------------------------------------------------------------------
-  const emptyYearTable = Array.from(yearDelta, () => 0);
   const accountsArray = Object.keys(accounts);
   const accountsYearlyObject = arrayToObject(accountsArray, 0);
 
-  // const expenseTotal = Array.from(yearDelta, () => {
-  //   return { ...accountsYearlyObject };
-  // });
   const expenseTotal = arrayToObject(yearTable, accountsYearlyObject);
 
   const savingsTotalTable = arrayToObject(yearTable, 0);
@@ -92,24 +88,18 @@ export default function accountComputation(accounts, settings) {
   const incomeTotalTable = arrayToObject(yearTable, 0);
   const incomeTotalAfterTaxTable = arrayToObject(yearTable, 0);
   const netTable = arrayToObject(yearTable, 0);
+  console.log(JSON.stringify(netTable));
 
   Object.keys(accounts).forEach((accountName) => {
     const account = accounts[accountName];
-    // Object.entries(accounts).forEach(([accountName, account]) => {
     // loop through all account objects
     // # ----------------------------------------------------------------------
     // # Initialize internal tables to correct size
     // # ----------------------------------------------------------------------
-    let tmp = 0;
-    if (Object.hasOwnProperty.call(account, 'table')) { // if there is already a table object
-      if (Object.hasOwnProperty.call(account.table, yearStart)) {
-        // if the table of the account has a value for the defined yearStart
-        tmp = account.table[yearStart]; // use that value for the tables value for this year
-      }
-    } else { // if there is not a table object then create one
+    if (!Object.hasOwnProperty.call(account, 'table')) { // if there is not a table object then create one
       account.table = {};
+      account.table[yearStart] = 0;
     }
-    account.table[yearStart] = tmp;
 
     // # ----------------------------------------------------------------------
     // # Initialize the interest table in LOAN
@@ -195,7 +185,6 @@ export default function accountComputation(accounts, settings) {
     if (yearCurrent > yearStart) {
       netTable[yearCurrent] = netTable[yearCurrent - 1]; // initialize this year as the value from last year
     }
-
 
     // # ----------------------------------------------------------------------
     // # Loop through accounts to make contributions and withdrawals
@@ -653,6 +642,7 @@ export default function accountComputation(accounts, settings) {
     // # Add Income to net account (subtract out paying for income tax)
     // # ----------------------------------------------------------------------
     const totalExpensesThisYear = Object.values(expenseTotal[yearCurrent]).reduce((acc, cur) => acc + cur, 0);
+    console.log(totalExpensesThisYear);
 
     netTable[yearCurrent] = netTable[yearCurrent] + incomeTotalTable[yearCurrent] - incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100) - totalExpensesThisYear;
     incomeTotalAfterTaxTable[yearCurrent] = incomeTotalTable[yearCurrent] - incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100);
@@ -660,6 +650,10 @@ export default function accountComputation(accounts, settings) {
 
   console.log('accounts after main loop');
   console.log(accounts);
+  console.log(netTable);
+  console.log(incomeTotalTable);
+  console.log(incomeTotalTaxableTable);
+  console.log(taxIncome);
 
   const result = {
     year: yearTable,

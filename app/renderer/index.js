@@ -8,6 +8,8 @@ import { configureStore, history } from './store/configureStore';
 import { openFile, saveFile } from './actions/data';
 import { loadResults, loadError } from './actions/results';
 
+import '../app.global.css';
+
 const { dialog } = require('electron').remote;
 
 const store = configureStore();

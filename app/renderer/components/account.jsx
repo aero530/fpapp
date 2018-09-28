@@ -28,11 +28,7 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import Select from '@material-ui/core/Select';
 
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
+import MuiEditableTable from './muiEditableTable';
 
 import SuggestedInput from './suggestedInput';
 
@@ -81,12 +77,20 @@ const styles = theme => ({
   textField: {
     flexBasis: 200,
   },
+  textArrayField: {
+    width: '100%',
+  },
+  textArrayFont: {
+    fontFamily: '"roboto-mono", "Courier New", sans-serif',
+    fontSize: '0.7rem',
+  },
   deleteFloatingActionButton: {
     position: 'absolute',
     bottom: theme.spacing.unit * 0,
     right: theme.spacing.unit * 0,
   },
 });
+
 
 class Account extends Component {
   constructor(props, context) {
@@ -122,9 +126,36 @@ class Account extends Component {
     onUpdate(newAccount);
   };
 
+  makeTableArray = (object) => {
+    const table = [];
+    Object.keys(object).sort((a, b) => a - b).forEach((key) => {
+      table.push({ year: key, value: object[key] });
+    });
+    return table;
+  }
+
+  arrayToObject = (array) => {
+    const obj = {};
+    array.forEach((row) => {
+      obj[row.year] = row.value;
+    });
+    return obj;
+  };
+
   render() {
     const { classes, incomeAccounts } = this.props;
     const { account } = this.state;
+
+    const colSpec = [
+      { title: 'Year', fieldName: 'year', inputType: 'TextField', width: 200 },
+      { title: 'Value', fieldName: 'value', inputType: 'TextField', width: 200 },
+    ];
+
+    const onAccountTableChange = (dataTable) => {
+      console.log(dataTable);
+      console.log(this.arrayToObject(dataTable));
+      this.handleChange('table', this.arrayToObject(dataTable));
+    };
 
     return (
       <Card className={classes.paper}>
@@ -413,24 +444,12 @@ class Account extends Component {
           <div>
             {show[account.type].table ? (
               <div>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell numeric>Year</TableCell>
-                      <TableCell numeric>Value</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Object.entries(account.table).map(([key, value]) => {
-                      return (
-                        <TableRow key={key}>
-                          <TableCell numeric>{key}</TableCell>
-                          <TableCell numeric>{value}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <MuiEditableTable
+                  colSpec={colSpec}
+                  rowData={this.makeTableArray(account.table)}
+                  onChange={onAccountTableChange}
+                  reorderable
+                />
               </div>
             ) : null}
           </div>
@@ -718,6 +737,27 @@ class Account extends Component {
                 />
               </Tooltip>
             ) : null}
+
+
+            {show[account.type].notes ? (
+              <TextField
+                id="notes"
+                label="Notes"
+                className={classes.textArrayField}
+                InputProps={{
+                  classes: {
+                    input: classes.textArrayFont,
+                  },
+                }}
+                multiline
+                rows="8"
+                value={account.notes}
+                onChange={(event) => {
+                  this.handleChange(event.target.id, event.target.value);
+                }}
+              />
+            ) : null}
+
           </div>
         </CardContent>
       </Card>

@@ -6,6 +6,7 @@ export const show = {
     endin: true,
     raise: true,
     base: true,
+    notes: true,
   },
   retirement: {
     name: true,
@@ -23,6 +24,7 @@ export const show = {
     incomelink: true,
     employermatch: true,
     matchlimit: true,
+    notes: true,
   },
   hsa: {
     name: true,
@@ -36,6 +38,7 @@ export const show = {
     contributiontype: true,
     yearlyreturn: true,
     taxstatus: true,
+    notes: true,
   },
   college: {
     name: true,
@@ -50,6 +53,7 @@ export const show = {
     withdrawaltype: true,
     withdrawalvalue: true,
     taxstatus: true,
+    notes: true,
   },
   expense: {
     name: true,
@@ -58,6 +62,7 @@ export const show = {
     endout: true,
     expensetype: true,
     expensevalue: true,
+    notes: true,
   },
   loan: {
     name: true,
@@ -67,6 +72,7 @@ export const show = {
     paymenttype: true,
     paymentvalue: true,
     rate: true,
+    notes: true,
   },
   mortgage: {
     name: true,
@@ -81,6 +87,7 @@ export const show = {
     ltvlimit: true,
     escrowvalue: true,
     value: true,
+    notes: true,
   },
   savings: {
     name: true,
@@ -95,6 +102,7 @@ export const show = {
     withdrawaltype: true,
     withdrawalvalue: true,
     taxstatus: true,
+    notes: true,
   },
 };
 
