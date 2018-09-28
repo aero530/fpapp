@@ -87,7 +87,6 @@ export default function accountComputation(accounts, settings) {
   // });
   const expenseTotal = arrayToObject(yearTable, accountsYearlyObject);
 
-  console.log(expenseTotal);
   const savingsTotalTable = arrayToObject(yearTable, 0);
   const incomeTotalTaxableTable = arrayToObject(yearTable, 0);
   const incomeTotalTable = arrayToObject(yearTable, 0);
@@ -100,12 +99,15 @@ export default function accountComputation(accounts, settings) {
     // # Initialize internal tables to correct size
     // # ----------------------------------------------------------------------
     let tmp = 0;
-    if (Object.hasOwnProperty.call(account, 'table')) {
+    if (Object.hasOwnProperty.call(account, 'table')) { // if there is already a table object
       if (Object.hasOwnProperty.call(account.table, yearStart)) {
         // if the table of the account has a value for the defined yearStart
         tmp = account.table[yearStart]; // use that value for the tables value for this year
       }
+    } else { // if there is not a table object then create one
+      account.table = {};
     }
+
     account.table[yearStart] = tmp;
 
     // # ----------------------------------------------------------------------
@@ -201,7 +203,7 @@ export default function accountComputation(accounts, settings) {
     if (yearIndex > 0) {
       netTable[yearCurrent] = netTable[yearCurrent - 1]; // initialize this year as the value from last year
     }
-    console.log(netTable[yearCurrent]);
+    
 
     // # ----------------------------------------------------------------------
     // # Loop through accounts to make contributions and withdrawals
@@ -677,14 +679,14 @@ export default function accountComputation(accounts, settings) {
     const totalExpensesThisYear = Object.values(
       expenseTotal[yearCurrent]
     ).reduce((acc, cur) => acc + cur, 0);
-    console.log(totalExpensesThisYear);
+    
     netTable[yearCurrent] =
       netTable[yearCurrent] +
       incomeTotalTable[yearCurrent] -
       incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100) -
       totalExpensesThisYear;
 
-    console.log(netTable[yearCurrent]);
+    
     incomeTotalAfterTaxTable[yearCurrent] =
       incomeTotalTable[yearCurrent] -
       incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100);
