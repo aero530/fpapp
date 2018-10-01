@@ -16,6 +16,7 @@ const initialState = {
   settings: {},
   accounts: {},
   incomeAccounts: [],
+  hsaAccounts: [],
   filename: '',
   modified: false,
 };
@@ -28,6 +29,7 @@ export default function (state = initialState, action) {
         settings: action.settings,
         accounts: action.accounts,
         incomeAccounts: action.incomeAccounts,
+        hsaAccounts: action.hsaAccounts,
         filename: action.filename,
         modified: false,
       };

@@ -77,7 +77,7 @@ export const withdrawalTypeOptions = [
     value: 'end_at_zero',
     label: 'end at zero',
     description:
-      'take money out in equal amounts each year such that the balance at endout is zero',
+      'take money out in equal amounts each year such that the balance at endOut is zero',
   },
   {
     value: 'col_frac_of_savings',

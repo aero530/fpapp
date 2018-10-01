@@ -68,7 +68,7 @@ class MuiEditableTable extends React.Component {
       <div className="cell action" key={`action ${action} ${rowKey}`} style={{ width: '45px', display: 'inline' }}>
         <IconButton
           className={`action-button ${action}-row-button${rowKey}`}
-          primary
+          color="primary"
           onClick={clickEvent}
           style={{ minWidth: '45px' }}
         >

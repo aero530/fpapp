@@ -111,24 +111,24 @@ class Results extends React.Component {
 Results.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   setAppBarTitle: PropTypes.func.isRequired,
-  accounts: PropTypes.arrayOf(PropTypes.object),
-  savings: PropTypes.arrayOf(PropTypes.number),
-  expenses: PropTypes.arrayOf(PropTypes.object),
-  incomeTaxable: PropTypes.arrayOf(PropTypes.number),
-  incomeTotal: PropTypes.arrayOf(PropTypes.number),
-  incomeAfterTax: PropTypes.arrayOf(PropTypes.number),
-  net: PropTypes.arrayOf(PropTypes.number),
+  accounts: PropTypes.objectOf(PropTypes.object),
+  savings: PropTypes.objectOf(PropTypes.number),
+  expenses: PropTypes.objectOf(PropTypes.object),
+  incomeTaxable: PropTypes.objectOf(PropTypes.number),
+  incomeTotal: PropTypes.objectOf(PropTypes.number),
+  incomeAfterTax: PropTypes.objectOf(PropTypes.number),
+  net: PropTypes.objectOf(PropTypes.number),
   year: PropTypes.arrayOf(PropTypes.number),
 };
 
 Results.defaultProps = {
-  accounts: [],
-  savings: [],
-  expenses: [],
-  incomeTaxable: [],
-  incomeTotal: [],
-  incomeAfterTax: [],
-  net: [],
+  accounts: {},
+  savings: {},
+  expenses: {},
+  incomeTaxable: {},
+  incomeTotal: {},
+  incomeAfterTax: {},
+  net: {},
   year: [],
 };
 

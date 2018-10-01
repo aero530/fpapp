@@ -47,6 +47,7 @@ class Accounts extends React.Component {
       match,
       accounts,
       incomeAccounts,
+      hsaAccounts,
       onUpdate,
       onDelete,
       onAdd,
@@ -62,6 +63,7 @@ class Accounts extends React.Component {
                 key={key}
                 account={accounts[name]}
                 incomeAccounts={incomeAccounts}
+                hsaAccounts={hsaAccounts}
                 onUpdate={(account) => {
                   onUpdate(name, account);
                 }}
@@ -88,14 +90,22 @@ class Accounts extends React.Component {
 Accounts.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   setAppBarTitle: PropTypes.func.isRequired,
-  onAccountChange: PropTypes.func.isRequired,
+  match: PropTypes.object.isRequired,
+  accounts: PropTypes.objectOf(PropTypes.object).isRequired,
+  incomeAccounts: PropTypes.arrayOf(PropTypes.object).isRequired,
+  hsaAccounts: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onAdd: PropTypes.func.isRequired,
 };
 
-Accounts.defaultProps = {};
+Accounts.defaultProps = {
+};
 
 const mapStateToProps = state => ({
   accounts: state.data.accounts,
   incomeAccounts: state.data.incomeAccounts,
+  hsaAccounts: state.data.hsaAccounts,
 });
 
 const mapDispatchToProps = dispatch => ({

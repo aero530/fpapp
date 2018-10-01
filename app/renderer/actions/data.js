@@ -12,6 +12,7 @@ function openFileReducer(
   settingsInput,
   accountsInput,
   incomeAccountsInput,
+  hsaAccountsInput,
   filenameInput,
 ) {
   return {
@@ -19,6 +20,7 @@ function openFileReducer(
     settings: settingsInput,
     accounts: accountsInput,
     incomeAccounts: incomeAccountsInput,
+    hsaAccounts: hsaAccountsInput,
     filename: filenameInput,
   };
 }
@@ -29,21 +31,20 @@ function saveFileReducer() {
   };
 }
 
-function getIncomeAccounts(accounts) {
-  const incomeAccounts = [];
-  incomeAccounts.push({ value: 'none', label: 'not linked' });
+function getAccountsTypeOf(accounts, type) {
+  const typeAccounts = [];
+  typeAccounts.push({ value: 'none', label: 'not linked' });
 
   Object.keys(accounts).forEach((name) => {
-    if (accounts[name].type === 'income') {
+    if (accounts[name].type === type) {
       const account = {
         value: name,
-        label: name,
+        label: accounts[name].name,
       };
-
-      incomeAccounts.push(account);
+      typeAccounts.push(account);
     }
   });
-  return incomeAccounts;
+  return typeAccounts;
 }
 
 export function openFile(filePath) {
@@ -54,13 +55,15 @@ export function openFile(filePath) {
 
       const settingsFromFile = result.settings ? result.settings : {};
       const accountsFromFile = result.accounts ? result.accounts : {};
-      const incomeAccounts = getIncomeAccounts(accountsFromFile);
+      const incomeAccounts = getAccountsTypeOf(accountsFromFile, 'income');
+      const hsaAccounts = getAccountsTypeOf(accountsFromFile, 'hsa');
 
       dispatch(
         openFileReducer(
           settingsFromFile,
           accountsFromFile,
           incomeAccounts,
+          hsaAccounts,
           filePath,
         ),
       );
@@ -89,6 +92,6 @@ export function saveFile(filePathInput = null) {
 export function editFileStateContent(contentInput) {
   return {
     type: EDIT_DATA_FILE_STATE_CONTENT,
-    content: contentInput
+    content: contentInput,
   };
 }

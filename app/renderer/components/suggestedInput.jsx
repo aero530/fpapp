@@ -177,7 +177,7 @@ class SuggestedInput extends React.Component {
 }
 
 SuggestedInput.propTypes = {
-  classes: PropTypes.object.isRequired,
+  classes: PropTypes.objectOf(PropTypes.string).isRequired,
   onInputChange: PropTypes.func,
   helperText: PropTypes.string,
   value: PropTypes.string,

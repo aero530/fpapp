@@ -127,7 +127,7 @@ class AppRoute extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      open: false,
+      drawerOpen: false,
       dialogOpen: false,
     };
   }
@@ -141,15 +141,16 @@ class AppRoute extends React.Component {
   };
 
   handleDrawerOpen = () => {
-    this.setState({ open: true });
+    this.setState({ drawerOpen: true });
   };
 
   handleDrawerClose = () => {
-    this.setState({ open: false });
+    this.setState({ drawerOpen: false });
   };
 
   render() {
     const { classes, appBarTitle, errorCount, errors } = this.props;
+    const { drawerOpen, dialogOpen } = this.state;
 
     return (
       <div className={classes.root}>
@@ -157,7 +158,7 @@ class AppRoute extends React.Component {
           position="absolute"
           className={classNames(
             classes.appBar,
-            this.state.open && classes.appBarShift,
+            drawerOpen && classes.appBarShift,
           )}
         >
           <Toolbar>
@@ -167,7 +168,7 @@ class AppRoute extends React.Component {
               onClick={this.handleDrawerOpen}
               className={classNames(
                 classes.menuButton,
-                this.state.open && classes.menuButtonHidden,
+                drawerOpen && classes.menuButtonHidden,
               )}
             >
               <MenuIcon />
@@ -197,10 +198,10 @@ class AppRoute extends React.Component {
           classes={{
             paper: classNames(
               classes.drawerPaper,
-              !this.state.open && classes.drawerPaperClose,
+              !drawerOpen && classes.drawerPaperClose,
             ),
           }}
-          open={this.state.open}
+          open={drawerOpen}
         >
           <div className={classes.toolbarIcon}>
             <IconButton onClick={this.handleDrawerClose}>
@@ -226,8 +227,7 @@ class AppRoute extends React.Component {
 
         <Dialog
           onClose={this.handleDialogClose}
-          aria-labelledby="simple-dialog-title"
-          open={this.state.dialogOpen}
+          open={dialogOpen}
         >
           <DialogTitle id="simple-dialog-title">Analysis Errors</DialogTitle>
           <div>
@@ -250,7 +250,12 @@ class AppRoute extends React.Component {
   }
 }
 
-AppRoute.propTypes = {};
+AppRoute.propTypes = {
+  classes: PropTypes.objectOf(PropTypes.string).isRequired,
+  appBarTitle: PropTypes.string.isRequired,
+  errorCount: PropTypes.number.isRequired,
+  errors: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
 
 AppRoute.defaultProps = {};
 
