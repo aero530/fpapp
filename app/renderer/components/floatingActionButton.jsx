@@ -11,6 +11,13 @@ const styles = theme => ({
   },
 });
 
+/**
+ * @function FloatingActionButton
+ * @description generate jsx for a floating action add button
+ * @param {function} onClick what happens when the button is clicked
+ * @returns {React Component} floating action button
+ */
+
 function FloatingActionButton(props) {
   const { classes, className, onClick } = props;
   return (
@@ -29,8 +36,13 @@ function FloatingActionButton(props) {
 }
 
 FloatingActionButton.propTypes = {
-  classes: PropTypes.object.isRequired,
+  classes: PropTypes.objectOf(PropTypes.string).isRequired,
   onClick: PropTypes.func.isRequired,
+  className: PropTypes.string,
+};
+
+FloatingActionButton.defaultProps = {
+  className: '',
 };
 
 export default withStyles(styles)(FloatingActionButton);

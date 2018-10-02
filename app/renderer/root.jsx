@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import compose from 'recompose/compose';
 import PropTypes from 'prop-types';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import {
   createMuiTheme,
   withStyles,
-  MuiThemeProvider
+  MuiThemeProvider,
 } from '@material-ui/core/styles';
 
 import { Provider } from 'react-redux';
@@ -25,18 +25,17 @@ const theme = createMuiTheme({
     // E.g., shift from Red 500 to Red 300 or Red 700.
     tonalOffset: 0.2,
     background: {
-      paper: "#fafafa",
-      default: "#eee",
-    }
+      paper: '#fafafa',
+      default: '#eee',
+    },
   },
- 
 });
 
 const muiStyles = () => ({
-  root: {}
+  root: {},
 });
 
-class Root extends Component {
+class Root extends PureComponent {
   render() {
     const { store, history } = this.props;
     return (
@@ -54,7 +53,7 @@ class Root extends Component {
 
 Root.propTypes = {
   store: PropTypes.object.isRequired, // eslint-disable-line react/forbid-prop-types
-  history: PropTypes.object.isRequired // eslint-disable-line react/forbid-prop-types
+  history: PropTypes.object.isRequired, // eslint-disable-line react/forbid-prop-types
 };
 
 export default compose(withStyles(muiStyles))(Root);

@@ -27,7 +27,6 @@ export default function accountComputation(accounts, settings) {
 
   const ageNow = yearStart - yearBorn;
   const yearRetire = yearBorn + ageRetire;
-  const yearDie = yearBorn + ageDie;
   let yearDelta = math.range(0, ageDie - ageNow + 1);
   let yearTable = math.add(yearDelta, yearStart);
 

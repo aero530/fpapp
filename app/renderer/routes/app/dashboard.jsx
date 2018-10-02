@@ -45,6 +45,8 @@ class Dashboard extends React.Component {
 Dashboard.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   setAppBarTitle: PropTypes.func.isRequired,
+  accounts: PropTypes.objectOf(PropTypes.object).isRequired,
+  settings: PropTypes.object.isRequired,
 };
 
 Dashboard.defaultProps = {};

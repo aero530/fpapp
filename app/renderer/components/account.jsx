@@ -1,4 +1,4 @@
-// cSpell: ignore Formaters, autofill
+// cSpell: ignore Formaters, autofill, reorderable
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
@@ -101,16 +101,16 @@ class Account extends Component {
     // initialize the state
     this.state = {
       account: { ...props.account },
-      open: false,
+      dialogOpen: false,
     };
   }
 
   handleDialogOpen = () => {
-    this.setState({ open: true });
+    this.setState({ dialogOpen: true });
   };
 
   handleDialogClose = () => {
-    this.setState({ open: false });
+    this.setState({ dialogOpen: false });
   };
 
   handleDeleteTrue = () => {
@@ -168,7 +168,7 @@ class Account extends Component {
 
   render() {
     const { classes, incomeAccounts, hsaAccounts } = this.props;
-    const { account } = this.state;
+    const { account, dialogOpen } = this.state;
 
     const colSpecValue = [
       { title: 'Year', fieldName: 'year', inputType: 'TextField', width: 200 },
@@ -200,7 +200,7 @@ class Account extends Component {
         />
 
         <Dialog
-          open={this.state.open}
+          open={dialogOpen}
           onClose={this.handleDialogClose}
         >
           <DialogTitle id="alert-dialog-title">{account.name}</DialogTitle>
@@ -860,7 +860,7 @@ class Account extends Component {
 
 Account.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
-  account: PropTypes.objectOf(PropTypes.object).isRequired,
+  account: PropTypes.object.isRequired,
   incomeAccounts: PropTypes.arrayOf(PropTypes.object).isRequired,
   hsaAccounts: PropTypes.arrayOf(PropTypes.object).isRequired,
   onDelete: PropTypes.func.isRequired,

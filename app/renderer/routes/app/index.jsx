@@ -232,16 +232,14 @@ class AppRoute extends React.Component {
           <DialogTitle id="simple-dialog-title">Analysis Errors</DialogTitle>
           <div>
             <List>
-              {errors.map((error) => {
-                return (
-                  <ListItem>
-                    <ListItemText
-                      primary={error.title}
-                      secondary={error.message}
-                    />
-                  </ListItem>
-                );
-              })}
+              {errors.map(error => (
+                <ListItem>
+                  <ListItemText
+                    primary={error.title}
+                    secondary={error.message}
+                  />
+                </ListItem>
+              ))}
             </List>
           </div>
         </Dialog>
@@ -252,12 +250,16 @@ class AppRoute extends React.Component {
 
 AppRoute.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
-  appBarTitle: PropTypes.string.isRequired,
-  errorCount: PropTypes.number.isRequired,
-  errors: PropTypes.arrayOf(PropTypes.string).isRequired,
+  appBarTitle: PropTypes.string,
+  errorCount: PropTypes.number,
+  errors: PropTypes.arrayOf(PropTypes.string),
 };
 
-AppRoute.defaultProps = {};
+AppRoute.defaultProps = {
+  errorCount: 0,
+  errors: [],
+  appBarTitle: '',
+};
 
 const mapStateToProps = state => ({
   appBarTitle: state.app.appBarTitle,

@@ -15,7 +15,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ComposedChart,
 } from 'recharts';
 

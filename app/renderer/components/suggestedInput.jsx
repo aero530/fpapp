@@ -97,9 +97,10 @@ class SuggestedInput extends React.Component {
   constructor(props, context) {
     super(props, context);
 
+    const { value } = this.props;
     // initialize the state
     this.state = {
-      enteredText: this.props.value,
+      enteredText: value,
       suggestions: [],
     };
   }
@@ -137,9 +138,14 @@ class SuggestedInput extends React.Component {
       titleLocation,
     } = this.props;
 
+    const {
+      suggestions,
+      enteredText,
+    } = this.state;
+
     const autosuggestProps = {
       renderInputComponent,
-      suggestions: this.state.suggestions,
+      suggestions,
       onSuggestionsFetchRequested: this.handleSuggestionsFetchRequested,
       onSuggestionsClearRequested: this.handleSuggestionsClearRequested,
       getSuggestionValue,
@@ -154,7 +160,7 @@ class SuggestedInput extends React.Component {
           classes,
           className,
           placeholder: helperText,
-          value: this.state.enteredText,
+          value: enteredText,
           onChange: this.handleChange(id),
           label,
           title,

@@ -5,8 +5,6 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 
-import classNames from 'classnames';
-
 import Paper from '@material-ui/core/Paper';
 
 import Table from '@material-ui/core/Table';
@@ -52,7 +50,7 @@ class Results extends React.Component {
   };
 
   render() {
-    const { classes, accounts, savings, expenses, incomeTaxable, incomeTotal, incomeAfterTax, net, year } = this.props;
+    const { classes, savings, expenses, incomeTaxable, incomeTotal, incomeAfterTax, net, year } = this.props;
 
     return (
       <div>
@@ -70,33 +68,31 @@ class Results extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {year.map((yearValue) => {
-                return (
-                  <TableRow key={yearValue} hover>
-                    <TableCell component="th" scope="row" padding="dense">
-                      {yearValue}
-                    </TableCell>
-                    <TableCell numeric padding="dense">
-                      {net[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </TableCell>
-                    <TableCell numeric padding="dense">
-                      {incomeTotal[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </TableCell>
-                    <TableCell numeric padding="dense">
-                      {incomeTaxable[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </TableCell>
-                    <TableCell numeric padding="dense">
-                      {incomeAfterTax[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </TableCell>
-                    <TableCell numeric padding="dense">
-                      {this.cumulativeSum(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </TableCell>
-                    <TableCell numeric padding="dense">
-                      {savings[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {year.map(yearValue => (
+                <TableRow key={yearValue} hover>
+                  <TableCell component="th" scope="row" padding="dense">
+                    {yearValue}
+                  </TableCell>
+                  <TableCell numeric padding="dense">
+                    {net[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell numeric padding="dense">
+                    {incomeTotal[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell numeric padding="dense">
+                    {incomeTaxable[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell numeric padding="dense">
+                    {incomeAfterTax[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell numeric padding="dense">
+                    {this.cumulativeSum(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell numeric padding="dense">
+                    {savings[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </Paper>
@@ -111,7 +107,7 @@ class Results extends React.Component {
 Results.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   setAppBarTitle: PropTypes.func.isRequired,
-  accounts: PropTypes.objectOf(PropTypes.object),
+  analyze: PropTypes.func.isRequired,
   savings: PropTypes.objectOf(PropTypes.number),
   expenses: PropTypes.objectOf(PropTypes.object),
   incomeTaxable: PropTypes.objectOf(PropTypes.number),
@@ -122,7 +118,6 @@ Results.propTypes = {
 };
 
 Results.defaultProps = {
-  accounts: {},
   savings: {},
   expenses: {},
   incomeTaxable: {},

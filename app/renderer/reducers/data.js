@@ -1,3 +1,5 @@
+// cSpell: ignore uuidv1
+
 import { v1 as uuidv1 } from 'uuid';
 
 import {
@@ -10,7 +12,7 @@ import {
   ADD_ACCOUNT,
 } from '../actions/data';
 
-import show from '../components/accountStructure';
+import { show } from '../components/accountStructure';
 
 const initialState = {
   settings: {},
@@ -79,7 +81,7 @@ export default function (state = initialState, action) {
       const id = uuidv1();
 
       // Create new account object and populate with keys from imported show object
-      let newAccount = { ...show[action.accountType] };
+      const newAccount = { ...show[action.accountType] };
       Object.keys(newAccount).forEach((key) => {
         newAccount[key] = '';
       });

@@ -1,4 +1,8 @@
+// cSpell: ignore reorderable
+
 import React from 'react';
+import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
 import AddIcon from '@material-ui/icons/Add';
@@ -6,12 +10,45 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import PromoteIcon from '@material-ui/icons/ArrowUpward';
 import DemoteIcon from '@material-ui/icons/ArrowDownward';
 
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableFooter from '@material-ui/core/TableFooter';
+import TableRow from '@material-ui/core/TableRow';
+
+const styles = theme => ({
+  root: {
+    marginTop: theme.spacing.unit * 2,
+  },
+  editableTableStyle: {
+  },
+  headerRowStyle: {
+    height: '20px',
+  },
+  footerRowStyle: {
+    height: '20px',
+  },
+  dataRowStyle: {
+    height: '20px',
+  },
+  cellStyle: {
+    margin: 0,
+    padding: 0,
+  },
+  tableButton: {
+    fontSize: '20px',
+    width: '26px',
+    height: '26px',
+    margin: 0,
+  },
+});
+
 class MuiEditableTable extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      containerStyle: this.props.containerStyle || {},
       rowData: [],
       colSpec: [],
       reorderable: false,
@@ -44,37 +81,34 @@ class MuiEditableTable extends React.Component {
 
   renderRowButtons = (index) => {
     const { reorderable, rowData } = this.state;
-
-    const buttons = [this.iconButton(index, 'delete', this.onDeleteRow(index), <DeleteIcon />)];
-
-    if (reorderable) {
-      if (index < (rowData.length - 1) && rowData.length > 1) {
-        buttons.push(this.iconButton(index, 'demote', this.onReorderRow(index, +1), <DemoteIcon />));
-      }
-      if (index > 0) {
-        buttons.push(this.iconButton(index, 'promote', this.onReorderRow(index, -1), <PromoteIcon />));
-      }
-    }
+    const { classes } = this.props;
 
     return (
-      <div>
-        {buttons}
-      </div>
-    );
-  }
-
-  iconButton = (rowKey, action, clickEvent, muiIcon) => {
-    return (
-      <div className="cell action" key={`action ${action} ${rowKey}`} style={{ width: '45px', display: 'inline' }}>
-        <IconButton
-          className={`action-button ${action}-row-button${rowKey}`}
-          color="primary"
-          onClick={clickEvent}
-          style={{ minWidth: '45px' }}
-        >
-          {muiIcon}
+      <TableCell style={{ display: 'flex' }} className={classes.cellStyle}>
+        <IconButton color="primary" key={`action delete ${index}`} onClick={this.onDeleteRow(index)} className={classes.tableButton}>
+          <DeleteIcon fontSize="inherit" />
         </IconButton>
-      </div>
+
+        {reorderable && (index < (rowData.length - 1) && rowData.length > 1) ? (
+          <IconButton color="primary" key={`action demote ${index}`} onClick={this.onReorderRow(index, +1)} className={classes.tableButton}>
+            <DemoteIcon fontSize="inherit" />
+          </IconButton>
+        ) : (
+          <IconButton color="primary" key={`action demote ${index}`} className={classes.tableButton} disabled>
+            <DemoteIcon fontSize="inherit" />
+          </IconButton>
+        )}
+
+        {reorderable && (index > 0) ? (
+          <IconButton color="primary" key={`action promote ${index}`} onClick={this.onReorderRow(index, -1)} className={classes.tableButton}>
+            <PromoteIcon fontSize="inherit" />
+          </IconButton>
+        ) : (
+          <IconButton color="primary" key={`action promote ${index}`} className={classes.tableButton} disabled>
+            <PromoteIcon fontSize="inherit" />
+          </IconButton>
+        )}
+      </TableCell>
     );
   }
 
@@ -95,65 +129,78 @@ class MuiEditableTable extends React.Component {
     }
 
     console.log(`Input field type ${column.inputType} not supported`);
+    return null;
   }
 
   renderRow = (dataRow, index) => {
-    const dataRowStyle = {
-      width: '100%',
-      display: 'flex',
-      flexFlow: 'row nowrap',
-      border: '0',
-      height: '40px',
-      borderBottom: '1px solid rgb(224, 224, 224)',
-    };
+    const { classes } = this.props;
     const { colSpec } = this.state;
 
     return (
-      <div className="mui-editable-table-row" key={index} style={dataRowStyle}>
+      <TableRow key={index} className={classes.dataRowStyle}>
         {colSpec.map(col => (
-          <div
-            className={`cell ${col.fieldName}`}
+          <TableCell
+            className={classes.cellStyle}
             key={col.fieldName + index}
             style={{ width: col.width }}
           >
             {this.renderInputField(col, index, dataRow)}
-          </div>
+          </TableCell>
         ))}
         {this.renderRowButtons(index)}
-      </div>
+      </TableRow>
     );
   }
 
   renderHeader = () => {
-    const headerRowStyle = {
-      width: '100%',
-      display: 'flex',
-      flexFlow: 'row nowrap',
-      border: '0',
-      height: '40px',
-      color: 'rgb(158, 158, 158)',
-      fontSize: '12px',
-      borderBottom: '1px solid #ccc',
-      paddingTop: '10px',
-    };
-
     const { colSpec } = this.state;
+    const { classes } = this.props;
 
     return (
-      <div className="mui-editable-table-row header-row" style={headerRowStyle}>
-        {colSpec.map(col => (
-          <div
-            className={`row-cell header-cell ${col.fieldName}`}
-            key={col.fieldName}
-            style={{ width: col.width }}
+      <TableHead>
+        <TableRow className={classes.headerRowStyle}>
+          {colSpec.map(col => (
+            <TableCell
+              className={classes.cellStyle}
+              key={col.fieldName}
+              style={{ width: col.width }}
+            >
+              {col.title}
+            </TableCell>
+          ))}
+          <TableCell
+            key="actionButtons"
+            className={classes.cellStyle}
           >
-            {col.title}
-          </div>
-        ))}
-        <div className="row-cell header-cell action" style={{ width: '100px' }}>
-          {this.iconButton('', 'add', this.onAddRow(), <AddIcon />)}
-        </div>
-      </div>
+            Actions
+          </TableCell>
+        </TableRow>
+      </TableHead>
+    );
+  }
+
+  renderFooter = () => {
+    const { colSpec } = this.state;
+    const { classes } = this.props;
+
+    return (
+      <TableFooter>
+        <TableRow className={classes.footerRowStyle}>
+          {colSpec.map(col => (
+            <TableCell
+              key={`empty-${col.fieldName}`}
+              style={{ width: col.width }}
+              className={classes.cellStyle}
+            />
+          ))}
+          <TableCell className={classes.cellStyle}>
+            Add row
+            <IconButton color="primary" key="action add" onClick={this.onAddRow()} className={classes.tableButton}>
+              <AddIcon fontSize="inherit" />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      </TableFooter>
     );
   }
 
@@ -164,7 +211,9 @@ class MuiEditableTable extends React.Component {
       const tempDataRow = [...self.state.rowData];
 
       const newRow = {};
-      colSpec.map(column => newRow[column.fieldName] = column.defaultValue || '');
+      colSpec.forEach((column) => {
+        newRow[column.fieldName] = column.defaultValue || '';
+      });
 
       tempDataRow.push(newRow);
 
@@ -211,34 +260,41 @@ class MuiEditableTable extends React.Component {
   }
 
   render() {
-    const editableTableStyle = {
-      display: 'flex',
-      flexFlow: 'column nowrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      fontFamily: 'Roboto, sans-serif',
-    };
-
-    const { containerStyle, rowData } = this.state;
+    const { rowData } = this.state;
+    const { classes } = this.props;
 
     return (
-      <div className="container" style={containerStyle}>
-        <div className="mui-editable-table" style={editableTableStyle}>
+      <div className={classes.root}>
+        <Table className={classes.editableTableStyle}>
           {this.renderHeader()}
-
-          {rowData.map((dataRow, i) => (
-            this.renderRow(dataRow, i)
-          ))}
-          <input
-            type="hidden"
-            id="mui-editable-table-count"
-            value={rowData.length}
-            readOnly="readOnly"
-          />
-        </div>
+          <TableBody>
+            {rowData.map((dataRow, i) => (
+              this.renderRow(dataRow, i)
+            ))}
+          </TableBody>
+          {this.renderFooter()}
+        </Table>
+        <input
+          type="hidden"
+          id="mui-editable-table-count"
+          value={rowData.length}
+          readOnly="readOnly"
+        />
       </div>
     );
   }
 }
 
-export default MuiEditableTable;
+MuiEditableTable.propTypes = {
+  classes: PropTypes.objectOf(PropTypes.string).isRequired,
+  onChange: PropTypes.func.isRequired,
+  rowData: PropTypes.arrayOf(PropTypes.object).isRequired,
+  colSpec: PropTypes.arrayOf(PropTypes.object).isRequired,
+  reorderable: PropTypes.bool,
+};
+
+MuiEditableTable.defaultProps = {
+  reorderable: false,
+};
+
+export default withStyles(styles)(MuiEditableTable);
