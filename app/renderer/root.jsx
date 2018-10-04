@@ -29,6 +29,8 @@ const theme = createMuiTheme({
       default: '#eee',
     },
   },
+  overrides: {
+  },
 });
 
 const muiStyles = () => ({

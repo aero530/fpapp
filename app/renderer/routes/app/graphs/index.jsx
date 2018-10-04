@@ -4,6 +4,8 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
+import { ResponsiveTreeMapCanvas } from '@nivo/treemap';
+import Slider from '@material-ui/lab/Slider';
 
 import {
   AreaChart,
@@ -46,12 +48,32 @@ const styles = theme => ({
   },
 });
 
+
 class Graphs extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sliderValue: 2020,
+    };
+  }
+
   componentDidMount() {
     const { setAppBarTitle, analyze } = this.props;
     setAppBarTitle('Graphs');
     analyze();
   }
+
+  numericSort = (key, dir) => {
+    return (a, b) => {
+      if (a[key] > b[key]) {
+        return -1 * dir;
+      }
+      if (b[key] > a[key]) {
+        return 1 * dir;
+      }
+      return 0;
+    };
+  };
 
   formatDataObject = (dataIn) => {
     const output = [];
@@ -106,6 +128,25 @@ class Graphs extends React.Component {
     return output;
   };
 
+  expenseTreeData = (year) => {
+    const { accounts, expenses } = this.props;
+    const yearsData = expenses[year];
+
+    const outputTable = [];
+    if (yearsData) {
+      Object.keys(yearsData).forEach((accountID) => {
+        outputTable.push({ name: accounts[accountID].name, amount: Math.round(yearsData[accountID]) });
+      });
+    } else {
+      outputTable.push({ name: '', amount: 0 });
+    }
+    return { name: 'root', children: outputTable };
+  };
+
+  handleSliderChange = (event, sliderValue) => {
+    this.setState({ sliderValue });
+  };
+
   render() {
     const {
       classes,
@@ -114,8 +155,12 @@ class Graphs extends React.Component {
       incomeTotal,
       incomeAfterTax,
       net,
+      yearTable,
     } = this.props;
 
+    const { sliderValue } = this.state;
+    const yearStart = yearTable[0];
+    const yearEnd = yearTable[yearTable.length - 1];
 
     // Create data objects for graphs
 
@@ -143,6 +188,7 @@ class Graphs extends React.Component {
     const expensesTotal = {};
     const expenseData = [];
     const expenseAccounts = [];
+
     if (Object.keys(expenses).length > 0) {
       Object.keys(expenses).forEach((rowYear) => {
         expensesTotal[rowYear] = this.arraySum(Object.values(expenses[rowYear]));
@@ -151,22 +197,35 @@ class Graphs extends React.Component {
       Object.keys(expenses).forEach((rowYear) => {
         const expenseRow = {};
         expenseRow.x = rowYear;
-        Object.keys(expenses[rowYear]).forEach((accountName) => {
-          expenseRow[accountName] = expenses[rowYear][accountName];
+        Object.keys(expenses[rowYear]).forEach((accountID) => {
+          expenseRow[accounts[accountID].name] = expenses[rowYear][accountID];
         });
         expenseData.push(expenseRow);
       });
 
-      Object.keys(Object.values(expenses)[0]).forEach((accountName) => {
-        expenseAccounts.push({ name: accountName, data: [] });
+      Object.keys(Object.values(expenses)[0]).forEach((accountID) => {
+        expenseAccounts.push({ name: accounts[accountID].name, id: accountID });
       });
     }
 
+
+    // Sort expense accounts by the amount of the expense on yearStart
+    expenseAccounts.sort((a, b) => {
+      if (expenses[yearStart][a.id] > expenses[yearStart][b.id]) {
+        return -1;
+      }
+      if (expenses[yearStart][b.id] > expenses[yearStart][a.id]) {
+        return 1;
+      }
+      return 0;
+    });
+
     return (
-      <div>
+      <div key="charts">
+
         <Paper className={classes.paper}>
-          <Typography variant="title" id="modal-title">
-            Net
+          <Typography variant="subheading" id="chart-title" align="center">
+            Overall
           </Typography>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart
@@ -191,13 +250,10 @@ class Graphs extends React.Component {
         </Paper>
 
         <Paper className={classes.paper}>
-          <Typography variant="title" id="modal-title">
-            College
-          </Typography>
           {Object.values(accounts).map((account) => {
             if (account.type === 'college') {
               return (
-                <div>
+                <div key={`charts-college-${account.name}`}>
                   <Typography variant="subheading" id="chart-title" align="center">
                     {account.name}
                   </Typography>
@@ -217,11 +273,11 @@ class Graphs extends React.Component {
                       <CartesianGrid strokeDasharray="3 3" />
                       <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
 
-                      <Area type="linear" stackId="1" dataKey="Cumulative Contribution" stroke={colors[1]} fill={colors[1]} />
-                      <Area type="linear" stackId="1" dataKey="Cumulative Earnings" stroke={colors[2]} fill={colors[2]} />
+                      <Area key={`charts-college-${account.name}-area-1`} type="linear" stackId="1" dataKey="Cumulative Contribution" stroke={colors[1]} fill={colors[1]} />
+                      <Area key={`charts-college-${account.name}-area-2`} type="linear" stackId="1" dataKey="Cumulative Earnings" stroke={colors[2]} fill={colors[2]} />
 
-                      <Line type="linear" dataKey="Contribution" stroke={colors[1]} strokeWidth="2" dot={false} />
-                      <Line type="linear" dataKey="Earnings" stroke={colors[2]} strokeWidth="2" dot={false} />
+                      <Line key={`charts-college-${account.name}-line-1`} type="linear" dataKey="Contribution" stroke={colors[1]} strokeWidth="2" dot={false} />
+                      <Line key={`charts-college-${account.name}-line-2`} type="linear" dataKey="Earnings" stroke={colors[2]} strokeWidth="2" dot={false} />
 
                       <Line type="linear" dataKey="Account Value" stroke={colors[0]} strokeWidth="2" dot={false} />
                     </ComposedChart>
@@ -234,20 +290,19 @@ class Graphs extends React.Component {
         </Paper>
 
         <Paper className={classes.paper}>
-          <Typography variant="title" id="modal-title">Mortgage</Typography>
           {Object.values(accounts).map((account) => {
             if (account.type === 'mortgage') {
               return (
-                <div>
+                <div key={`charts-mortgage-${account.name}`}>
                   <Typography variant="subheading" id="chart-title" align="center">
-                    {account.name} Mortgage
+                    {account.name}
                   </Typography>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart
                       data={this.formatDataObjects([
-                        { name: 'Value', data: account.table },
+                        { name: 'Principal', data: account.table },
                         { name: 'Payment', data: account.payment },
-                        { name: 'Cumulative Payment', data: this.objectSubtract(this.cumulativeSum(account.payment), this.cumulativeSum(account.escrow)) },
+                        { name: `Cumulative Payment since ${yearStart}`, data: this.objectSubtract(this.cumulativeSum(account.payment), this.cumulativeSum(account.escrow)) },
                       ])}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
@@ -255,9 +310,9 @@ class Graphs extends React.Component {
                       <YAxis />
                       <CartesianGrid strokeDasharray="3 3" />
                       <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                      <Line type="monotone" dataKey="Value" stroke="#e91e63" dot={false} />
+                      <Line type="monotone" dataKey="Principal" stroke="#e91e63" dot={false} />
                       <Line type="monotone" dataKey="Payment" stroke="#2196f3" dot={false} />
-                      <Line type="monotone" dataKey="Cumulative Payment" stroke="#4caf50" dot={false} />
+                      <Line type="monotone" dataKey={`Cumulative Payment since ${yearStart}`} stroke="#4caf50" dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
 
@@ -273,16 +328,16 @@ class Graphs extends React.Component {
           {Object.values(accounts).map((account) => {
             if (account.type === 'loan') {
               return (
-                <div>
+                <div key={`charts-loan-${account.name}`}>
                   <Typography variant="subheading" id="chart-title" align="center">
-                    {account.name} Loan Value
+                    {account.name}
                   </Typography>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart
                       data={this.formatDataObjects([
-                        { name: 'Value', data: account.table },
+                        { name: 'Principal', data: account.table },
                         { name: 'Payment', data: account.payment },
-                        { name: 'Cumulative Payment', data: this.cumulativeSum(account.payment) },
+                        { name: `Cumulative Payment since ${yearStart}`, data: this.cumulativeSum(account.payment) },
                       ])}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
@@ -290,9 +345,9 @@ class Graphs extends React.Component {
                       <YAxis />
                       <CartesianGrid strokeDasharray="3 3" />
                       <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                      <Line type="monotone" dataKey="Value" stroke="#e91e63" dot={false} />
+                      <Line type="monotone" dataKey="Principal" stroke="#e91e63" dot={false} />
                       <Line type="monotone" dataKey="Payment" stroke="#2196f3" dot={false} />
-                      <Line type="monotone" dataKey="Cumulative Payment" stroke="#4caf50" dot={false} />
+                      <Line type="monotone" dataKey={`Cumulative Payment since ${yearStart}`} stroke="#4caf50" dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -303,8 +358,7 @@ class Graphs extends React.Component {
         </Paper>
 
         <Paper className={classes.paper}>
-          <Typography variant="title" id="modal-title">Income Stacked</Typography>
-          <div>
+          <div key="charts-income">
             <Typography variant="subheading" id="chart-title" align="center">
               Income
             </Typography>
@@ -317,15 +371,14 @@ class Graphs extends React.Component {
                 <YAxis />
                 <CartesianGrid strokeDasharray="3 3" />
                 <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                {incomeAccounts.map((row, index) => <Area type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
+                {incomeAccounts.map((row, index) => <Area key={`charts-income-area-${row.name}`} type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Paper>
 
         <Paper className={classes.paper}>
-          <Typography variant="title" id="modal-title">Retirement Stacked</Typography>
-          <div>
+          <div key="charts-retirement">
             <Typography variant="subheading" id="chart-title" align="center">
               Retirement
             </Typography>
@@ -338,17 +391,16 @@ class Graphs extends React.Component {
                 <YAxis />
                 <CartesianGrid strokeDasharray="3 3" />
                 <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                {retirementAccounts.map((row, index) => <Area type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
+                {retirementAccounts.map((row, index) => <Area key={`charts-retirement-area-${row.name}`} type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Paper>
 
         <Paper className={classes.paper}>
-          <Typography variant="title" id="modal-title">Expense Stacked</Typography>
-          <div>
+          <div key="charts-expenses">
             <Typography variant="subheading" id="chart-title" align="center">
-            Expense
+            Expenses
             </Typography>
             <ResponsiveContainer width="100%" height={chartHeight}>
               <AreaChart
@@ -358,11 +410,43 @@ class Graphs extends React.Component {
                 <XAxis dataKey="x" />
                 <YAxis />
                 <CartesianGrid strokeDasharray="3 3" />
-                <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                {expenseAccounts.map((row, index) => <Area type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
+                <Tooltip
+                  formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  itemSorter={this.numericSort('value', 1)}
+                />
+                {expenseAccounts.map((row, index) => <Area key={`charts-expenses-area-${row.name}`} type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
               </AreaChart>
             </ResponsiveContainer>
           </div>
+        </Paper>
+
+        <Paper className={classes.paper} >
+          <Typography variant="subheading" id="chart-title" align="center">
+            {`${sliderValue} Expenses`}
+          </Typography>
+          <div style={{ height: `${chartHeight}px` }}>
+            <ResponsiveTreeMapCanvas
+              root={this.expenseTreeData(sliderValue)}
+              leavesOnly
+              innerPadding={0}
+              margin={{
+                top: 10,
+                right: 10,
+                bottom: 10,
+                left: 10,
+              }}
+              labelSkipSize={18}
+              labelTextColor="inherit:darker(1.6)"
+              borderWidth={1}
+              borderColor="inherit:darker(0.8)"
+              colors="accent"
+              colorBy="name"
+              label="name"
+              identity="name"
+              value="amount"
+            />
+          </div>
+          <Slider value={sliderValue} min={yearStart} max={yearEnd} step={1} onChange={this.handleSliderChange} />
         </Paper>
 
       </div>
@@ -379,9 +463,11 @@ Graphs.propTypes = {
   incomeAfterTax: PropTypes.objectOf(PropTypes.number).isRequired,
   net: PropTypes.objectOf(PropTypes.number).isRequired,
   analyze: PropTypes.func.isRequired,
+  yearTable: PropTypes.arrayOf(PropTypes.number),
 };
 
 Graphs.defaultProps = {
+  yearTable: [],
 };
 
 const mapStateToProps = state => ({
@@ -390,6 +476,7 @@ const mapStateToProps = state => ({
   incomeTotal: state.results.incomeTotal,
   incomeAfterTax: state.results.incomeAfterTax,
   net: state.results.net,
+  yearTable: state.results.year,
 });
 
 const mapDispatchToProps = dispatch => ({

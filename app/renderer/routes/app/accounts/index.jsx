@@ -6,6 +6,8 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 
+import Grid from '@material-ui/core/Grid';
+
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
 import {
   UPDATE_ACCOUNT,
@@ -54,38 +56,38 @@ class Accounts extends React.Component {
     } = this.props;
 
     return (
-      <div>
-        {Object.keys(accounts).map((name, index) => {
-          if (accounts[name].type === match.params.type) {
-            const key = `account-${name}-${index}`;
-            return (
-              <Account
-                key={key}
-                account={accounts[name]}
-                incomeAccounts={incomeAccounts}
-                hsaAccounts={hsaAccounts}
-                onUpdate={(account) => {
-                  onUpdate(name, account);
-                }}
-                onDelete={() => {
-                  onDelete(name);
-                  this.forceUpdate();
-                }}
-              />
-            );
-          }
-          return null;
-        })}
-        <FloatingActionButton
-          className={classes.addFloatingActionButton}
-          onClick={() => {
-            onAdd(match.params.type);
-          }}
-        />
-      </div>
+      <Grid container className={classes.root} spacing={16}>
+        <Grid item xs={12} />
+        <Grid container justify="center" spacing={16}>
+          {Object.keys(accounts).map((name, index) => {
+            if (accounts[name].type === match.params.type) {
+              const key = `account-${name}-${index}`;
+              return (
+                <Grid key={`grid-${key}`} item xs={12} sm={12} md={12} lg={6}>
+                  <Account
+                    key={key}
+                    account={accounts[name]}
+                    incomeAccounts={incomeAccounts}
+                    hsaAccounts={hsaAccounts}
+                    onUpdate={(account) => {
+                      onUpdate(name, account);
+                    }}
+                    onDelete={() => {
+                      onDelete(name);
+                      this.forceUpdate();
+                    }}
+                  />
+                </Grid>
+              );
+            }
+            return null;
+          })}
+        </Grid>
+      </Grid>
     );
   }
 }
+
 
 Accounts.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,

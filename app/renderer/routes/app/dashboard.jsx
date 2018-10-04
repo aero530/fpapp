@@ -27,20 +27,25 @@ class Dashboard extends React.Component {
     return (
       <Grid container className={classes.root} spacing={16}>
         <Grid item xs={12} />
-        <Button
-          className={classes.button}
-          variant="contained"
-          onClick={() => {
-            ipcRenderer.send('backgroundCompute', accounts, settings);
-          }}
-          type="button"
-        >
-          compute
-        </Button>
+        <Grid container justify="center" spacing={16}>
+          <Grid item xs={12} sm={8} md={6} lg={4}>
+            <Button
+              className={classes.button}
+              variant="contained"
+              onClick={() => {
+                ipcRenderer.send('backgroundCompute', accounts, settings);
+              }}
+              type="button"
+            >
+              compute
+            </Button>
+          </Grid>
+        </Grid>
       </Grid>
     );
   }
 }
+
 
 Dashboard.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,

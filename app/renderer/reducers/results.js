@@ -3,7 +3,7 @@ import { LOAD_RESULTS, LOAD_ERROR, CLEAR_ERRORS } from '../actions/results';
 const initialState = {
   accounts: {},
   savings: {},
-  expenses: [],
+  expenses: {},
   incomeTaxable: {},
   incomeTotal: {},
   incomeAfterTax: {},

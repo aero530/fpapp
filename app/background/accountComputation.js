@@ -27,6 +27,7 @@ export default function accountComputation(accounts, settings) {
 
   const ageNow = yearStart - yearBorn;
   const yearRetire = yearBorn + ageRetire;
+  const yearDie = yearBorn + ageDie; // not directly used in this file but can be an input from account setup
   let yearDelta = math.range(0, ageDie - ageNow + 1);
   let yearTable = math.add(yearDelta, yearStart);
 
@@ -92,7 +93,7 @@ export default function accountComputation(accounts, settings) {
   const incomeTotalTable = arrayToObject(yearTable, 0);
   const incomeTotalAfterTaxTable = arrayToObject(yearTable, 0);
   const netTable = arrayToObject(yearTable, 0);
-  console.log(JSON.stringify(netTable));
+  // console.log(JSON.stringify(netTable));
 
   Object.keys(accounts).forEach((accountName) => {
     const account = accounts[accountName];
@@ -188,7 +189,7 @@ export default function accountComputation(accounts, settings) {
     // console.log(JSON.stringify(account));
   });
 
-  console.log(yearTable);
+  // console.log(yearTable);
 
   // # ----------------------------------------------------------------------
   // # Main loop to loop through each year
@@ -674,11 +675,11 @@ export default function accountComputation(accounts, settings) {
     incomeTotalAfterTaxTable[yearCurrent] = incomeTotalTable[yearCurrent] - incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100);
   }); // end for each year loop
 
-  console.log('accounts after main loop');
-  console.log(accounts);
-  console.log(netTable);
-  console.log(incomeTotalTable);
-  console.log(incomeTotalTaxableTable);
+  // console.log('accounts after main loop');
+  // console.log(accounts);
+  // console.log(netTable);
+  // console.log(incomeTotalTable);
+  // console.log(incomeTotalTaxableTable);
 
 
   const result = {

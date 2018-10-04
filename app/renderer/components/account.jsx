@@ -529,7 +529,7 @@ class Account extends Component {
           <div>
             {show[account.type].table ? (
               <div>
-                {account.type === 'college' ? (
+                {(account.type === 'college' || account.type === 'retirement') ? (
                   <MuiEditableTable
                     colSpec={colSpecCollege}
                     rowData={this.makeTableArray({ value: account.table, contribution: account.contribution, earnings: account.earnings })}

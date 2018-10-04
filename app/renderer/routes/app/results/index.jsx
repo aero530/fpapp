@@ -96,9 +96,6 @@ class Results extends React.Component {
             </TableBody>
           </Table>
         </Paper>
-        <Paper className={classes.paper}>
-          <span>{JSON.stringify(net, undefined, 2)}</span>
-        </Paper>
       </div>
     );
   }

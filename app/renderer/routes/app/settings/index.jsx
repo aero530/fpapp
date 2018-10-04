@@ -225,7 +225,7 @@ class Settings extends React.Component {
 Settings.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   setAppBarTitle: PropTypes.func.isRequired,
-  settings: PropTypes.objectOf(PropTypes.object).isRequired,
+  settings: PropTypes.objectOf(PropTypes.number || PropTypes.string).isRequired,
   changeSetting: PropTypes.func.isRequired,
 };
 

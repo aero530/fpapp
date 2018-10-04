@@ -3,8 +3,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
+import classNames from 'classnames';
 import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
+import Input from '@material-ui/core/Input';
+
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import PromoteIcon from '@material-ui/icons/ArrowUpward';
@@ -24,23 +27,33 @@ const styles = theme => ({
   editableTableStyle: {
   },
   headerRowStyle: {
-    height: '20px',
+    height: '1rem',
   },
   footerRowStyle: {
-    height: '20px',
+    height: '1rem',
   },
   dataRowStyle: {
-    height: '20px',
+    height: '1rem',
   },
   cellStyle: {
     margin: 0,
     padding: 0,
+    borderBottom: '0',
   },
   tableButton: {
-    fontSize: '20px',
-    width: '26px',
-    height: '26px',
+    fontSize: '1rem',
+    height: '1.5rem',
+    width: '1.5rem',
     margin: 0,
+    marginTop: '0.2rem',
+    padding: 0,
+  },
+  actionCell: {
+    width: '80px',
+    display: 'flex',
+  },
+  textField: {
+    fontSize: '.75rem',
   },
 });
 
@@ -84,7 +97,7 @@ class MuiEditableTable extends React.Component {
     const { classes } = this.props;
 
     return (
-      <TableCell style={{ display: 'flex' }} className={classes.cellStyle}>
+      <TableCell className={classNames(classes.cellStyle, classes.actionCell)}>
         <IconButton color="primary" key={`action delete ${index}`} onClick={this.onDeleteRow(index)} className={classes.tableButton}>
           <DeleteIcon fontSize="inherit" />
         </IconButton>
@@ -113,17 +126,19 @@ class MuiEditableTable extends React.Component {
   }
 
   renderInputField = (column, index, rowData) => {
+    const { classes } = this.props;
     if (column.isReadOnly && column.isReadOnly(rowData)) {
       return (<div style={{ width: column.width }} />);
     }
 
     if (column.inputType === 'TextField') {
       return (
-        <TextField
+        <Input
           id={column.fieldName + index}
           style={{ width: column.width }}
           value={column.fieldName in rowData ? rowData[column.fieldName] : ''}
           onChange={this.onFieldChange(index, column.fieldName)}
+          className={classNames(classes.textField, classes.cellStyle)}
         />
       );
     }
@@ -142,7 +157,7 @@ class MuiEditableTable extends React.Component {
           <TableCell
             className={classes.cellStyle}
             key={col.fieldName + index}
-            style={{ width: col.width }}
+            style={{ width: col.width, fontSize: '5px' }}
           >
             {this.renderInputField(col, index, dataRow)}
           </TableCell>
