@@ -46,6 +46,7 @@ import Accounts from './accounts';
 import Settings from './settings';
 import Results from './results';
 import Graphs from './graphs';
+import GraphsDetail from './graphs/detail';
 
 const drawerWidth = 240;
 
@@ -219,6 +220,7 @@ class AppRoute extends React.Component {
           <Switch>
             <Route exact path="/app" component={Dashboard} />
             <Route exact path="/app/results" component={Results} />
+            <Route exact path="/app/graphs/detail" component={GraphsDetail} />
             <Route exact path="/app/graphs" component={Graphs} />
             <Route exact path="/app/settings" component={Settings} />
             <Route exact path="/app/accounts/:type" component={Accounts} />
@@ -233,7 +235,7 @@ class AppRoute extends React.Component {
           <div>
             <List>
               {errors.map(error => (
-                <ListItem>
+                <ListItem key={`error-item-${error.title}`}>
                   <ListItemText
                     primary={error.title}
                     secondary={error.message}
@@ -252,7 +254,7 @@ AppRoute.propTypes = {
   classes: PropTypes.objectOf(PropTypes.string).isRequired,
   appBarTitle: PropTypes.string,
   errorCount: PropTypes.number,
-  errors: PropTypes.arrayOf(PropTypes.string),
+  errors: PropTypes.arrayOf(PropTypes.object),
 };
 
 AppRoute.defaultProps = {

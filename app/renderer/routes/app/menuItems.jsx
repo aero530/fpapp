@@ -6,6 +6,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ListSubheader from '@material-ui/core/ListSubheader';
 import DashboardIcon from '@material-ui/icons/Dashboard';
 import BarChartIcon from '@material-ui/icons/BarChart';
+import ShowChartIcon from '@material-ui/icons/ShowChart';
 import TableChartIcon from '@material-ui/icons/TableChart';
 import HomeIcon from '@material-ui/icons/Home';
 import CreditCardIcon from '@material-ui/icons/CreditCard';
@@ -38,6 +39,13 @@ export const mainListItems = (
         <BarChartIcon />
       </ListItemIcon>
       <ListItemText primary="Graphs" />
+    </ListItem>
+
+    <ListItem dense button component={Link} to="/app/graphs/detail">
+      <ListItemIcon>
+        <ShowChartIcon />
+      </ListItemIcon>
+      <ListItemText primary="Detail Graphs" />
     </ListItem>
 
     <ListItem dense button component={Link} to="/app/results">

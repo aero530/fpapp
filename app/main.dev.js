@@ -137,6 +137,10 @@ app.on('ready', async () => {
     mainWindow.webContents.send('analysisError', arg);
   });
 
+  ipcMain.on('analysisErrors', (event, arg) => {
+    mainWindow.webContents.send('analysisErrors', arg);
+  });
+
   ipcMain.on('backgroundCompute', (event, arg1, arg2) => {
     backgroundWindow.webContents.send('backgroundCompute', arg1, arg2);
   });

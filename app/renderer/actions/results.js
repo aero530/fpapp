@@ -3,6 +3,7 @@ import { ipcRenderer } from 'electron';
 export const LOAD_RESULTS = 'LOAD_RESULTS';
 export const RUN_ANALYSIS = 'RUN_ANALYSIS';
 export const LOAD_ERROR = 'LOAD_ERROR';
+export const LOAD_ERRORS = 'LOAD_ERRORS';
 export const CLEAR_ERRORS = 'CLEAR_ERRORS';
 
 export function loadResults(arg) {
@@ -16,6 +17,13 @@ export function loadError(arg) {
   return {
     type: LOAD_ERROR,
     error: arg,
+  };
+}
+
+export function loadErrors(arg) {
+  return {
+    type: LOAD_ERRORS,
+    errors: arg,
   };
 }
 

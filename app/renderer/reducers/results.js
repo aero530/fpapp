@@ -1,4 +1,4 @@
-import { LOAD_RESULTS, LOAD_ERROR, CLEAR_ERRORS } from '../actions/results';
+import { LOAD_RESULTS, LOAD_ERROR, LOAD_ERRORS, CLEAR_ERRORS } from '../actions/results';
 
 const initialState = {
   accounts: {},
@@ -31,6 +31,17 @@ export default function (state = initialState, action) {
     case LOAD_ERROR: {
       const prevErrors = state.errors;
       prevErrors.push(action.error);
+      const count = prevErrors.length;
+      return {
+        ...state,
+        errors: prevErrors,
+        errorCount: count,
+      };
+    }
+
+    case LOAD_ERRORS: {
+      let prevErrors = state.errors;
+      prevErrors = prevErrors.concat(action.errors);
       const count = prevErrors.length;
       return {
         ...state,

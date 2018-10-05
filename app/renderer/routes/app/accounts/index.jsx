@@ -83,6 +83,12 @@ class Accounts extends React.Component {
             return null;
           })}
         </Grid>
+        <FloatingActionButton
+          className={classes.addFloatingActionButton}
+          onClick={() => {
+            onAdd(match.params.type);
+          }}
+        />
       </Grid>
     );
   }

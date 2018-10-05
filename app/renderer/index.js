@@ -6,7 +6,7 @@ import Root from './root';
 import { configureStore, history } from './store/configureStore';
 
 import { openFile, saveFile } from './actions/data';
-import { loadResults, loadError } from './actions/results';
+import { loadResults, loadError, loadErrors } from './actions/results';
 
 import '../app.global.css';
 
@@ -16,6 +16,10 @@ const store = configureStore();
 
 ipcRenderer.on('analysisError', (event, arg) => {
   store.dispatch(loadError(arg));
+});
+
+ipcRenderer.on('analysisErrors', (event, arg) => {
+  store.dispatch(loadErrors(arg));
 });
 
 ipcRenderer.on('analysisResults', (event, arg) => {

@@ -25,6 +25,17 @@ export default function accountComputation(accounts, settings) {
     retirementCostOfLiving,
   } = settings;
 
+  let errors = [];
+
+  if (!yearStart) { errors.push({ title: 'Beginning Year', message: 'not defined' }); }
+  if (!yearBorn) { errors.push({ title: 'Birth Year', message: 'not defined' }); }
+  if (!ageRetire) { errors.push({ title: 'Retirement Age', message: 'not defined' }); }
+  if (!ageDie) { errors.push({ title: 'Termination Age', message: 'not defined' }); }
+  if (!inflationBase) { errors.push({ title: 'Inflation %', message: 'not defined' }); }
+  if (!taxIncome) { errors.push({ title: 'Income Tax Rate %', message: 'not defined' }); }
+  if (!taxCapitalGains) { errors.push({ title: 'Capital Gains Tax Rate %', message: 'not defined' }); }
+  if (!retirementCostOfLiving) { errors.push({ title: 'Cost of Living %', message: 'not defined' }); }
+
   const ageNow = yearStart - yearBorn;
   const yearRetire = yearBorn + ageRetire;
   const yearDie = yearBorn + ageDie; // not directly used in this file but can be an input from account setup
@@ -95,14 +106,19 @@ export default function accountComputation(accounts, settings) {
   const netTable = arrayToObject(yearTable, 0);
   // console.log(JSON.stringify(netTable));
 
-  Object.keys(accounts).forEach((accountName) => {
-    const account = accounts[accountName];
+  Object.keys(accounts).forEach((accountID) => {
+    const account = accounts[accountID];
     // loop through all account objects
     // # ----------------------------------------------------------------------
     // # Initialize internal tables to correct size
     // # ----------------------------------------------------------------------
     if (!Object.hasOwnProperty.call(account, 'table')) { // if there is not a table object then create one
       account.table = {};
+      account.table[yearStart] = 0;
+    } else if ((typeof account.table !== 'object')) { // if the table has not been initialized with the current year
+      account.table = {};
+      account.table[yearStart] = 0;
+    } else if ((typeof account.table === 'object') && !(yearStart in account.table)) { // if the table has not been initialized with the current year
       account.table[yearStart] = 0;
     }
 
@@ -194,6 +210,7 @@ export default function accountComputation(accounts, settings) {
   // # ----------------------------------------------------------------------
   // # Main loop to loop through each year
   // # ----------------------------------------------------------------------
+  console.log(yearTable);
   yearTable.forEach((yearCurrent) => { // loop through all years
     // # ----------------------------------------------------------------------
     // # Initialize this year
@@ -205,7 +222,7 @@ export default function accountComputation(accounts, settings) {
     // # ----------------------------------------------------------------------
     // # Loop through accounts to make contributions and withdrawals
     // # ---------------------------------------------------------------------
-    accountOrderIndex.forEach((accountName) => {
+    accountOrderIndex.forEach((accountID) => {
       // # ----------------------------------------------------------------------
       // # Initialize temp variables to zero
       // # ----------------------------------------------------------------------
@@ -217,7 +234,7 @@ export default function accountComputation(accounts, settings) {
       let withdrawal = 0; // withdrawal is money that may be considered income (dependIng on account type)
       let expense = 0;
 
-      let account = accounts[accountName];
+      let account = accounts[accountID];
 
       // # ----------------------------------------------------------------------
       // # Initialize the value of the account for this year
@@ -328,8 +345,9 @@ export default function accountComputation(accounts, settings) {
 
           if (contribution < 0) {
             console.log('Error contribution < 0');
-            ipcRenderer.send('analysisError', {
-              title: `${accountName} ${yearCurrent}`,
+            // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'contribution < 0' });
+            errors.push({
+              title: `${account.name} ${yearCurrent}`,
               message: 'contribution < 0',
             });
           }
@@ -377,7 +395,8 @@ export default function accountComputation(accounts, settings) {
               }
             } else {
               console.log('Employer Match defined for account but incomeLink length <= 0 ', account.name);
-              ipcRenderer.send('analysisError', { title: `${accountName} ${yearCurrent}`, message: 'employer match defined for account but incomeLink length <= 0' });
+              // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'employer match defined for account but incomeLink length <= 0' });
+              errors.push({ title: `${account.name} ${yearCurrent}`, message: 'employer match defined for account but incomeLink length <= 0' });
             }
           } else if (Object.prototype.hasOwnProperty.call(account, 'employerContribution') && yearCurrent <= yearRetire) {
             if (account.contributionType === 'fixed_with_inflation') {
@@ -388,7 +407,8 @@ export default function accountComputation(accounts, settings) {
               employerMatch = account.employerContribution; // set the contribution amount to the value input
             } else {
               console.log('Employer Contribution type not implemented');
-              ipcRenderer.send('analysisError', { title: `${accountName} ${yearCurrent}`, message: 'employer contribution type not implemented' });
+              // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'employer contribution type not implemented' });
+              errors.push({ title: `${account.name} ${yearCurrent}`, message: 'employer contribution type not implemented' });
             }
           }
         }
@@ -432,7 +452,8 @@ export default function accountComputation(accounts, settings) {
         }
         if (payment < 0) {
           console.log('Error payment < 0');
-          ipcRenderer.send('analysisError', { title: `${accountName} ${yearCurrent}`, message: 'payment < 0' });
+          // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'payment < 0' });
+          errors.push({ title: `${account.name} ${yearCurrent}`, message: 'payment < 0' });
         }
       }
 
@@ -468,10 +489,8 @@ export default function accountComputation(accounts, settings) {
               }
             } else {
               console.log('ERROR - Can not compute withdrawal amount');
-              ipcRenderer.send('analysisError', {
-                title: `${accountName} ${yearCurrent}`,
-                message: 'can not compute withdrawal amount < 0',
-              });
+              // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'can not compute withdrawal amount < 0' });
+              errors.push({ title: `${account.name} ${yearCurrent}`, message: 'can not compute withdrawal amount < 0' });
             }
           } else if (account.withdrawalType === 'fixed') {
             // otherwise if type is a fixed value
@@ -488,10 +507,8 @@ export default function accountComputation(accounts, settings) {
           } else {
             // otherwise if a different type is specified
             console.log('Invalid withdrawal type');
-            ipcRenderer.send('analysisError', {
-              title: `${accountName} ${yearCurrent}`,
-              message: 'invalid withdrawal type',
-            });
+            // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'invalid withdrawal type' });
+            errors.push({ title: `${account.name} ${yearCurrent}`, message: 'invalid withdrawal type' });
             withdrawal = 0; // set withdrawal to zero (this is for accounts that you dont remove money from such as expense accounts)
           }
         }
@@ -502,10 +519,8 @@ export default function accountComputation(accounts, settings) {
         }
         if (withdrawal < 0) {
           console.log('Error withdrawal < 0');
-          ipcRenderer.send('analysisError', {
-            title: `${accountName} ${yearCurrent}`,
-            message: 'withdrawal < 0',
-          });
+          // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'withdrawal < 0' });
+          errors.push({ title: `${account.name} ${yearCurrent}`, message: 'withdrawal < 0' });
         }
         account.withdrawal[yearCurrent] = withdrawal;
       }
@@ -537,10 +552,8 @@ export default function accountComputation(accounts, settings) {
         }
         if (expense < 0) {
           console.log('Error expense < 0');
-          ipcRenderer.send('analysisError', {
-            title: `${accountName} ${yearCurrent}`,
-            message: 'expense < 0',
-          });
+          // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'expense < 0' });
+          errors.push({ title: `${account.name} ${yearCurrent}`, message: 'expense < 0' });
         }
       }
 
@@ -602,12 +615,10 @@ export default function accountComputation(accounts, settings) {
 
       account.table[yearCurrent] += expense;
 
-      if (
-        Object.prototype.hasOwnProperty.call(account, 'isHealthcare') && account.isHealthcare === 1) {
+      if (Object.prototype.hasOwnProperty.call(account, 'isHealthcare') && account.isHealthcare) {
         // pull from HSA
-        if (Object.prototype.hasOwnProperty.call(account, 'hsaLink')) {
+        if (Object.prototype.hasOwnProperty.call(account, 'hsaLink') && account.hsaLink !== 'none') {
           // if there is an HSA account linked
-
           // print('{0:s} {1:.2f} {2:.2f}'.format(account[account[accountIndex]['hsaLink']]['name'],account[account[accountIndex]['hsaLink']]['table'][yearCurrent], expense))
           if (accounts[account.hsaLink].table[yearCurrent] >= expense) {
             // if there is enough money in the HSA savings account to pay for healthcare expenses
@@ -620,6 +631,10 @@ export default function accountComputation(accounts, settings) {
             accounts[account.hsaLink].table[yearCurrent] = 0;
             expense = tmp;
           }
+        } else {
+          console.log('Account is healthcare but does not have HSA link');
+          // ipcRenderer.send('analysisError', { title: `${account.name} ${yearCurrent}`, message: 'account is healthcare but does not have HSA link' });
+          errors.push({ title: `${account.name} ${yearCurrent}`, message: 'account is healthcare but does not have HSA link' });
         }
       }
 
@@ -628,25 +643,25 @@ export default function accountComputation(accounts, settings) {
       // # ----------------------------------------------------------------------
       if (account.type === 'expense') {
         // and if type is EXPENSE
-        expenseTotal[yearCurrent][accountName] = expense; // add withdrawal to the expense table
+        expenseTotal[yearCurrent][accountID] = expense; // add withdrawal to the expense table
       } else if (account.type === 'loan') {
         // otherwise if type is LOAN
-        expenseTotal[yearCurrent][accountName] = payment; // add withdrawal to the expense table
+        expenseTotal[yearCurrent][accountID] = payment; // add withdrawal to the expense table
       } else if (account.type === 'mortgage') {
         // otherwise if type is LOAN
-        expenseTotal[yearCurrent][accountName] = payment; // add withdrawal to the expense table
+        expenseTotal[yearCurrent][accountID] = payment; // add withdrawal to the expense table
       } else if (account.type === 'college') {
         // otherwise if type is LOAN
-        expenseTotal[yearCurrent][accountName] = contribution; // add contribution to the expense table
+        expenseTotal[yearCurrent][accountID] = contribution; // add contribution to the expense table
       } else if (account.type === 'savings') {
         // otherwise if type is a SAVINGS account
-        expenseTotal[yearCurrent][accountName] = contribution; // add contribution to the expense table
+        expenseTotal[yearCurrent][accountID] = contribution; // add contribution to the expense table
       } else if (account.type === 'retirement') {
         // otherwise if type is a SAVINGS account
-        expenseTotal[yearCurrent][accountName] = contribution; // add contribution to the expense table
+        expenseTotal[yearCurrent][accountID] = contribution; // add contribution to the expense table
       } else if (account.type === 'hsa') {
         // otherwise if type is a HSA account
-        expenseTotal[yearCurrent][accountName] = contribution; // add contribution to the expense table
+        expenseTotal[yearCurrent][accountID] = contribution; // add contribution to the expense table
       }
 
       // # ----------------------------------------------------------------------
@@ -681,6 +696,7 @@ export default function accountComputation(accounts, settings) {
   // console.log(incomeTotalTable);
   // console.log(incomeTotalTaxableTable);
 
+  ipcRenderer.send('analysisErrors', errors);
 
   const result = {
     year: yearTable,
