@@ -124,6 +124,27 @@ class GraphsDetail extends React.Component {
             <Typography variant="title" id="modal-title">Retirement Accounts</Typography>
             {Object.values(accounts).map((account) => {
               if (account.type === 'retirement') {
+                let data = {};
+                if (account.employerContributionTable) {
+                  data = this.formatDataObjects([
+                    { name: 'Account Value', data: account.table },
+                    { name: 'Cumulative Contribution', data: this.cumulativeSum(account.contribution) },
+                    { name: 'Cumulative Employer Match', data: this.cumulativeSum(account.employerContributionTable) },
+                    { name: 'Cumulative Earnings', data: this.cumulativeSum(account.earnings) },
+                    { name: 'Contribution', data: account.contribution },
+                    { name: 'Employer Match', data: account.employerContributionTable },
+                    { name: 'Earnings', data: account.earnings },
+                  ]);
+                } else {
+                  data = this.formatDataObjects([
+                    { name: 'Account Value', data: account.table },
+                    { name: 'Cumulative Contribution', data: this.cumulativeSum(account.contribution) },
+                    { name: 'Cumulative Earnings', data: this.cumulativeSum(account.earnings) },
+                    { name: 'Contribution', data: account.contribution },
+                    { name: 'Earnings', data: account.earnings },
+                  ]);
+                }
+                console.log(data);
                 return (
                   <div key={`charts-retirement-${account.name}`}>
                     <Typography variant="subheading" id="chart-title" align="center">
@@ -131,13 +152,7 @@ class GraphsDetail extends React.Component {
                     </Typography>
                     <ResponsiveContainer width="100%" height={chartHeight}>
                       <ComposedChart
-                        data={this.formatDataObjects([
-                          { name: 'Account Value', data: account.table },
-                          { name: 'Cumulative Contribution', data: this.cumulativeSum(account.contribution) },
-                          { name: 'Cumulative Earnings', data: this.cumulativeSum(account.earnings) },
-                          { name: 'Contribution', data: account.contribution },
-                          { name: 'Earnings', data: account.earnings },
-                        ])}
+                        data={data}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
                         <XAxis dataKey="x" />
@@ -146,10 +161,20 @@ class GraphsDetail extends React.Component {
                         <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
 
                         <Area key={`charts-retirement-${account.name}-area-1`} type="linear" stackId="1" dataKey="Cumulative Contribution" stroke={colors[1]} fill={colors[1]} />
-                        <Area key={`charts-retirement-${account.name}-area-2`} type="linear" stackId="1" dataKey="Cumulative Earnings" stroke={colors[2]} fill={colors[2]} />
+                        {account.employerContributionTable ? (
+                          <Area key={`charts-retirement-${account.name}-area-2`} type="linear" stackId="1" dataKey="Cumulative Employer Match" stroke={colors[2]} fill={colors[2]} />
+                        ) : (
+                          null
+                        )}
+                        <Area key={`charts-retirement-${account.name}-area-3`} type="linear" stackId="1" dataKey="Cumulative Earnings" stroke={colors[3]} fill={colors[3]} />
 
                         <Line key={`charts-retirement-${account.name}-line-1`} type="linear" dataKey="Contribution" stroke={colors[1]} strokeWidth="2" dot={false} />
-                        <Line key={`charts-retirement-${account.name}-line-2`} type="linear" dataKey="Earnings" stroke={colors[2]} strokeWidth="2" dot={false} />
+                        {account.employerContributionTable ? (
+                          <Line key={`charts-retirement-${account.name}-line-2`} type="linear" dataKey="Employer Match" stroke={colors[21]} strokeWidth="2" dot={false} />
+                        ) : (
+                          null
+                        )}
+                        <Line key={`charts-retirement-${account.name}-line-3`} type="linear" dataKey="Earnings" stroke={colors[3]} strokeWidth="2" dot={false} />
 
                         <Line type="linear" dataKey="Account Value" stroke={colors[0]} strokeWidth="2" dot={false} />
                       </ComposedChart>
@@ -285,6 +310,7 @@ class GraphsDetail extends React.Component {
                       <LineChart
                         data={this.formatDataObjects([
                           { name: 'Contribution', data: account.contribution },
+                          { name: 'Employer Match', data: account.employerContributionTable },
                           { name: 'Earnings', data: account.earnings },
                           { name: 'Value', data: account.table },
                           { name: 'Withdrawal', data: account.withdrawal },
@@ -297,6 +323,7 @@ class GraphsDetail extends React.Component {
                         <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
                         <Line type="monotone" dataKey="Value" stroke={colors[2]} dot={false} />
                         <Line type="monotone" dataKey="Contribution" stroke={colors[0]} dot={false} />
+                        <Line type="monotone" dataKey="Employer Match" stroke={colors[0]} dot={false} />
                         <Line type="monotone" dataKey="Earnings" stroke={colors[1]} dot={false} />
                         <Line type="monotone" dataKey="Withdrawal" stroke={colors[3]} dot={false} />
                       </LineChart>

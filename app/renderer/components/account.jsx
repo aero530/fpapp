@@ -1,5 +1,16 @@
 // cSpell: ignore Formaters, autofill, reorderable
 
+/**
+ * @class Account
+ * @description Shows account page with inputs based on account type
+ * @property {Object} classes material ui class
+ * @property {Object} account account to show
+ * @property {Array} incomeAccounts list of income accounts - used to populate dropdown list
+ * @property {Array} hsaAccounts list of hsa accounts - used to populate dropdown list
+ * @property {Function} onDelete function to call when this account is deleted
+ * @property {Function} onUpdate function to call when this account is updated
+ */
+
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
