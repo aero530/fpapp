@@ -14,6 +14,7 @@
 
 ## Redux Store
 The redux store maintains four primary objects:  
+
 * **app** info about application state
   * *appBarTitle* current string that should be shown in titlebar
 * **data** input data
