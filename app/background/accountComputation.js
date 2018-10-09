@@ -24,7 +24,7 @@ const arrayToObject = (array, value) => array.reduce((obj, item) => {
  * This function performs the financial simulation
  * @function accountComputation
  * @description Program flow:
- * Loop through accounts to determine what order they should be processed in
+ *  Loop through accounts to determine what order they should be processed in
  *  initialize tables to the correct sizes
  *  Main loop to loop through each year
  *    Initialize this year
@@ -56,6 +56,10 @@ const arrayToObject = (array, value) => array.reduce((obj, item) => {
  *      Add entry to savings total
  *    Add Income to net account (subtract out paying for income tax)
  *  Return Results
+ *
+ * All data points are in that years evaluation of dollars (ie data for 2030 is in 2030 dollars)
+ * http://www.bankrate.com/calculators/retirement/retirement-plan-calculator.aspx
+ *
  * @param {Array.<Object>} accounts array of operations
  * @param settings object of settings
  * @param settings.yearStart year to start the simulation
@@ -100,15 +104,9 @@ export default function accountComputation(accounts, settings) {
   yearDelta = yearDelta.toArray();
   yearTable = yearTable.toArray();
 
-  // ======================================================================
-  // Main Program
-  // #
-  // net_table[yearCurrent] : running sum of un allocated money after income tax (ie checking account)
-  // expenseTotal.table(yearCurrent,accountIndex) : initialize table for expenses
-  // incomeTotalTaxableTable['table'][yearCurrent] : total of all the running incomes
-  // ======================================================================
-
-  // Define counts used to run for loops
+  // ----------------------------------------------------------------------
+  // Define accounts used to run for loops
+  // ----------------------------------------------------------------------
   const numberAccounts = Object.keys(accounts).length; // number of accounts defined in the account object
 
   // ----------------------------------------------------------------------
@@ -117,6 +115,7 @@ export default function accountComputation(accounts, settings) {
   const accountOrderIndex = []; // [0]*numberAccounts // make accountOrderIndex an array of the correct size
   const accountOrderTable = [
     'income',
+    'ssa',
     'hsa',
     'expense',
     'mortgage',
@@ -159,6 +158,7 @@ export default function accountComputation(accounts, settings) {
   const incomeTotalTable = arrayToObject(yearTable, 0);
   const incomeTotalAfterTaxTable = arrayToObject(yearTable, 0);
   const netTable = arrayToObject(yearTable, 0);
+  const incomeDuringRetirement = arrayToObject(yearTable, 0);
   // console.log(JSON.stringify(netTable));
 
   Object.keys(accounts).forEach((accountID) => {
@@ -301,8 +301,8 @@ export default function accountComputation(accounts, settings) {
       // ----------------------------------------------------------------------
       // Initialize the value of the account for this year
       // ----------------------------------------------------------------------
-      if (account.type === 'expense' || account.type === 'income') {
-        // if this is an EXPENSE or INCOME account
+      if (account.type === 'expense' || account.type === 'income' || account.type === 'ssa') {
+        // if this is an EXPENSE or INCOME or SSA account
         account.table[yearCurrent] = 0; // previous years value does not carry over (ie not an account that carries a balance)
       } else if (account.type === 'savings' || account.type === 'college' || account.type === 'retirement' || account.type === 'hsa' || account.type === 'loan' || account.type === 'mortgage') {
         // this account type should carry over the value from last year
@@ -337,6 +337,17 @@ export default function accountComputation(accounts, settings) {
           // if this income object is active this year
           earnings = account.base * ((1 + account.raise / 100) ** (yearCurrent - account.startIn)); // calculate this years income
         }
+        if (yearCurrent >= yearRetire) {
+          incomeDuringRetirement[yearCurrent] += earnings;
+        }
+      } else if (account.type === 'ssa') {
+        if (account.startIn <= yearCurrent && account.endIn >= yearCurrent) {
+          // if this ssa object is active this year
+          earnings = account.base; // calculate this years income
+          if (yearCurrent >= yearRetire) {
+            incomeDuringRetirement[yearCurrent] += earnings;
+          }
+        }
       }
       if (isNaN(earnings) || earnings < 0) {
         earnings = 0;
@@ -350,7 +361,6 @@ export default function accountComputation(accounts, settings) {
       // Add earnings to the account for the year
       // ----------------------------------------------------------------------
       account.table[yearCurrent] += earnings;
-
 
       // ----------------------------------------------------------------------
       // Calculate interest
@@ -463,7 +473,6 @@ export default function accountComputation(accounts, settings) {
                 }
               }
               account.employerContributionTable[yearCurrent] = employerMatch;
-
             } else {
               console.log('Employer Match defined for account but incomeLink length <= 0 ', account.name);
               errors.push({ title: `${account.name} ${yearCurrent}`, message: 'employer match defined for account but incomeLink length <= 0' });
@@ -480,23 +489,13 @@ export default function accountComputation(accounts, settings) {
               errors.push({ title: `${account.name} ${yearCurrent}`, message: 'employer contribution type not implemented' });
             }
             account.employerContributionTable[yearCurrent] = employerMatch;
-
           }
         }
-      }
 
-      // ----------------------------------------------------------------------
-      // Add contribution and employerMatch to the account for the year
-      // ----------------------------------------------------------------------
-
-      account.table[yearCurrent] = account.table[yearCurrent] + contribution + employerMatch;
-
-      // ----------------------------------------------------------------------
-      // Remove contribution from taxable income for the year based on taxStatus
-      // ----------------------------------------------------------------------
-      if (Object.prototype.hasOwnProperty.call(account, 'taxStatus') && (account.taxStatus === 3 || account.taxStatus === 4)) {
-        // if contributions should be taken out of taxable income for the year
-        incomeTotalTaxableTable[yearCurrent] -= contribution; // take the contribution value out of taxable income for the year
+        // ----------------------------------------------------------------------
+        // Add contribution and employerMatch to the account for the year
+        // ----------------------------------------------------------------------
+        account.table[yearCurrent] = account.table[yearCurrent] + contribution + employerMatch;
       }
 
       // ----------------------------------------------------------------------
@@ -554,9 +553,12 @@ export default function accountComputation(accounts, settings) {
               // withdrawal = costOfLiving['table'][yearIndex] * account[accountIndex].table(yearIndex-1)./savingsTotal.table(yearIndex-1)
               // account for retirement cost of living and for capital gains in this line...its a hack and probably not very correct
               if (account.table[yearCurrent - 1] > 0) {
-                // if there is money left in the account (python gives error on zero / anything)
+                // if there is money left in the account
                 // withdrawal from this account = total expenses this year  * fraction of total savings this account represents
-                const totalExpensesThisYear = Object.values(expenseTotal[yearCurrent]).reduce((acc, cur) => acc + cur, 0);
+                // total expenses this year is reduced by the income during retirement for the year.
+                // incomeDuringRetirement is tracked because withdrawals from retirement accounts go into the income table but we want to
+                // pay for expenses from money earned in this year before pulling from retirement accounts.
+                const totalExpensesThisYear = Object.values(expenseTotal[yearCurrent]).reduce((acc, cur) => acc + cur, 0) - incomeDuringRetirement[yearCurrent];
                 withdrawal = (totalExpensesThisYear * account.table[yearCurrent - 1]) / savingsTotalTable[yearCurrent - 1];
                 if (Object.prototype.hasOwnProperty.call(account, 'taxStatus') && account.taxStatus === 3) {
                   withdrawal *= (taxIncome / 100 + 1); // add extra to amount withdrawal value to account for taxes.
@@ -630,10 +632,23 @@ export default function accountComputation(accounts, settings) {
       }
 
       // ----------------------------------------------------------------------
+      // Remove contribution from taxable income for the year based on taxStatus
+      // ----------------------------------------------------------------------
+      if (Object.prototype.hasOwnProperty.call(account, 'taxStatus') && (account.taxStatus === 3 || account.taxStatus === 4)) {
+        // if contributions should be taken out of taxable income for the year
+        // contribute pretax income
+        incomeTotalTaxableTable[yearCurrent] -= contribution; // take the contribution value out of taxable income for the year
+      }
+
+      // ----------------------------------------------------------------------
       // Add earnings to incomeTotalTaxableTable and incomeTotalTable for the year
       // ----------------------------------------------------------------------
       if (account.type === 'income') {
         incomeTotalTaxableTable[yearCurrent] += account.table[yearCurrent]; // increase this years taxable income by the withdrawal amount
+        incomeTotalTable[yearCurrent] += account.table[yearCurrent]; // increase this years income by the withdrawal amount
+      }
+      if (account.type === 'ssa') {
+        incomeTotalTaxableTable[yearCurrent] += account.table[yearCurrent] * (account.percentTaxed / 100); // increase this years taxable income by the withdrawal amount
         incomeTotalTable[yearCurrent] += account.table[yearCurrent]; // increase this years income by the withdrawal amount
       }
 
@@ -654,13 +669,12 @@ export default function accountComputation(accounts, settings) {
       // ----------------------------------------------------------------------
       if (account.type !== 'college') {
         // dont put college withdrawals into income because they go to kids not me
-        if (
-          Object.prototype.hasOwnProperty.call(account, 'taxStatus') && account.taxStatus === 3) {
+        if (Object.prototype.hasOwnProperty.call(account, 'taxStatus') && account.taxStatus === 3) {
           // if the withdrawal should be counted as taxable income for the year
           incomeTotalTaxableTable[yearCurrent] += withdrawal; // increase this years taxable income by the withdrawal amount
-          incomeTotalTable[yearCurrent] += withdrawal; // increase this years taxable income by the withdrawal amount
+          incomeTotalTable[yearCurrent] += withdrawal; // increase this years income by the withdrawal amount
         } else {
-          incomeTotalTable[yearCurrent] += withdrawal; // increase this years taxable income by the withdrawal amount
+          incomeTotalTable[yearCurrent] += withdrawal; // increase this years income by the withdrawal amount
         }
       }
 
@@ -681,13 +695,30 @@ export default function accountComputation(accounts, settings) {
             // if there is enough money in the HSA savings account to pay for healthcare expenses
             accounts[account.hsaLink].table[yearCurrent] -= expense;
             accounts[account.hsaLink].withdrawal[yearCurrent] += expense;
-            expense = 0; // there is no remaining expense to pull from the income table
+
+            // calculating expense accounts happens after calculating hsa accounts for the year so the withdrawal made must also be applied to income.
+            if (accounts[account.hsaLink].taxStatus === 4) {
+              incomeTotalTable[yearCurrent] += expense; // hsa is probably a taxStatus = 4 account
+            } else if (accounts[account.hsaLink].taxStatus === 3) {
+              incomeTotalTable[yearCurrent] += expense;
+              incomeTotalTaxableTable[yearCurrent] += expense;
+              errors.push({ title: `${account.name} ${yearCurrent}`, message: 'HSA is set with tax status === contribute pretax income - taxed as income when used' });
+            }
           } else {
             // otherwise drain the HSA account then reset expense to represent the remaining balance of the expense
-            const tmpCurrentVal = accounts[account.hsaLink].table[yearCurrent];
+            const tmpCurrentVal = accounts[account.hsaLink].table[yearCurrent]; // only this much of the expense can be covered by the hsa
             accounts[account.hsaLink].withdrawal[yearCurrent] = tmpCurrentVal;
+
+            // calculating expense accounts happens after calculating hsa accounts for the year so the withdrawal made must also be applied to income.
+            if (accounts[account.hsaLink].taxStatus === 4) {
+              incomeTotalTable[yearCurrent] += expense; // hsa is probably a taxStatus = 4 account
+            } else if (accounts[account.hsaLink].taxStatus === 3) {
+              incomeTotalTable[yearCurrent] += expense;
+              incomeTotalTaxableTable[yearCurrent] += expense;
+              errors.push({ title: `${account.name} ${yearCurrent}`, message: 'HSA is set with tax status === contribute pretax income - taxed as income when used' });
+            }
+
             accounts[account.hsaLink].table[yearCurrent] = 0;
-            expense -= tmpCurrentVal; // there is some remaining expense to pull from the income table
           }
         } else {
           console.log('Account is healthcare but does not have HSA link');
@@ -738,12 +769,6 @@ export default function accountComputation(accounts, settings) {
     // ----------------------------------------------------------------------
     const totalExpensesThisYear = Object.values(expenseTotal[yearCurrent]).reduce((acc, cur) => acc + cur, 0);
     // console.log(totalExpensesThisYear);
-
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // verify that expenses total is not double dipping expenses
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     netTable[yearCurrent] = netTable[yearCurrent] + incomeTotalTable[yearCurrent] - incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100) - totalExpensesThisYear;
     incomeTotalAfterTaxTable[yearCurrent] = incomeTotalTable[yearCurrent] - incomeTotalTaxableTable[yearCurrent] * (taxIncome / 100);

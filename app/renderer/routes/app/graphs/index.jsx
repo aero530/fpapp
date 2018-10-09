@@ -28,6 +28,11 @@ import { SET_APP_BAR_TITLE } from '../../../actions/app';
 
 import CustomTooltip from '../../../components/customToolTip';
 
+import {
+  arraySum,
+  formatDataObjects,
+} from '../../../utils';
+
 const colors = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#cddc39', '#ff5722', '#009688', '#ffeb3b'];
 
 const chartHeight = 600;
@@ -75,50 +80,6 @@ class Graphs extends React.Component {
     return 0;
   };
 
-  // dataIn = [{name: "dataset name", data: account.payment}, {}, {}]
-  formatDataObjects = (accounts) => {
-    // dataIn is array of data objects
-    const output = [];
-    console.log(accounts);
-    const years = Object.keys(accounts[0].data).sort((a, b) => a - b);
-
-    years.forEach((year) => {
-      let row = { x: year };
-      accounts.forEach((account) => {
-        row = { ...row, [account.name]: account.data[year] };
-      });
-      output.push(row);
-    });
-
-    return output;
-  };
-
-  cumulativeSum = (inputObject) => {
-    const output = {};
-    let total = 0;
-    Object.keys(inputObject).sort((a, b) => a - b).forEach((key) => {
-      total += inputObject[key];
-      output[key] = total;
-    });
-    return output;
-  };
-
-  objectSubtract = (a, b) => {
-    const output = {};
-    Object.keys(a).forEach((key) => {
-      output[key] = a[key] - b[key];
-    });
-    return output;
-  };
-
-  arraySum = (input) => {
-    let output = 0;
-    input.forEach((value) => {
-      output += value;
-    });
-    return output;
-  };
-
   expenseTreeData = (year) => {
     const { accounts, expenses } = this.props;
     const yearsData = expenses[year];
@@ -162,12 +123,12 @@ class Graphs extends React.Component {
     const retirementAccounts = [];
     if (Object.keys(accounts).length > 0) {
       Object.values(accounts).forEach((account) => {
-        if (account.type === 'income') {
+        if (account.type === 'income' || account.type === 'ssa') {
           incomeAccounts.push({ name: account.name, data: account.table });
         }
       });
       if (incomeAccounts.length > 0) {
-        incomeData = this.formatDataObjects(incomeAccounts);
+        incomeData = formatDataObjects(incomeAccounts);
       }
       Object.values(accounts).forEach((account) => {
         if (account.type === 'retirement') {
@@ -175,7 +136,7 @@ class Graphs extends React.Component {
         }
       });
       if (retirementAccounts.length > 0) {
-        retirementData = this.formatDataObjects(retirementAccounts);
+        retirementData = formatDataObjects(retirementAccounts);
       }
     }
 
@@ -186,7 +147,7 @@ class Graphs extends React.Component {
 
     if (Object.keys(expenses).length > 0) {
       Object.keys(expenses).forEach((rowYear) => {
-        expensesTotal[rowYear] = this.arraySum(Object.values(expenses[rowYear]));
+        expensesTotal[rowYear] = arraySum(Object.values(expenses[rowYear]));
       });
 
       Object.keys(expenses).forEach((rowYear) => {
@@ -223,7 +184,7 @@ class Graphs extends React.Component {
             </Typography>
             <ResponsiveContainer width="100%" height={chartHeight}>
               <LineChart
-                data={this.formatDataObjects([
+                data={formatDataObjects([
                   { name: 'Net', data: net },
                   { name: 'Total Income', data: incomeTotal },
                   { name: 'After Tax Income', data: incomeAfterTax },
@@ -266,7 +227,7 @@ class Graphs extends React.Component {
               </ResponsiveContainer>
             </div>
           </Paper>
-  
+
           <Paper className={classes.paper}>
             <div key="charts-retirement">
               <Typography variant="subheading" id="chart-title" align="center">
@@ -290,7 +251,7 @@ class Graphs extends React.Component {
               </ResponsiveContainer>
             </div>
           </Paper>
-  
+
           <Paper className={classes.paper}>
             <div key="charts-expenses">
               <Typography variant="subheading" id="chart-title" align="center">
@@ -314,7 +275,7 @@ class Graphs extends React.Component {
               </ResponsiveContainer>
             </div>
           </Paper>
-  
+
           <Paper className={classes.paper}>
             <Typography variant="subheading" id="chart-title" align="center">
               {`${sliderValue} Expenses`}

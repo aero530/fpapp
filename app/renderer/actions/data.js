@@ -2,12 +2,12 @@ import fs from 'fs';
 
 export const OPEN_DATA_FILE = 'OPEN_DATA_FILE';
 export const SAVE_DATA_FILE = 'SAVE_DATA_FILE';
-export const EDIT_DATA_FILE_STATE_CONTENT = 'EDIT_DATA_FILE_STATE_CONTENT';
 export const UPDATE_SETTING = 'UPDATE_SETTING';
 export const UPDATE_ACCOUNT = 'UPDATE_ACCOUNT';
 export const DELETE_ACCOUNT = 'DELETE_ACCOUNT';
 export const ADD_ACCOUNT = 'ADD_ACCOUNT';
 
+// action to apply opened file to the redux store
 function openFileReducer(
   settingsInput,
   accountsInput,
@@ -25,12 +25,14 @@ function openFileReducer(
   };
 }
 
+// action to notify redux store that the data was stored
 function saveFileReducer() {
   return {
     type: SAVE_DATA_FILE,
   };
 }
 
+// helper function to extract accounts of a specified type from the accounts object
 function getAccountsTypeOf(accounts, type) {
   const typeAccounts = [];
   typeAccounts.push({ value: 'none', label: 'not linked' });
@@ -47,6 +49,8 @@ function getAccountsTypeOf(accounts, type) {
   return typeAccounts;
 }
 
+// action to open a data file
+// opens file, reads contents, then dispatches action to put data in redux store
 export function openFile(filePath) {
   return (dispatch) => {
     fs.readFile(filePath, 'utf8', (err, data) => {
@@ -71,6 +75,7 @@ export function openFile(filePath) {
   };
 }
 
+// action to save the file then dispatch action to notify redux store that the file was saved
 export function saveFile(filePathInput = null) {
   return (dispatch, getState) => {
     const { settings, accounts } = getState().data;
@@ -86,12 +91,5 @@ export function saveFile(filePathInput = null) {
       if (err) throw err;
       dispatch(saveFileReducer());
     });
-  };
-}
-
-export function editFileStateContent(contentInput) {
-  return {
-    type: EDIT_DATA_FILE_STATE_CONTENT,
-    content: contentInput,
   };
 }

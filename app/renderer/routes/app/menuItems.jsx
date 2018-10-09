@@ -17,6 +17,7 @@ import SaveAltIcon from '@material-ui/icons/SaveAlt';
 import HotTubIcon from '@material-ui/icons/HotTub';
 import ShareIcon from '@material-ui/icons/Share';
 import SettingsIcon from '@material-ui/icons/Settings';
+import SupervisorAccountIcon from '@material-ui/icons/SupervisorAccount';
 
 export const mainListItems = (
   <div>
@@ -71,6 +72,12 @@ export const accountListItems = (
         <HotTubIcon />
       </ListItemIcon>
       <ListItemText primary="Retirement" />
+    </ListItem>
+    <ListItem dense button component={Link} to="/app/accounts/ssa">
+      <ListItemIcon>
+        <SupervisorAccountIcon />
+      </ListItemIcon>
+      <ListItemText primary="Social Security" />
     </ListItem>
     <ListItem dense button component={Link} to="/app/accounts/college">
       <ListItemIcon>

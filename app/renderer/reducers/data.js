@@ -5,14 +5,13 @@ import { v1 as uuidv1 } from 'uuid';
 import {
   OPEN_DATA_FILE,
   SAVE_DATA_FILE,
-  EDIT_DATA_FILE_STATE_CONTENT,
   UPDATE_SETTING,
   UPDATE_ACCOUNT,
   DELETE_ACCOUNT,
   ADD_ACCOUNT,
 } from '../actions/data';
 
-import { show } from '../components/accountStructure';
+import { show } from '../constants/accountStructure';
 
 const initialState = {
   settings: {},
@@ -40,14 +39,6 @@ export default function (state = initialState, action) {
       return {
         ...state,
         modified: false,
-      };
-
-    case EDIT_DATA_FILE_STATE_CONTENT:
-      return {
-        ...state,
-        modified: true,
-        settings: action.settings,
-        accounts: action.accounts,
       };
 
     case UPDATE_SETTING: {

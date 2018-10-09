@@ -59,18 +59,10 @@ import {
   expenseTypeOptions,
   withdrawalTypeOptions,
   paymentTypeOptions,
-} from './autofillTypeOptions';
+} from '../constants/autofillTypeOptions';
 
-import { show } from './accountStructure';
-
-const percentSuggestions = [{ label: 'inflationBase' }];
-
-const yearSuggestions = [
-  { label: 'yearStart' },
-  { label: 'yearRetire' },
-  { label: 'yearDie' },
-  { label: 'yearEnd' },
-];
+import { show } from '../constants/accountStructure';
+import { percentSuggestions, yearSuggestions } from '../constants/suggestions';
 
 const styles = theme => ({
   root: {
@@ -431,6 +423,23 @@ class Account extends Component {
                   this.handleChange(fieldName, fieldValue);
                 }}
               />
+            ) : null}
+          </div>
+
+          <div>
+            {show[account.type].percentTaxed ? (
+              <Tooltip title="Percent of this income that will be taxed">
+                <TextField
+                  id="percentTaxed"
+                  label="Percent Taxed"
+                  className={classNames(classes.margin, classes.textField)}
+                  value={account.percentTaxed}
+                  InputProps={{ inputComponent: NumberFormatPercentage }}
+                  onChange={(event) => {
+                    this.handleChange(event.target.id, event.target.floatValue);
+                  }}
+                />
+              </Tooltip>
             ) : null}
           </div>
 
@@ -881,68 +890,3 @@ Account.propTypes = {
 Account.defaultProps = {};
 
 export default withStyles(styles)(Account);
-
-/*
-# account.type : Type of account
-#      SAVINGS : Savings accounts should be used for any account where you
-#            accumulate wealth such as a bank savings account, money market account,
-#            Roth IRA, or 401K.  Withdrawals from this account go into income
-#            or net dependIng on what the tax status setting is.  Can have employer
-#            matching on these accounts
-#      EXPENSE : Expense accounts account for daily expenses such as grocery, car
-#            insurance, clothes, travel, entertainment, etc.  Money to pay for these
-#            things comes out of after tax income then out of net.
-#      MORTGAGE : Home mortgage
-#      LOAN : General loan type.  Can be used for things like car loans or school
-#            loans...anything with a balance due, interest rate, and consistent payments
-#      COLLEGE : 529 account.  Withdrawals from this account will not go toward income or net
-# account.name : String describing this income source
-# account.table(1) : startIng balance.  For LOAN and MORTGAGE this should be a negative number (money is owed)
-# account.startIn : Calendar year when money starts coming out of income and going into this account
-# account.endIn : Calendar year when money no longer goes to this account (this is inclusive so it will generally be yearRetire-1)
-# account.startOut : Calendar year when money starts coming out of this account and acts as income
-# account.endOut : Calendar year when money no longer is taken out of this account
-# account.yearlyContribution : Amount put into this account every year
-# account.contributionType : Type of contribution
-#      fixed : fixed dollar amount
-#      percent_of_income : percent of cost of current living
-#      fixed_with_inflation : fixed dollar amount compensated for inflation from year
-#            start (ie dollar amount is in current dollars)
-# account.yearlyReturn : Percent interest earned each year
-# account.withdrawalType : How money should be removed from the account
-#      end_at_zero : take money out in equal amounts each year such that the
-#            balance at endOut is zero
-#      fixed : Take out a fixed dollar amount
-#      COL_fraction_of_total_savings : Take out the current cost of living * (this accounts value / total savings)
-# account.withdrawalValue : How much money should be take out per year
-#      (either as a percentage or a fixed dollar amount)
-# account.paymentType : How money should be removed from the account
-#      fixed : fixed dollar amount
-#      fixed_with_inflation : fixed dollar amount compensated for inflation from year
-#            start (ie dollar amount is in current dollars)
-# account.paymentValue : How much money should be payed each year
-#      (either as a percentage or a fixed dollar amount)
-# account.taxStatus :
-#      0=payed with taxed income, earnings are tax deferred, withdrawals are not taxed
-#      1=payed with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed
-#            (tax free as long as used for intended purpose)
-#      ## NOT IMPLEMENTED ## 2=payed with taxed income, earnings are taxed in year taken out as capital gains, withdrawals are not taxed
-#      3=payed pretax and taxed in year of use as income
-#      4=payed pretax and not taxed as income (use with HSA)
-# account.rate : Interest rate on borrowed money. This is an APR this is
-#      then compounded based on the compound time setting.  Used for LOAN and
-#      MORTGAGE account types.
-# account.compoundTime : Number of times per year that interest
-#       is compounded. (1=yearly, 12=monthly) Used for MORTGAGE account types.
-# account.mortgageInsurance : Mortgage insurance payment expressed as
-#      a yearly fixed number in today's dollars
-# account.ltvLimit : Loan to Value amount when mortgage insurance is no
-#      longer pulled from payment.  Since monthly payment does not change over
-#      time, after the insurance is done there is more money going to the
-#      principal each payment
-# account.escrow : Amount of money going into escrow every year to pay
-#      for property tax.  This number is currently assumed to be constant
-#      (ie property taxes do not increase)
-# account.value : Current value of the home.  This is used to compute loan to value
-# account.raise : Yearly increase in income as a percent
-*/

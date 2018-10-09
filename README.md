@@ -1,35 +1,22 @@
 <div align="center">
 <br>
-<img src="https://user-images.githubusercontent.com/12294525/44203609-77d50800-a147-11e8-98f0-f2403527abdc.png" width="600px" />
-
+<h1>fpapp</h1>
 </div>
 
 <br>
 
 <p align="center">
-A boilerplate for Scalable Cross-Platform Desktop Apps based on  <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://github.com/reactjs/redux">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="http://webpack.github.io/docs/">Webpack</a> and <a href="https://github.com/gaearon/react-transform-hmr">React Transform HMR</a> for rapid application development.
+A financial planning & simulation application based on  
+<a href="https://github.com/chentsulin/electron-react-boilerplate">electron-react-boilerplate</a> using 
+<a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="http://webpack.github.io/docs/">Webpack</a>, <a href="https://github.com/gaearon/react-transform-hmr">React Transform HMR</a>, and
+<a href="https://yarnpkg.com/">yarn</a>.
 </p>
 
 <br>
 
-<div align="center">
-
-<a href="https://facebook.github.io/react/"><img src="./internals/img/react-padded-90.png" /></a>
-<a href="https://webpack.github.io/"><img src="./internals/img/webpack-padded-90.png" /></a>
-<a href="http://redux.js.org/"><img src="./internals/img/redux-padded-90.png" /></a>
-<a href="https://github.com/ReactTraining/react-router"><img src="./internals/img/react-router-padded-90.png" /></a>
-<a href="https://flowtype.org/"><img src="./internals/img/flow-padded-90.png" /></a>
-<a href="http://eslint.org/"><img src="./internals/img/eslint-padded-90.png" /></a>
-<a href="https://facebook.github.io/jest/"><img src="./internals/img/jest-padded-90.png" /></a>
-<a href="https://yarnpkg.com/"><img src="./internals/img/yarn-padded-90.png" /></a>
-
-</div>
-
 <hr>
 
-## Install
-
-- **If you have installation or compilation issues with this project, please see [our debugging guide](https://github.com/chentsulin/electron-react-boilerplate/issues/400)**
+## Development Setup
 
 This config works when using nodejs and yarn installed for windows (not through ubuntu in windows).
 
@@ -105,17 +92,6 @@ To package apps with options:
 $ yarn package -- --[option]
 ```
 
-To run End-to-End Test
-
-```bash
-$ yarn build
-$ yarn test-e2e
-
-# Running e2e tests in a minimized window
-$ START_MINIMIZED=true yarn build
-$ yarn test-e2e
-```
-
 :bulb: You can debug your production build with devtools by simply setting the `DEBUG_PROD` env variable:
 
 ```bash
@@ -124,14 +100,14 @@ DEBUG_PROD=true yarn package
 
 ## How to add modules to the project
 
-You will need to add other modules to this boilerplate, depending on the requirements of your project. For example, you may want to add [node-postgres](https://github.com/brianc/node-postgres) to communicate with PostgreSQL database, or
+You will need to add other modules to this project, depending on the requirements of your project. For example, you may want to add [node-postgres](https://github.com/brianc/node-postgres) to communicate with PostgreSQL database, or
 [material-ui](http://www.material-ui.com/) to reuse react UI components.
 
 ⚠️ Please read the following section before installing any dependencies ⚠️
 
 ### Module Structure
 
-This boilerplate uses a [two package.json structure](https://github.com/electron-userland/electron-builder/wiki/Two-package.json-Structure). This means, you will have two `package.json` files.
+This project uses a [two package.json structure](https://github.com/electron-userland/electron-builder/wiki/Two-package.json-Structure). This means, you will have two `package.json` files.
 
 1. `./package.json` in the root of your project
 1. `./app/package.json` inside `app` folder
@@ -148,8 +124,6 @@ This boilerplate uses a [two package.json structure](https://github.com/electron
 
 See the wiki page, [Module Structure — Two package.json Structure](https://github.com/chentsulin/electron-react-boilerplate/wiki/Module-Structure----Two-package.json-Structure) to understand what is native module, the rationale behind two package.json structure and more.
 
-For an example app that uses this boilerplate and packages native dependencies, see [erb-sqlite-example](https://github.com/amilajack/erb-sqlite-example).
-
 ## CSS Modules
 
 This boilerplate is configured to use [css-modules](https://github.com/css-modules/css-modules) out of the box.
@@ -163,14 +137,6 @@ If you want to import global css libraries (like `bootstrap`), you can just writ
 
 ```css
 @import '~bootstrap/dist/css/bootstrap.css';
-```
-
-## Sass support
-
-If you want to use Sass in your app, you only need to import `.sass` files instead of `.css` once:
-
-```js
-import './app.global.scss';
 ```
 
 ## Dispatching redux actions from main process
@@ -190,10 +156,6 @@ Then, use git to merge some latest commits:
 ```sh
 git pull upstream master
 ```
-
-## License
-
-MIT © [C. T. Lin](https://github.com/chentsulin)
 
 [npm-image]: https://img.shields.io/npm/v/electron-react-boilerplate.svg?style=flat-square
 [github-tag-image]: https://img.shields.io/github/tag/chentsulin/electron-react-boilerplate.svg

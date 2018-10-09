@@ -30,8 +30,8 @@ export function loadErrors(arg) {
 export function analyze() {
   return (dispatch, getState) => {
     const { settings, accounts } = getState().data;
-    dispatch({ type: RUN_ANALYSIS });
-    dispatch({ type: CLEAR_ERRORS });
-    ipcRenderer.send('backgroundCompute', accounts, settings);
+    dispatch({ type: RUN_ANALYSIS }); // notify redux store that analysis will start
+    dispatch({ type: CLEAR_ERRORS }); // clear existing errors from the redux store
+    ipcRenderer.send('backgroundCompute', accounts, settings); // send ipc message to start computation / simulation
   };
 }

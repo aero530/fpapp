@@ -24,6 +24,12 @@ import * as ResultsActions from '../../../actions/results';
 
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
 
+import {
+  cumulativeSum,
+  objectSubtract,
+  formatDataObjects,
+} from '../../../utils';
+
 const colors = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#cddc39', '#ff5722', '#009688', '#ffeb3b'];
 
 const chartHeight = 600;
@@ -63,50 +69,6 @@ class GraphsDetail extends React.Component {
     return 0;
   };
 
-  // dataIn = [{name: "dataset name", data: account.payment}, {}, {}]
-  formatDataObjects = (accounts) => {
-    // dataIn is array of data objects
-    const output = [];
-    const years = Object.keys(accounts[0].data).sort((a, b) => a - b);
-
-    years.forEach((year) => {
-      let row = { x: year };
-      accounts.forEach((account) => {
-        row = { ...row, [account.name]: account.data[year] };
-      });
-      output.push(row);
-    });
-
-    return output;
-  };
-
-  cumulativeSum = (inputObject) => {
-    const output = {};
-    let total = 0;
-    Object.keys(inputObject).sort((a, b) => a - b).forEach((key) => {
-      total += inputObject[key];
-      output[key] = total;
-    });
-    return output;
-  };
-
-  objectSubtract = (a, b) => {
-    const output = {};
-    Object.keys(a).forEach((key) => {
-      output[key] = a[key] - b[key];
-    });
-    return output;
-  };
-
-  arraySum = (input) => {
-    let output = 0;
-    input.forEach((value) => {
-      output += value;
-    });
-    return output;
-  };
-
-
   render() {
     const {
       classes,
@@ -126,20 +88,20 @@ class GraphsDetail extends React.Component {
               if (account.type === 'retirement') {
                 let data = {};
                 if (account.employerContributionTable) {
-                  data = this.formatDataObjects([
+                  data = formatDataObjects([
                     { name: 'Account Value', data: account.table },
-                    { name: 'Cumulative Contribution', data: this.cumulativeSum(account.contribution) },
-                    { name: 'Cumulative Employer Match', data: this.cumulativeSum(account.employerContributionTable) },
-                    { name: 'Cumulative Earnings', data: this.cumulativeSum(account.earnings) },
+                    { name: 'Cumulative Contribution', data: cumulativeSum(account.contribution) },
+                    { name: 'Cumulative Employer Match', data: cumulativeSum(account.employerContributionTable) },
+                    { name: 'Cumulative Earnings', data: cumulativeSum(account.earnings) },
                     { name: 'Contribution', data: account.contribution },
                     { name: 'Employer Match', data: account.employerContributionTable },
                     { name: 'Earnings', data: account.earnings },
                   ]);
                 } else {
-                  data = this.formatDataObjects([
+                  data = formatDataObjects([
                     { name: 'Account Value', data: account.table },
-                    { name: 'Cumulative Contribution', data: this.cumulativeSum(account.contribution) },
-                    { name: 'Cumulative Earnings', data: this.cumulativeSum(account.earnings) },
+                    { name: 'Cumulative Contribution', data: cumulativeSum(account.contribution) },
+                    { name: 'Cumulative Earnings', data: cumulativeSum(account.earnings) },
                     { name: 'Contribution', data: account.contribution },
                     { name: 'Earnings', data: account.earnings },
                   ]);
@@ -197,10 +159,10 @@ class GraphsDetail extends React.Component {
                     </Typography>
                     <ResponsiveContainer width="100%" height={chartHeight}>
                       <ComposedChart
-                        data={this.formatDataObjects([
+                        data={formatDataObjects([
                           { name: 'Account Value', data: account.table },
-                          { name: 'Cumulative Contribution', data: this.cumulativeSum(account.contribution) },
-                          { name: 'Cumulative Earnings', data: this.cumulativeSum(account.earnings) },
+                          { name: 'Cumulative Contribution', data: cumulativeSum(account.contribution) },
+                          { name: 'Cumulative Earnings', data: cumulativeSum(account.earnings) },
                           { name: 'Contribution', data: account.contribution },
                           { name: 'Earnings', data: account.earnings },
                         ])}
@@ -238,10 +200,10 @@ class GraphsDetail extends React.Component {
                     </Typography>
                     <ResponsiveContainer width="100%" height={chartHeight}>
                       <LineChart
-                        data={this.formatDataObjects([
+                        data={formatDataObjects([
                           { name: 'Principal', data: account.table },
                           { name: 'Payment', data: account.payment },
-                          { name: `Cumulative Payment since ${yearStart}`, data: this.objectSubtract(this.cumulativeSum(account.payment), this.cumulativeSum(account.escrow)) },
+                          { name: `Cumulative Payment since ${yearStart}`, data: objectSubtract(cumulativeSum(account.payment), cumulativeSum(account.escrow)) },
                         ])}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
@@ -273,10 +235,10 @@ class GraphsDetail extends React.Component {
                     </Typography>
                     <ResponsiveContainer width="100%" height={chartHeight}>
                       <LineChart
-                        data={this.formatDataObjects([
+                        data={formatDataObjects([
                           { name: 'Principal', data: account.table },
                           { name: 'Payment', data: account.payment },
-                          { name: `Cumulative Payment since ${yearStart}`, data: this.cumulativeSum(account.payment) },
+                          { name: `Cumulative Payment since ${yearStart}`, data: cumulativeSum(account.payment) },
                         ])}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
@@ -308,7 +270,7 @@ class GraphsDetail extends React.Component {
                     </Typography>
                     <ResponsiveContainer width="100%" height={chartHeight}>
                       <LineChart
-                        data={this.formatDataObjects([
+                        data={formatDataObjects([
                           { name: 'Contribution', data: account.contribution },
                           { name: 'Employer Match', data: account.employerContributionTable },
                           { name: 'Earnings', data: account.earnings },

@@ -8,6 +8,14 @@ export const show = {
     base: true,
     notes: true,
   },
+  ssa: {
+    name: true,
+    startIn: true,
+    endIn: true,
+    base: true,
+    percentTaxed: true,
+    notes: true,
+  },
   retirement: {
     name: true,
     table: true,

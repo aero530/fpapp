@@ -16,6 +16,8 @@ import TableRow from '@material-ui/core/TableRow';
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
 import * as ResultsActions from '../../../actions/results';
 
+import { cumulativeSumArray } from '../../../utils';
+
 const styles = theme => ({
   root: {
     width: '100%',
@@ -40,14 +42,6 @@ class Results extends React.Component {
     setAppBarTitle('Results');
     analyze();
   }
-
-  cumulativeSum = (a) => {
-    let result = a[0];
-    for (let i = 1; i < a.length; i += 1) {
-      result += a[i];
-    }
-    return result;
-  };
 
   render() {
     const { classes, savings, expenses, incomeTaxable, incomeTotal, incomeAfterTax, net, year } = this.props;
@@ -86,7 +80,7 @@ class Results extends React.Component {
                     {incomeAfterTax[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </TableCell>
                   <TableCell numeric padding="dense">
-                    {this.cumulativeSum(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {cumulativeSumArray(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </TableCell>
                   <TableCell numeric padding="dense">
                     {savings[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
