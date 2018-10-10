@@ -1,13 +1,14 @@
 /* eslint global-require: 0 */
 
 /**
+ * @module app
+ * @description  electron window configuration and ipc communication redirects  
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
  * through IPC.
  *
  * When running `yarn build` or `yarn build-main`, this file is compiled to
  * `./app/main.prod.js` using webpack. This gives us some performance wins.
- *
  */
 import { app, BrowserWindow, ipcMain } from 'electron';
 import MenuBuilder from './menu';
@@ -67,7 +68,8 @@ app.on('ready', async () => {
   mainWindow = new BrowserWindow({
     show: false,
     width: 1024,
-    height: 900
+    height: 900,
+    icon: `${__dirname}/../resources/icon.ico`,
   });
 
   mainWindow.loadURL(`file://${__dirname}/app.html`);
@@ -131,10 +133,6 @@ app.on('ready', async () => {
   // Windows can talk to each other via main
   ipcMain.on('analysisResults', (event, arg) => {
     mainWindow.webContents.send('analysisResults', arg);
-  });
-
-  ipcMain.on('analysisError', (event, arg) => {
-    mainWindow.webContents.send('analysisError', arg);
   });
 
   ipcMain.on('analysisErrors', (event, arg) => {

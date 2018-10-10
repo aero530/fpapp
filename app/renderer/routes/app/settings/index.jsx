@@ -14,7 +14,10 @@ import Typography from '@material-ui/core/Typography';
 import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
 
-import NumberFormat from 'react-number-format';
+import {
+  NumberFormatPercentage,
+  NumberFormatYear,
+} from '../../../components/numberFormaters';
 
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
 import { UPDATE_SETTING } from '../../../actions/data';
@@ -35,58 +38,6 @@ const styles = theme => ({
     margin: theme.spacing.unit,
   },
 });
-
-function NumberFormatPercentage(props) {
-  const { inputRef, onChange, ...other } = props;
-
-  return (
-    <NumberFormat
-      {...other}
-      getInputRef={inputRef}
-      onValueChange={(values, event) => {
-        onChange({
-          target: {
-            value: values.value,
-            floatValue: values.floatValue,
-            id: event.target.id,
-          },
-        });
-      }}
-      suffix="%"
-    />
-  );
-}
-
-NumberFormatPercentage.propTypes = {
-  inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
-
-function NumberFormatYear(props) {
-  const { inputRef, onChange, ...other } = props;
-
-  return (
-    <NumberFormat
-      {...other}
-      getInputRef={inputRef}
-      onValueChange={(values, event) => {
-        onChange({
-          target: {
-            value: values.value,
-            floatValue: values.floatValue,
-            id: event.target.id,
-          },
-        });
-      }}
-      format="####"
-    />
-  );
-}
-
-NumberFormatYear.propTypes = {
-  inputRef: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
 
 class Settings extends React.Component {
   componentDidMount() {

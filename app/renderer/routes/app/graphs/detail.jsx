@@ -106,7 +106,6 @@ class GraphsDetail extends React.Component {
                     { name: 'Earnings', data: account.earnings },
                   ]);
                 }
-                console.log(data);
                 return (
                   <div key={`charts-retirement-${account.name}`}>
                     <Typography variant="subheading" id="chart-title" align="center">
@@ -124,19 +123,19 @@ class GraphsDetail extends React.Component {
 
                         <Area key={`charts-retirement-${account.name}-area-1`} type="linear" stackId="1" dataKey="Cumulative Contribution" stroke={colors[1]} fill={colors[1]} />
                         {account.employerContributionTable ? (
-                          <Area key={`charts-retirement-${account.name}-area-2`} type="linear" stackId="1" dataKey="Cumulative Employer Match" stroke={colors[2]} fill={colors[2]} />
+                          <Area key={`charts-retirement-${account.name}-area-2`} type="linear" stackId="1" dataKey="Cumulative Employer Match" stroke={colors[3]} fill={colors[3]} />
                         ) : (
                           null
                         )}
-                        <Area key={`charts-retirement-${account.name}-area-3`} type="linear" stackId="1" dataKey="Cumulative Earnings" stroke={colors[3]} fill={colors[3]} />
+                        <Area key={`charts-retirement-${account.name}-area-3`} type="linear" stackId="1" dataKey="Cumulative Earnings" stroke={colors[2]} fill={colors[2]} />
 
                         <Line key={`charts-retirement-${account.name}-line-1`} type="linear" dataKey="Contribution" stroke={colors[1]} strokeWidth="2" dot={false} />
                         {account.employerContributionTable ? (
-                          <Line key={`charts-retirement-${account.name}-line-2`} type="linear" dataKey="Employer Match" stroke={colors[21]} strokeWidth="2" dot={false} />
+                          <Line key={`charts-retirement-${account.name}-line-2`} type="linear" dataKey="Employer Match" stroke={colors[3]} strokeWidth="2" dot={false} />
                         ) : (
                           null
                         )}
-                        <Line key={`charts-retirement-${account.name}-line-3`} type="linear" dataKey="Earnings" stroke={colors[3]} strokeWidth="2" dot={false} />
+                        <Line key={`charts-retirement-${account.name}-line-3`} type="linear" dataKey="Earnings" stroke={colors[2]} strokeWidth="2" dot={false} />
 
                         <Line type="linear" dataKey="Account Value" stroke={colors[0]} strokeWidth="2" dot={false} />
                       </ComposedChart>
@@ -211,9 +210,9 @@ class GraphsDetail extends React.Component {
                         <YAxis />
                         <CartesianGrid strokeDasharray="3 3" />
                         <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                        <Line type="monotone" dataKey="Principal" stroke={colors[0]} dot={false} />
-                        <Line type="monotone" dataKey="Payment" stroke={colors[1]} dot={false} />
-                        <Line type="monotone" dataKey={`Cumulative Payment since ${yearStart}`} stroke={colors[2]} dot={false} />
+                        <Line type="monotone" dataKey="Principal" stroke={colors[0]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey="Payment" stroke={colors[2]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey={`Cumulative Payment since ${yearStart}`} stroke={colors[1]} strokeWidth="2" dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
 
@@ -246,9 +245,9 @@ class GraphsDetail extends React.Component {
                         <YAxis />
                         <CartesianGrid strokeDasharray="3 3" />
                         <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                        <Line type="monotone" dataKey="Principal" stroke={colors[0]} dot={false} />
-                        <Line type="monotone" dataKey="Payment" stroke={colors[1]} dot={false} />
-                        <Line type="monotone" dataKey={`Cumulative Payment since ${yearStart}`} stroke={colors[2]} dot={false} />
+                        <Line type="monotone" dataKey="Principal" stroke={colors[0]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey="Payment" stroke={colors[2]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey={`Cumulative Payment since ${yearStart}`} stroke={colors[1]} strokeWidth="2" dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -283,11 +282,11 @@ class GraphsDetail extends React.Component {
                         <YAxis />
                         <CartesianGrid strokeDasharray="3 3" />
                         <Tooltip formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-                        <Line type="monotone" dataKey="Value" stroke={colors[2]} dot={false} />
-                        <Line type="monotone" dataKey="Contribution" stroke={colors[0]} dot={false} />
-                        <Line type="monotone" dataKey="Employer Match" stroke={colors[0]} dot={false} />
-                        <Line type="monotone" dataKey="Earnings" stroke={colors[1]} dot={false} />
-                        <Line type="monotone" dataKey="Withdrawal" stroke={colors[3]} dot={false} />
+                        <Line type="monotone" dataKey="Value" stroke={colors[0]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey="Contribution" stroke={colors[1]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey="Employer Match" stroke={colors[3]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey="Earnings" stroke={colors[2]} strokeWidth="2" dot={false} />
+                        <Line type="monotone" dataKey="Withdrawal" stroke={colors[4]} strokeWidth="2" dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>

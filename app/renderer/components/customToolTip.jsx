@@ -2,7 +2,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
+/**
+ * @class CustomTooltip
+ * @description generate custom tool tip for rechart graphs
+ */
+
 class CustomTooltip extends React.PureComponent {
+
+  /**
+   * @function getIcon
+   * @description determine if the input variable is either a number or string
+   * @param {} value variable to test
+   * @returns {bool} if input value is either a number or string
+   */
   isNumOrStr = (value) => {
     if ((typeof value === 'number') || (typeof value === 'string')) {
       return true;
@@ -10,6 +22,12 @@ class CustomTooltip extends React.PureComponent {
     return false;
   };
 
+  /**
+   * @function yearlySum
+   * @description add the 'value' of each object in the input array
+   * @param {Array} payload array of objects with key 'value'
+   * @returns {number} sum
+   */
   yearlySum = (payload) => {
     let total = 0;
     payload.forEach((object) => {

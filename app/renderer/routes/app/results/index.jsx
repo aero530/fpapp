@@ -16,7 +16,7 @@ import TableRow from '@material-ui/core/TableRow';
 import { SET_APP_BAR_TITLE } from '../../../actions/app';
 import * as ResultsActions from '../../../actions/results';
 
-import { cumulativeSumArray } from '../../../utils';
+import { arraySum } from '../../../utils';
 
 const styles = theme => ({
   root: {
@@ -80,7 +80,7 @@ class Results extends React.Component {
                     {incomeAfterTax[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </TableCell>
                   <TableCell numeric padding="dense">
-                    {cumulativeSumArray(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {arraySum(Object.values(expenses[yearValue])).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </TableCell>
                   <TableCell numeric padding="dense">
                     {savings[yearValue].toLocaleString('en-US', { maximumFractionDigits: 0 })}

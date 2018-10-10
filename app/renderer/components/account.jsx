@@ -122,6 +122,12 @@ class Account extends Component {
     onDelete();
   };
 
+  /**
+   * @function handleChange
+   * @description when an input is changed, update the account value in state and call the onUpdate function provided to the account class.
+   * @param {string} fieldNameInput name of field to update
+   * @param {string} fieldValueInput new field value
+   */
   handleChange = (fieldNameInput, fieldValueInput) => {
     const { onUpdate } = this.props;
     const { account } = this.state;
@@ -133,16 +139,17 @@ class Account extends Component {
   };
 
 
-  // Reorder the data coming from the analysis into something the table editor can use.
-  // Incoming data is an object of objects.  The primary key is the name/id of the account.
-  // The internal object is structured as key value pairs with the key equal to the year and
-  // the value equal to the dollar amount value.
-  //
-  // { "account1": {2017: 3416, 2018: 253672}, "account2": {2017: 3215, 2018: 9846} }
-  //
-  //
+  /**
+   * @function makeTableArray
+   * @description Reorder the data coming from the analysis into something the table editor can use.
+   * @param {Object} ObjectOfObjects Incoming data is an object of objects.  The primary key is the name/id of the account.
+   * @returns {Array} Array of objects. Each object in the array represents data for one year. [{ year: 2025, account1: 3416, account2: 9846 }, { year: 2026, account1: 3877, account2: 6797 }]
+   */
   makeTableArray = (ObjectOfObjects) => {
-    const table = [];
+    const table = []; // returned value
+    // The internally used tableObj is structured as key value pairs with the
+    // key equal to the year and the value equal to the dollar amount value.
+    // { "account1": {2017: 3416, 2018: 253672}, "account2": {2017: 3215, 2018: 9846} }
     const tableObj = {};
     Object.keys(ObjectOfObjects).forEach((accountName) => {
       const object = ObjectOfObjects[accountName];
@@ -161,6 +168,12 @@ class Account extends Component {
     return table;
   }
 
+  /**
+   * @function arrayToObject
+   * @description Reorder the data from an array to an object.
+   * @param {Array} array Input must be an array of objects.  Each object must have a 'year' and 'value' key.
+   * @returns {Object} object representation of the array 'value' by 'year'
+   */
   arrayToObject = (array) => {
     const obj = {};
     array.forEach((row) => {
@@ -173,11 +186,19 @@ class Account extends Component {
     const { classes, incomeAccounts, hsaAccounts } = this.props;
     const { account, dialogOpen } = this.state;
 
+    /**
+     * @const {Array}
+     * @description column info used to generate table of year / value pairs
+     */
     const colSpecValue = [
       { title: 'Year', fieldName: 'year', inputType: 'TextField', width: 200 },
       { title: 'Value', fieldName: 'value', inputType: 'TextField', width: 200 },
     ];
 
+    /**
+     * @const {Array}
+     * @description column info used to generate table of year, value, contribution, earnings
+     */
     const colSpecCollege = [
       { title: 'Year', fieldName: 'year', inputType: 'TextField', width: 100 },
       { title: 'Value', fieldName: 'value', inputType: 'TextField', width: 100 },

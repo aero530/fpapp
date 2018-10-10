@@ -1,3 +1,10 @@
+/**
+ * @class MenuBuilder
+ * @description  Create the menu system for the main application window.
+ * @param mainWindow
+ * @param backgroundWindow
+ */
+
 import { app, Menu, shell, dialog } from 'electron';
 
 export default class MenuBuilder {

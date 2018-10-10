@@ -1,3 +1,10 @@
+/**
+ * @class Root
+ * @description Root react component with material ui applied
+ * @property {Object} store redux store
+ * @property {string} history react router history
+ */
+
 import React, { PureComponent } from 'react';
 import compose from 'recompose/compose';
 import PropTypes from 'prop-types';
@@ -12,21 +19,24 @@ import { Provider } from 'react-redux';
 import { ConnectedRouter } from 'react-router-redux';
 import Routes from './routes';
 
-// Default theme settings
-// https://material-ui.com/customization/default-theme/
 
+/** @constant
+ * Default theme settings
+ * https://material-ui.com/customization/default-theme/
+*/
 const theme = createMuiTheme({
   palette: {
-    // Used by `getContrastText()` to maximize the contrast between the background and
-    // the text.
     contrastThreshold: 3,
-    // Used to shift a color's luminance by approximately
-    // two indexes within its tonal palette.
-    // E.g., shift from Red 500 to Red 300 or Red 700.
     tonalOffset: 0.2,
     background: {
       paper: '#fafafa',
       default: '#eee',
+    },
+    primary: {
+      light: '#ea96b9',
+      main: '#9f1d54',
+      dark: '#72173d',
+      contrastText: '#ffffff',
     },
   },
   overrides: {

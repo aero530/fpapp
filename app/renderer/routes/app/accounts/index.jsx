@@ -1,5 +1,10 @@
 // cSpell:ignore Unmount
 
+/**
+ * @class Accounts
+ * @description Show accounts of the type specified by the url
+ */
+
 import React from 'react';
 import compose from 'recompose/compose';
 import { connect } from 'react-redux';

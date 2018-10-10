@@ -8,6 +8,12 @@ const history = createHashHistory();
 const router = routerMiddleware(history);
 const enhancer = applyMiddleware(thunk, router);
 
+/**
+ * @function configureStore
+ * @description creates a Redux store using reducers and enhancers
+ * @param {Object} initialState 
+ * @returns {Object} redux store
+ */
 function configureStore(initialState) {
   return createStore(rootReducer, initialState, enhancer);
 }

@@ -7,7 +7,11 @@ export const UPDATE_ACCOUNT = 'UPDATE_ACCOUNT';
 export const DELETE_ACCOUNT = 'DELETE_ACCOUNT';
 export const ADD_ACCOUNT = 'ADD_ACCOUNT';
 
-// action to apply opened file to the redux store
+/**
+ * @function openFileReducer
+ * @description action to apply opened file to the redux store
+ * @fires reducer:OPEN_DATA_FILE
+ */
 function openFileReducer(
   settingsInput,
   accountsInput,
@@ -25,14 +29,21 @@ function openFileReducer(
   };
 }
 
-// action to notify redux store that the data was stored
+/**
+ * @function saveFileReducer
+ * @description action to notify redux store that the data was stored
+ * @fires reducer:SAVE_DATA_FILE
+ */
 function saveFileReducer() {
   return {
     type: SAVE_DATA_FILE,
   };
 }
 
-// helper function to extract accounts of a specified type from the accounts object
+/**
+ * @function getAccountsTypeOf
+ * @description helper function to extract accounts of a specified type from the accounts object
+ */
 function getAccountsTypeOf(accounts, type) {
   const typeAccounts = [];
   typeAccounts.push({ value: 'none', label: 'not linked' });
@@ -49,8 +60,11 @@ function getAccountsTypeOf(accounts, type) {
   return typeAccounts;
 }
 
-// action to open a data file
-// opens file, reads contents, then dispatches action to put data in redux store
+/**
+ * @function openFile
+ * @description action to open a data file.  opens file, reads contents, then dispatches action to put data in redux store
+ * @fires: action:openFileReducer
+ */
 export function openFile(filePath) {
   return (dispatch) => {
     fs.readFile(filePath, 'utf8', (err, data) => {
@@ -75,7 +89,11 @@ export function openFile(filePath) {
   };
 }
 
-// action to save the file then dispatch action to notify redux store that the file was saved
+/**
+ * @function saveFile
+ * @description action to save the file then dispatch action to notify redux store that the file was saved
+ * @fires: action:saveFileReducer
+ */
 export function saveFile(filePathInput = null) {
   return (dispatch, getState) => {
     const { settings, accounts } = getState().data;

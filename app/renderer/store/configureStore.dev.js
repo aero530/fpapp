@@ -7,6 +7,13 @@ import rootReducer from '../reducers';
 
 const history = createHashHistory();
 
+/**
+ * @function configureStore
+ * @description creates a Redux store using reducers and enhancers with extra goodness for development
+ * @param {Object} initialState 
+ * @returns {Object} redux store
+ */
+
 const configureStore = (initialState) => {
   // Redux Configuration
   const middleware = [];

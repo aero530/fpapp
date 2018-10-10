@@ -1,3 +1,9 @@
+/**
+ * @function cumulativeSum
+ * @description sort input object by key and calculate a cumulative sum.
+ * @param {Object} inputObject object of numeric values to perform cumulative sum on.
+ * @returns {Object} object of cumulative sum having the same keys as the original object.
+ */
 export function cumulativeSum(inputObject) {
   const output = {};
   let total = 0;
@@ -8,14 +14,13 @@ export function cumulativeSum(inputObject) {
   return output;
 }
 
-export function cumulativeSumArray(a) {
-  let result = a[0];
-  for (let i = 1; i < a.length; i += 1) {
-    result += a[i];
-  }
-  return result;
-}
-
+/**
+ * @function objectSubtract
+ * @description piecewise subtraction of the values in two objects
+ * @param {Object} a single layer object of numeric values (must have the same keys as b).
+ * @param {Object} b single layer object of numeric values (must have the same keys as a).
+ * @returns {Object} object with same keys are input objects and value of a[key]-b[key]
+ */
 export function objectSubtract(a, b) {
   const output = {};
   Object.keys(a).forEach((key) => {
@@ -24,6 +29,12 @@ export function objectSubtract(a, b) {
   return output;
 }
 
+/**
+ * @function arraySum
+ * @description calculate a sum of an array.
+ * @param {Array} a array of numeric values to perform sum on.
+ * @returns {number} sum of array values.
+ */
 export function arraySum(input) {
   let output = 0;
   input.forEach((value) => {
@@ -32,8 +43,13 @@ export function arraySum(input) {
   return output;
 }
 
+/**
+ * @function formatDataObjects
+ * @description format data objects for use in graphing
+ * @param {Array} accounts array of data objects.
+ * @returns {Array} array of objects to graphing.
+ */
 export function formatDataObjects(accounts) {
-  // dataIn is array of data objects
   const output = [];
   const years = Object.keys(accounts[0].data).sort((a, b) => a - b);
 

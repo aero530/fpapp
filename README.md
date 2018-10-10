@@ -1,6 +1,6 @@
 <div align="center">
 <br>
-<h1>fpapp</h1>
+<h1>financial planning app</h1>
 </div>
 
 <br>

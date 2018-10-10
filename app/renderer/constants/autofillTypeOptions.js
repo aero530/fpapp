@@ -1,3 +1,7 @@
+/**
+ * @const {Array}
+ * @description used to populate account dropdown for tax status selection
+ */
 export const taxStatusTypeOptions = [
   {
     value: 0,
@@ -29,6 +33,10 @@ export const taxStatusTypeOptions = [
   },
 ];
 
+/**
+ * @const {Array}
+ * @description used to populate account dropdown for contribution type selection
+ */
 export const contributionTypeOptions = [
   {
     value: 'fixed',
@@ -48,6 +56,10 @@ export const contributionTypeOptions = [
   },
 ];
 
+/**
+ * @const {Array}
+ * @description used to populate account dropdown for expense type selection
+ */
 export const expenseTypeOptions = [
   {
     value: 'fixed',
@@ -62,6 +74,10 @@ export const expenseTypeOptions = [
   },
 ];
 
+/**
+ * @const {Array}
+ * @description used to populate account dropdown for withdrawal type selection
+ */
 export const withdrawalTypeOptions = [
   {
     value: 'fixed',
@@ -92,6 +108,10 @@ export const withdrawalTypeOptions = [
   },
 ];
 
+/**
+ * @const {Array}
+ * @description used to populate account dropdown for payment type selection
+ */
 export const paymentTypeOptions = [
   {
     value: 'fixed',

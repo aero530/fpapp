@@ -34,6 +34,7 @@ import {
 } from '../../../utils';
 
 const colors = ['#e91e63', '#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#cddc39', '#ff5722', '#009688', '#ffeb3b'];
+const colorsLightened = ['#f277a1', '#79c0f8', '#93cf96', '#ffc165', '#c47dd0', '#e1ea88', '#ff9a7a', '#65c0b8', '#fff38a'];
 
 const chartHeight = 600;
 
@@ -199,7 +200,7 @@ class Graphs extends React.Component {
                 <Line type="monotone" dataKey="Net" stroke={colors[0]} strokeWidth="2" dot={false} />
                 <Line type="monotone" dataKey="Total Income" stroke={colors[1]} strokeWidth="2" dot={false} />
                 <Line type="monotone" dataKey="After Tax Income" stroke={colors[2]} strokeWidth="2" dot={false} />
-                <Line type="monotone" dataKey="Expenses" stroke={colors[3]} strokeWidth="2" dot={false} />
+                <Line type="monotone" dataKey="Expenses" stroke={colors[4]} strokeWidth="2" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </Paper>
@@ -217,12 +218,13 @@ class Graphs extends React.Component {
                   <XAxis dataKey="x" />
                   <YAxis />
                   <CartesianGrid strokeDasharray="3 3" />
+                  
+                  {incomeAccounts.map((row, index) => <Area fillOpacity={.6} key={`charts-income-area-${row.name}`} type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
                   <Tooltip
                     formatter={value => value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     itemSorter={this.numericSort('value', 1)}
                     content={<CustomTooltip />}
                   />
-                  {incomeAccounts.map((row, index) => <Area key={`charts-income-area-${row.name}`} type="monotone" stackId="1" dataKey={row.name} stroke={colors[index % colors.length]} fill={colors[index % colors.length]} />)}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -295,7 +297,7 @@ class Graphs extends React.Component {
                 labelTextColor="inherit:darker(1.6)"
                 borderWidth={1}
                 borderColor="inherit:darker(0.8)"
-                colors="accent"
+                colors={colorsLightened}
                 colorBy="name"
                 label="name"
                 identity="name"

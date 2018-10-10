@@ -2,7 +2,7 @@
 
 ## Folder Structure
 
-**index.js** exposes account simulation functions  
+**index.js** listens for ipc call to run computation  
 **accountComputation.js** performs computation / financial simulation  
 **fpcalc.py** original python based simulation  
 

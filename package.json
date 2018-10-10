@@ -1,8 +1,8 @@
 {
   "name": "fpapp",
-  "productName": "Financial Planning",
-  "version": "0.14.0",
-  "description": "Financial planning application",
+  "productName": "financial planning",
+  "version": "1.0.2",
+  "description": "financial planning application",
   "scripts": {
     "build": "concurrently \"yarn build-main\" \"yarn build-renderer\"",
     "build-dll": "cross-env NODE_ENV=development node --trace-warnings -r babel-register ./node_modules/webpack/bin/webpack --config webpack.config.renderer.dev.dll.js --colors",
@@ -35,7 +35,7 @@
     ]
   },
   "build": {
-    "productName": "fpapp",
+    "productName": "financial planning",
     "appId": "com.zatetic.fpapp",
     "files": [
       "dist/",

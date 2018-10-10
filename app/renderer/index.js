@@ -6,7 +6,7 @@ import Root from './root';
 import { configureStore, history } from './store/configureStore';
 
 import { openFile, saveFile } from './actions/data';
-import { loadResults, loadError, loadErrors } from './actions/results';
+import { loadResults, loadErrors } from './actions/results';
 
 import '../app.global.css';
 
@@ -14,30 +14,66 @@ const { dialog } = require('electron').remote;
 
 const store = configureStore();
 
-ipcRenderer.on('analysisError', (event, arg) => {
-  store.dispatch(loadError(arg));
-});
-
+/**
+ * @description listen for analysisErrors from main and dispatch loadErrors action
+ * @listens ipcRenderer:analysisErrors
+ * @param event
+ * @param arg
+ * @fires store:loadErrors
+ */
 ipcRenderer.on('analysisErrors', (event, arg) => {
   store.dispatch(loadErrors(arg));
 });
 
+/**
+ * @description listen for analysisResults from main and dispatch loadResults action
+ * @listens ipcRenderer:analysisResults
+ * @param event
+ * @param arg
+ * @fires store:loadResults
+ */
 ipcRenderer.on('analysisResults', (event, arg) => {
   store.dispatch(loadResults(arg));
 });
 
+/**
+ * @description listen for fileOpen from main and dispatch openFile action
+ * @listens ipcRenderer:fileOpen
+ * @param event
+ * @param arg
+ * @fires store:openFile
+ */
 ipcRenderer.on('fileOpen', (event, arg) => {
   store.dispatch(openFile(arg.filename[0]));
 });
 
+/**
+ * @description listen for fileSave from main and dispatch saveFile action
+ * @listens ipcRenderer:fileSave
+ * @param event
+ * @param arg
+ * @fires store:saveFile
+ */
 ipcRenderer.on('fileSave', () => {
   store.dispatch(saveFile());
 });
 
+/**
+ * @description listen for fileSaveAs from main and dispatch saveFile action
+ * @listens ipcRenderer:fileSaveAs
+ * @param event
+ * @param arg
+ * @fires store:saveFile
+ */
 ipcRenderer.on('fileSaveAs', (event, arg) => {
   store.dispatch(saveFile(arg.filename));
 });
 
+/**
+ * @function showOpen
+ * @description show OS native dialog to open a file
+ * @fires store:openFile
+ */
 function showOpen() {
   dialog.showOpenDialog(
     {
@@ -56,6 +92,12 @@ function showOpen() {
   );
 }
 
+/**
+ * @description listen for fileOpenOnClick from main. check if current file has been modified
+ * (in which case show dialog to save current or cancel).  then show open file dialog.
+ * @listens ipcRenderer:fileOpenOnClick
+ * @fires store:showOpen
+ */
 ipcRenderer.on('fileOpenOnClick', () => {
   const { modified } = store.getState().data;
 
@@ -65,9 +107,9 @@ ipcRenderer.on('fileOpenOnClick', () => {
         type: 'warning', // Can be "none", "info", "error", "question" or "warning".
         buttons: ['Save', "Don't Save", 'Cancel'], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
         defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
-        title: 'File has not been saved', // Title of the message box, some platforms will not show it.
-        message: 'Unsaved file', // Content of the message box.
-        detail: 'Do you want to save or discard your current edits?', // extra information of the message.
+        title: 'File has not been saved',
+        message: 'Unsaved file',
+        detail: 'Do you want to save or discard your current edits?',
       },
       (selection) => {
         if (selection === 0) {
@@ -85,6 +127,12 @@ ipcRenderer.on('fileOpenOnClick', () => {
   }
 });
 
+/**
+ * @description listen for closeOnClick from main. check if current file has been modified
+ * (in which case show dialog to save or not).  then close the application.
+ * @listens ipcRenderer:closeOnClick
+ * @fires ipcRenderer:quitApp
+ */
 ipcRenderer.on('closeOnClick', () => {
   const { modified } = store.getState().data;
   if (modified) {
@@ -95,9 +143,9 @@ ipcRenderer.on('closeOnClick', () => {
         type: 'warning', // Can be "none", "info", "error", "question" or "warning".
         buttons: ['Save', "Don't Save"], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
         defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
-        title: 'File has not been saved', // Title of the message box, some platforms will not show it.
-        message: 'Unsaved file', // Content of the message box.
-        detail: 'Do you want to save or discard your current edits?', // extra information of the message.
+        title: 'File has not been saved',
+        message: 'Unsaved file',
+        detail: 'Do you want to save or discard your current edits?',
       },
       (selection) => {
         if (selection === 0) {

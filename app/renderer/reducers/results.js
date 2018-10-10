@@ -1,4 +1,4 @@
-import { LOAD_RESULTS, LOAD_ERROR, LOAD_ERRORS, CLEAR_ERRORS } from '../actions/results';
+import { LOAD_RESULTS, LOAD_ERRORS, CLEAR_ERRORS } from '../actions/results';
 
 const initialState = {
   accounts: {},
@@ -14,6 +14,11 @@ const initialState = {
 
 export default function (state = initialState, action) {
   switch (action.type) {
+    /**
+     * @function LOAD_RESULTS
+     * @description update redux store results object with output from background analysis
+     * @listens: reducer:LOAD_RESULTS
+     */
     case LOAD_RESULTS: {
       return {
         ...state,
@@ -28,17 +33,11 @@ export default function (state = initialState, action) {
       };
     }
 
-    case LOAD_ERROR: {
-      const prevErrors = state.errors;
-      prevErrors.push(action.error);
-      const count = prevErrors.length;
-      return {
-        ...state,
-        errors: prevErrors,
-        errorCount: count,
-      };
-    }
-
+    /**
+     * @function LOAD_ERRORS
+     * @description update redux store results object by adding new errors from background analysis to existing array
+     * @listens: reducer:LOAD_ERRORS
+     */
     case LOAD_ERRORS: {
       let prevErrors = state.errors;
       prevErrors = prevErrors.concat(action.errors);
@@ -50,6 +49,11 @@ export default function (state = initialState, action) {
       };
     }
 
+    /**
+     * @function CLEAR_ERRORS
+     * @description update redux store results object by clearing all errors
+     * @listens: reducer:CLEAR_ERRORS
+     */
     case CLEAR_ERRORS: {
       return {
         ...state,
