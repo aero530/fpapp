@@ -12,9 +12,14 @@ A financial planning & simulation application based on
 <a href="https://yarnpkg.com/">yarn</a>.
 </p>
 
-<br>
+---
 
-<hr>
+## react-router-redux is depricated
+https://reacttraining.com/react-router/web/guides/redux-integration  
+https://redux.js.org/advanced/usagewithreactrouter  
+
+
+---
 
 ## Development Setup
 

@@ -151,15 +151,19 @@ class Account extends Component {
     // key equal to the year and the value equal to the dollar amount value.
     // { "account1": {2017: 3416, 2018: 253672}, "account2": {2017: 3215, 2018: 9846} }
     const tableObj = {};
+    console.log(ObjectOfObjects);
+
     Object.keys(ObjectOfObjects).forEach((accountName) => {
       const object = ObjectOfObjects[accountName];
-      Object.keys(object).sort((a, b) => a - b).forEach((yearKey) => {
-        if (Object.hasOwnProperty.call(tableObj, yearKey)) {
-          tableObj[yearKey] = { ...tableObj[yearKey], [accountName]: object[yearKey] };
-        } else {
-          tableObj[yearKey] = { [accountName]: object[yearKey] };
-        }
-      });
+      if (typeof object === 'object') {
+        Object.keys(object).sort((a, b) => a - b).forEach((yearKey) => {
+          if (Object.hasOwnProperty.call(tableObj, yearKey)) {
+            tableObj[yearKey] = { ...tableObj[yearKey], [accountName]: object[yearKey] };
+          } else {
+            tableObj[yearKey] = { [accountName]: object[yearKey] };
+          }
+        });
+      }
     });
     Object.keys(tableObj).sort((a, b) => a - b).forEach((key) => {
       table.push({ year: key, ...tableObj[key] });
