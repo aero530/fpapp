@@ -1,8 +1,8 @@
 {
   "name": "fpapp",
-  "productName": "Financial Planning",
-  "version": "1.0.2",
-  "description": "Financial planning application",
+  "productName": "financial planning",
+  "version": "1.0.3",
+  "description": "financial planning application",
   "main": "./main.prod.js",
   "author": {
     "name": "P. Spindler",
