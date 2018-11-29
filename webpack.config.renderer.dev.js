@@ -1,4 +1,4 @@
-/* eslint global-require: 0, import/no-dynamic-require: 0 */
+/* eslint global-require: off, import/no-dynamic-require: off */
 
 /**
  * Build config for development electron renderer process that uses
@@ -72,14 +72,14 @@ export default merge.smart(baseConfig, {
           loader: 'babel-loader',
           options: {
             cacheDirectory: true,
-            plugins: [
-              // Here, we include babel plugins that are only required for the
-              // renderer process. The 'transform-*' plugins must be included
-              // before react-hot-loader/babel
-              'transform-class-properties',
-              'transform-es2015-classes',
-              'react-hot-loader/babel'
-            ]
+            // plugins: [
+            //   // Here, we include babel plugins that are only required for the
+            //   // renderer process. The 'transform-*' plugins must be included
+            //   // before react-hot-loader/babel
+            //   'transform-class-properties',
+            //   'transform-es2015-classes',
+            //   'react-hot-loader/babel'
+            // ]
           }
         }
       },

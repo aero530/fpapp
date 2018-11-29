@@ -1,4 +1,4 @@
-/* eslint global-require: 0 */
+/* eslint global-require: off */
 
 /**
  * @module app
