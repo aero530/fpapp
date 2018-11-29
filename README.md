@@ -8,7 +8,7 @@
 <p align="center">
 A financial planning & simulation application based on  
 <a href="https://github.com/chentsulin/electron-react-boilerplate">electron-react-boilerplate</a> using 
-<a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="http://webpack.github.io/docs/">Webpack</a>, <a href="https://github.com/gaearon/react-transform-hmr">React Transform HMR</a>, and
+<a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="http://webpack.github.io/docs/">Webpack</a>, and
 <a href="https://yarnpkg.com/">yarn</a>.
 </p>
 
@@ -96,32 +96,6 @@ $ yarn package -- --[option]
 DEBUG_PROD=true yarn package
 ```
 
-## How to add modules to the project
-
-You will need to add other modules to this project, depending on the requirements of your project. For example, you may want to add [node-postgres](https://github.com/brianc/node-postgres) to communicate with PostgreSQL database, or
-[material-ui](http://www.material-ui.com/) to reuse react UI components.
-
-⚠️ Please read the following section before installing any dependencies ⚠️
-
-### Module Structure
-
-This project uses a [two package.json structure](https://github.com/electron-userland/electron-builder/wiki/Two-package.json-Structure). This means, you will have two `package.json` files.
-
-1. `./package.json` in the root of your project
-2. `./app/package.json` inside `app` folder
-
-### Which `package.json` file to use
-
-**Rule of thumb** is: all modules go into `./package.json` except native modules, or modules with native dependencies or peer dependencies. Native modules, or packages with native dependencies should go into `./app/package.json`.
-
-1. If the module is native to a platform (like node-postgres), it should be listed under `dependencies` in `./app/package.json`
-2. If a module is `import`ed by another module, include it in `dependencies` in `./package.json`. See [this ESLint rule](https://github.com/benmosher/eslint-plugin-import/blob/master/docs/rules/no-extraneous-dependencies.md). Examples of such modules are `material-ui`, `redux-form`, and `moment`.
-3. Otherwise, modules used for building, testing and debugging should be included in `devDependencies` in `./package.json`.
-
-### Further Readings
-
-See the wiki page, [Module Structure — Two package.json Structure](https://github.com/chentsulin/electron-react-boilerplate/wiki/Module-Structure----Two-package.json-Structure) to understand what is native module, the rationale behind two package.json structure and more.
-
 ## CSS Modules
 
 This boilerplate is configured to use [css-modules](https://github.com/css-modules/css-modules) out of the box.
@@ -154,13 +128,3 @@ Then, use git to merge some latest commits:
 ```sh
 git pull upstream master
 ```
-
-[npm-image]: https://img.shields.io/npm/v/electron-react-boilerplate.svg?style=flat-square
-[github-tag-image]: https://img.shields.io/github/tag/chentsulin/electron-react-boilerplate.svg
-[github-tag-url]: https://github.com/chentsulin/electron-react-boilerplate/releases/latest
-[travis-image]: https://travis-ci.org/chentsulin/electron-react-boilerplate.svg?branch=master
-[travis-url]: https://travis-ci.org/chentsulin/electron-react-boilerplate
-[appveyor-image]: https://ci.appveyor.com/api/projects/status/github/chentsulin/electron-react-boilerplate?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/chentsulin/electron-react-boilerplate/branch/master
-[david_img]: https://img.shields.io/david/chentsulin/electron-react-boilerplate.svg
-[david_site]: https://david-dm.org/chentsulin/electron-react-boilerplate
