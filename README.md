@@ -25,6 +25,7 @@ A financial planning & simulation application based on <a href="https://github.c
   * Savings
   * Health Savings Account (HSA)
 * Make pretty graphs
+* Financial data saved locally as human readable json file
 
 ---
 
