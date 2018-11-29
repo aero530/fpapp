@@ -1,16 +1,30 @@
-<div align="center">
-<br>
-<h1>financial planning app</h1>
-</div>
+# financial planning app
 
-<br>
-
-<p align="center">
-A financial planning & simulation application based on  
-<a href="https://github.com/chentsulin/electron-react-boilerplate">electron-react-boilerplate</a> using 
+A financial planning & simulation application based on <a href="https://github.com/chentsulin/electron-react-boilerplate">electron-react-boilerplate</a> using 
 <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="http://webpack.github.io/docs/">Webpack</a>, and
 <a href="https://yarnpkg.com/">yarn</a>.
-</p>
+
+---
+
+![screenshot_graphs](https://github.com/aero530/fpapp/raw/master/resources/screenshots/graphs.png "Graph")
+
+![screenshot_loan](https://github.com/aero530/fpapp/raw/master/resources/screenshots/loan.png "Loan")
+
+## Features
+
+* Simulate income and expenses through retirement
+* Track historic account balances
+* Support multiple account types
+  * Income
+  * Retirement (IRA, Roth IRA, 401K)
+  * Social Security
+  * College Savings (529)
+  * Expenses (such as grocery, car, utilities, insurance, entertainment, rent, etc.)
+  * Loans (student, car, etc.)
+  * Mortgage
+  * Savings
+  * Health Savings Account (HSA)
+* Make pretty graphs
 
 ---
 
