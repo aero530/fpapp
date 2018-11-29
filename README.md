@@ -14,13 +14,6 @@ A financial planning & simulation application based on
 
 ---
 
-## react-router-redux is depricated
-https://reacttraining.com/react-router/web/guides/redux-integration  
-https://redux.js.org/advanced/usagewithreactrouter  
-
-
----
-
 ## Development Setup
 
 This config works when using nodejs and yarn installed for windows (not through ubuntu in windows).
@@ -115,7 +108,7 @@ You will need to add other modules to this project, depending on the requirement
 This project uses a [two package.json structure](https://github.com/electron-userland/electron-builder/wiki/Two-package.json-Structure). This means, you will have two `package.json` files.
 
 1. `./package.json` in the root of your project
-1. `./app/package.json` inside `app` folder
+2. `./app/package.json` inside `app` folder
 
 ### Which `package.json` file to use
 

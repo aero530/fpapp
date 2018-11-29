@@ -1,7 +1,7 @@
 {
   "name": "fpapp",
   "productName": "financial planning",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "financial planning application",
   "main": "./main.prod.js",
   "author": {
