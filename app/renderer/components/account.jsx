@@ -554,6 +554,7 @@ class Account extends Component {
               </Tooltip>
             ) : null}
 
+
             {show[account.type].raise ? (
               <SuggestedInput
                 className={classNames(classes.margin, classes.textField)}

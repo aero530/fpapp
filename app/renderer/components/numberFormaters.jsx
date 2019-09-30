@@ -9,12 +9,12 @@ export function NumberFormatPercentage(props) {
     <NumberFormat
       {...other}
       getInputRef={inputRef}
-      onValueChange={(values, event) => {
+      onValueChange={(values) => {
         onChange({
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id,
+            id: props.id,
           },
         });
       }}
@@ -42,12 +42,12 @@ export function NumberFormatDollarPercentage(props) {
     <NumberFormat
       {...other}
       getInputRef={inputRef}
-      onValueChange={(values, event) => {
+      onValueChange={(values) => {
         onChange({
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id,
+            id: props.id,
           },
         });
       }}
@@ -69,12 +69,12 @@ export function NumberFormatDollar(props) {
     <NumberFormat
       {...other}
       getInputRef={inputRef}
-      onValueChange={(values, event) => {
+      onValueChange={(values) => {
         onChange({
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id,
+            id: props.id,
           },
         });
       }}
@@ -96,12 +96,12 @@ export function NumberFormatYear(props) {
     <NumberFormat
       {...other}
       getInputRef={inputRef}
-      onValueChange={(values, event) => {
+      onValueChange={(values) => {
         onChange({
           target: {
             value: values.value,
             floatValue: values.floatValue,
-            id: event.target.id,
+            id: props.id,
           },
         });
       }}

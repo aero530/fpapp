@@ -173,6 +173,7 @@
     "@material-ui/lab": "^3.0.0-alpha.23",
     "@nivo/treemap": "^0.51.0",
     "connected-react-router": "^5.0.1",
+    "core-js": "3",
     "devtron": "^1.4.0",
     "electron-debug": "^2.0.0",
     "history": "^4.7.2",

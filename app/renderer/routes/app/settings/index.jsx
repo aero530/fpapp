@@ -163,6 +163,7 @@ class Settings extends React.Component {
               value={settings.retirementCostOfLiving}
               InputProps={{ inputComponent: NumberFormatPercentage }}
               onChange={(event) => {
+                console.log(event.target.id);
                 changeSetting(event.target.id, event.target.floatValue);
                 this.forceUpdate();
               }}
