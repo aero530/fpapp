@@ -26,6 +26,8 @@ import FloatingActionButton from '../../components/floatingActionButton';
 const styles = theme => ({
   root: {
     width: '100%',
+    marginTop: theme.spacing(0),
+    paddingLeft: theme.spacing(5),
   },
   addFloatingActionButton: {
     position: 'absolute',

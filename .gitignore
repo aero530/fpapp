@@ -16,6 +16,7 @@ logs
 
 # Data
 data.json
+dataSimple.json
 
 # vscode config
 .vscode

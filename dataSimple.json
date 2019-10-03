@@ -20,6 +20,15 @@
       "base": 30000,
       "notes": "",
       "type": "income"
+    },
+    "86677240-e5f7-11e9-9455-6b52cdd02811": {
+      "name": "ssa21",
+      "startIn": "yearRetire+1",
+      "endIn": "yearDie",
+      "base": 24000,
+      "percentTaxed": "",
+      "notes": "",
+      "type": "ssa"
     }
   },
   "settings": {
@@ -28,8 +37,13 @@
     "yearBorn": 1982,
     "yearStart": 2018,
     "inflationBase": 3,
-    "taxIncome": 1,
+    "taxIncome": 20,
     "taxCapitalGains": 15,
-    "retirementCostOfLiving": 90
+    "retirementCostOfLiving": 90,
+    "ssaBreakpointsLow": 32000,
+    "ssaBreakpointsHigh": 44000,
+    "ssaTaxableIncomePercentageLow": 50,
+    "ssaTaxableIncomePercentageHigh": 85,
+    "ssaTaxRate": 12
   }
 }

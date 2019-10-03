@@ -67,18 +67,17 @@ import { percentSuggestions, yearSuggestions } from '../constants/suggestions';
 const styles = theme => ({
   root: {
     width: '100%',
-    marginTop: theme.spacing(3),
   },
   paper: {
     width: '100%',
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[5],
     padding: theme.spacing(4),
-    marginBottom: theme.spacing(4),
+    marginBottom: theme.spacing(1),
     overflow: 'visible',
   },
   margin: {
-    margin: theme.spacing(1),
+    margin: theme.spacing(2),
   },
   textField: {
     flexBasis: 200,
@@ -390,7 +389,7 @@ class Account extends Component {
                 className={classNames(classes.margin, classes.textField)}
                 value={(typeof account.startIn === 'number') ? account.startIn.toString() : account.startIn}
                 id="startIn"
-                label="Begin Contributions"
+                label="Year Contributions Begin"
                 helperText="can be based on 'year' strings"
                 title="Calendar year when money starts coming out of income and going into this account"
                 titleLocation="right"
@@ -406,7 +405,7 @@ class Account extends Component {
                 className={classNames(classes.margin, classes.textField)}
                 value={(typeof account.endIn === 'number') ? account.endIn.toString() : account.endIn}
                 id="endIn"
-                label="End Contributions"
+                label="Year Contributions End"
                 helperText="can be based on 'year' strings"
                 title="Calendar year when money no longer goes to this account (this is inclusive so it will generally be yearRetire-1)"
                 titleLocation="right"

@@ -72,6 +72,10 @@ const arrayToObject = (array, value) => array.reduce((obj, item) => {
  * @param settings.taxIncome income tax rate (%)
  * @param settings.taxCapitalGains capital gains tax rate (%)
  * @param settings.retirementCostOfLiving percentage applied to cost of living expenses after retirement (100% = do not reduce living expenses)
+ * @param settings.ssaBreakpointsLow
+ * @param settings.ssaBreakpointsHigh
+ * @param settings.ssaTaxableIncomePercentageLow
+ * @param settings.ssaTaxableIncomePercentageHigh
  * @returns {Array} a bunch of output data
  */
 export default function accountComputation(accounts, settings) {
@@ -84,6 +88,10 @@ export default function accountComputation(accounts, settings) {
     taxIncome,
     taxCapitalGains,
     retirementCostOfLiving,
+    ssaBreakpointsLow,
+    ssaBreakpointsHigh,
+    ssaTaxableIncomePercentageLow,
+    ssaTaxableIncomePercentageHigh,
   } = settings;
 
   let errors = [];
@@ -96,6 +104,10 @@ export default function accountComputation(accounts, settings) {
   if (!taxIncome) { errors.push({ title: 'Income Tax Rate %', message: 'not defined' }); }
   if (!taxCapitalGains) { errors.push({ title: 'Capital Gains Tax Rate %', message: 'not defined' }); }
   if (!retirementCostOfLiving) { errors.push({ title: 'Cost of Living %', message: 'not defined' }); }
+  if (!ssaBreakpointsLow) { errors.push({ title: 'SSA Income Break Point Low', message: 'not defined' }); }
+  if (!ssaBreakpointsHigh) { errors.push({ title: 'SSA Income Break Point High', message: 'not defined' }); }
+  if (!ssaTaxableIncomePercentageLow) { errors.push({ title: 'SSA Taxable Income % Low', message: 'not defined' }); }
+  if (!ssaTaxableIncomePercentageHigh) { errors.push({ title: 'SSA Taxable Income % High', message: 'not defined' }); }
 
   const ageNow = yearStart - yearBorn;
   const yearRetire = yearBorn + ageRetire;
@@ -131,6 +143,7 @@ export default function accountComputation(accounts, settings) {
     return output;
   };
 
+  // Map the string name of each value to a number
   const getStringValue = (inputString) => {
     switch(inputString) {
       case 'yearStart':
@@ -141,6 +154,8 @@ export default function accountComputation(accounts, settings) {
         return yearDie;
       case 'yearEnd':
         return yearEnd;
+      case 'inflationBase':
+        return inflationBase;
       default:
         return parseFloat(inputString);
     }
@@ -213,12 +228,12 @@ export default function accountComputation(accounts, settings) {
     // ----------------------------------------------------------------------
     if (!Object.hasOwnProperty.call(account, 'table')) { // if there is not a table object then create one
       account.table = {};
-      account.table[yearStart] = 0;
+      account.table[yearStart] = null;
     } else if ((typeof account.table !== 'object')) { // if the table has not been initialized with the current year
       account.table = {};
-      account.table[yearStart] = 0;
+      account.table[yearStart] = null;
     } else if ((typeof account.table === 'object') && !(yearStart in account.table)) { // if the table has not been initialized with the current year
-      account.table[yearStart] = 0;
+      account.table[yearStart] = null;
     }
 
     // ----------------------------------------------------------------------
@@ -350,9 +365,18 @@ export default function accountComputation(accounts, settings) {
         account.table[yearCurrent] = 0; // previous years value does not carry over (ie not an account that carries a balance)
       } else if (account.type === 'savings' || account.type === 'college' || account.type === 'retirement' || account.type === 'hsa' || account.type === 'loan' || account.type === 'mortgage') {
         // this account type should carry over the value from last year
-        const mostRecentYear = Object.keys(account.table).sort((a, b) => a - b)[account.table.length];
+        const sortedKeys = Object.keys(account.table).sort((a, b) => a - b); // sort the list of keys
+        let mostRecentYear = sortedKeys[0]; // default to the first year of the table
+        for (var year in sortedKeys) { // go through the sorted list of keys
+          if (account.table[sortedKeys[year]] !== null) { // if the value is not null (ie it was defined in the input table)
+            mostRecentYear = sortedKeys[year]; // set the most recent year to this year
+          } else { // if there are no longer data defined then break out of the loop
+            break;
+          }
+        }
 
-        if (mostRecentYear === yearCurrent) {
+        // pull the most recent year data forward to the current year
+        if (mostRecentYear == yearCurrent) {
           account.table[yearCurrent] = account.table[mostRecentYear];
         } else if (Object.hasOwnProperty.call(account.table, yearCurrent - 1)) {
           account.table[yearCurrent] = account.table[yearCurrent - 1];
@@ -388,11 +412,13 @@ export default function accountComputation(accounts, settings) {
         if (account.startIn <= yearCurrent && account.endIn >= yearCurrent) {
           // if this ssa object is active this year
           earnings = account.base; // calculate this years income
-          if (yearCurrent >= yearRetire) {
-            incomeDuringRetirement[yearCurrent] += earnings;
-          }
+        }
+        if (yearCurrent >= yearRetire) {
+          incomeDuringRetirement[yearCurrent] += earnings;
         }
       }
+      
+      
       if (isNaN(earnings) || earnings < 0) {
         earnings = 0;
         errors.push({
@@ -692,8 +718,15 @@ export default function accountComputation(accounts, settings) {
         incomeTotalTable[yearCurrent] += account.table[yearCurrent]; // increase this years income by the withdrawal amount
       }
       if (account.type === 'ssa') {
-        incomeTotalTaxableTable[yearCurrent] += account.table[yearCurrent] * (account.percentTaxed / 100); // increase this years taxable income by the withdrawal amount
-        incomeTotalTable[yearCurrent] += account.table[yearCurrent]; // increase this years income by the withdrawal amount
+        if ((incomeTotalTaxableTable[yearCurrent]+account.table[yearCurrent]) > ssaBreakpointsHigh) {
+          incomeTotalTaxableTable[yearCurrent] += (account.table[yearCurrent] * settings.ssaTaxableIncomePercentageHigh / 100);
+          incomeTotalTable[yearCurrent] += account.table[yearCurrent]; // increase this years income by the withdrawal amount
+        } else if ((incomeTotalTaxableTable[yearCurrent]+account.table[yearCurrent]) > ssaBreakpointsLow) {
+          incomeTotalTaxableTable[yearCurrent] += (account.table[yearCurrent] * settings.ssaTaxableIncomePercentageLow / 100);
+          incomeTotalTable[yearCurrent] += account.table[yearCurrent]; // increase this years income by the withdrawal amount
+        }
+        
+        
       }
 
       // ----------------------------------------------------------------------

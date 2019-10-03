@@ -17,6 +17,7 @@ import TextField from '@material-ui/core/TextField';
 import {
   NumberFormatPercentage,
   NumberFormatYear,
+  NumberFormatDollar,
 } from '../../components/numberFormaters';
 
 import { SET_APP_BAR_TITLE } from '../../actions/app';
@@ -164,6 +165,65 @@ class Settings extends React.Component {
               InputProps={{ inputComponent: NumberFormatPercentage }}
               onChange={(event) => {
                 console.log(event.target.id);
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+        </Paper>
+
+        
+        <Paper className={classes.paper}>
+          <Typography variant="h6" id="modal-title">
+            Social Security
+          </Typography>
+          <Tooltip title="If total income is below this limit you do not pay taxes on social security benefit.">
+            <TextField
+              id="ssaBreakpointsLow"
+              label="Low Income Limit"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.ssaBreakpointsLow}
+              InputProps={{ inputComponent: NumberFormatDollar }}
+              onChange={(event) => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="If total income is above this limit the taxes you pay on social security benefit is limited.">
+            <TextField
+              id="ssaBreakpointsHigh"
+              label="High Income Limit"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.ssaBreakpointsHigh}
+              InputProps={{ inputComponent: NumberFormatDollar }}
+              onChange={(event) => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="If total income is between the income limits you pay taxes on this percentage of your social security benefit.">
+            <TextField
+              id="ssaTaxableIncomePercentageLow"
+              label="Taxable Income Percentage Low"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.ssaTaxableIncomePercentageLow}
+              InputProps={{ inputComponent: NumberFormatPercentage }}
+              onChange={(event) => {
+                changeSetting(event.target.id, event.target.floatValue);
+                this.forceUpdate();
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="If total income is above the high income limit you pay taxes on this percentage of your social security benefit.">
+            <TextField
+              id="ssaTaxableIncomePercentageHigh"
+              label="Taxable Income Percentage High"
+              className={classNames(classes.margin, classes.textField)}
+              value={settings.ssaTaxableIncomePercentageHigh}
+              InputProps={{ inputComponent: NumberFormatPercentage }}
+              onChange={(event) => {
                 changeSetting(event.target.id, event.target.floatValue);
                 this.forceUpdate();
               }}

@@ -46,6 +46,9 @@ const styles = theme => ({
     padding: theme.spacing(4),
     marginBottom: theme.spacing(4),
   },
+  chart: {
+    marginBottom: theme.spacing(4),
+  },
   button: {
     margin: theme.spacing(1),
   },
@@ -111,7 +114,7 @@ class GraphsDetail extends React.Component {
                     <Typography variant="subtitle1" id="chart-title" align="center">
                       {account.name}
                     </Typography>
-                    <ResponsiveContainer width="100%" height={chartHeight}>
+                    <ResponsiveContainer width="100%" height={chartHeight} className={classes.chart}>
                       <ComposedChart
                         data={data}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}

@@ -2,6 +2,7 @@
  * @const {Object}
  * @description specifies what account fields are shown for each account type
  */
+
 export const show = {
   income: {
     name: true,
@@ -17,7 +18,6 @@ export const show = {
     startIn: true,
     endIn: true,
     base: true,
-    percentTaxed: true,
     notes: true,
   },
   retirement: {
