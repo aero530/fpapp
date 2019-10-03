@@ -106,6 +106,48 @@ export default function accountComputation(accounts, settings) {
   yearDelta = yearDelta.toArray();
   yearTable = yearTable.toArray();
 
+  const yearEnd = yearTable[yearTable.length - 1];
+
+  const evalSuggestions = (inputString) => {
+    var array = [];
+    var output = 0;
+    if (inputString.includes("+")) {
+      array = inputString.split("+");
+      if (!isNaN(array[1])) { // test for isNumeric
+        output = getStringValue(array[0]) + parseFloat(array[1]);
+      } else {
+        output =  parseFloat(array[0]) + getStringValue(array[1]);
+      }
+    } else if (inputString.includes("-")) {
+      array = inputString.split("-");
+      if (!isNaN(array[1])) { // test for isNumeric
+        output = getStringValue(array[0]) - parseFloat(array[1]);
+      } else {
+        output = parseFloat(array[0]) - getStringValue(array[1]);
+      }
+    } else {
+      output = getStringValue(inputString);
+    }
+    return output;
+  };
+
+  const getStringValue = (inputString) => {
+    switch(inputString) {
+      case 'yearStart':
+        return yearStart;
+      case 'yearRetire':
+        return yearRetire;
+      case 'yearDie':
+        return yearDie;
+      case 'yearEnd':
+        return yearEnd;
+      default:
+        return parseFloat(inputString);
+    }
+  };
+
+
+
   // ----------------------------------------------------------------------
   // Define accounts used to run for loops
   // ----------------------------------------------------------------------
@@ -239,32 +281,32 @@ export default function accountComputation(accounts, settings) {
       if (account.startIn === 'incomeLink') {
         account.startIn = accounts[account.incomeLink].startIn;
       } else {
-        account.startIn = eval(account.startIn);
+        account.startIn = evalSuggestions(account.startIn);
       }
     }
     if (Object.prototype.hasOwnProperty.call(account, 'endIn') && typeof account.endIn !== 'number') {
       if (account.endIn === 'incomeLink') {
         account.endIn = accounts[account.incomeLink].endIn;
       } else {
-        account.endIn = eval(account.endIn);
+        account.endIn = evalSuggestions(account.endIn);
       }
     }
     if (Object.prototype.hasOwnProperty.call(account, 'startOut') && typeof account.startOut !== 'number') {
       if (account.startOut === 'incomeLink') {
         account.startOut = accounts[account.incomeLink].startOut;
       } else {
-        account.startOut = eval(account.startOut);
+        account.startOut = evalSuggestions(account.startOut);
       }
     }
     if (Object.prototype.hasOwnProperty.call(account, 'endOut') && typeof account.endOut !== 'number') {
       if (account.endOut === 'incomeLink') {
         account.endOut = accounts[account.incomeLink].endOut;
       } else {
-        account.endOut = eval(account.endOut);
+        account.endOut = evalSuggestions(account.endOut);
       }
     }
     if (Object.prototype.hasOwnProperty.call(account, 'raise') && typeof account.raise !== 'number') {
-      account.raise = eval(account.raise);
+      account.raise = evalSuggestions(account.raise);
     }
     // console.log(JSON.stringify(account));
   });

@@ -1,12 +1,13 @@
-# Computation Engine
+# Computation Engine #
 
-## Folder Structure
+## Folder Structure ##
 
-**index.js** listens for ipc call to run computation  
+**index.html** Background processing entry page 
+**background.js** listens for ipc call to run computation  
 **accountComputation.js** performs computation / financial simulation  
 **fpcalc.py** original python based simulation  
 
-## Computation Flow
+## Computation Flow ##
 
 * Loop through accounts to determine what order they should be processed in
 * initialize tables to the correct sizes

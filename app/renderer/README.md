@@ -1,18 +1,21 @@
-# Application View Window
+# Application View (Renderer) Window #
 
-## Folder Structure
+## Folder Structure ##
 
 **actions** actions  
 **components** Visual components  
 **constants** Constant definitions  
+**containers** Main webpage structure  
 **reducers** redux reducers  
-**routes** Main webpage structure  
-**store** Redux store configuration  
 **utils** Reusable utility functions  
-**index.js** Main react app - ipc action routing, redux store, and history configuration  
-**root.jsx** apply material ui theme to app
 
-## Redux Store
+**app.js** Main react app - ipc action routing, redux store, and history configuration  
+**index.html** Application view window entry page  
+**routes.js** Application page router
+**store.js** Redux store configuration
+
+## Redux Store ##
+
 The redux store maintains four primary objects:  
 
 * **app** info about application state

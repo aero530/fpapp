@@ -62,6 +62,7 @@ export default function (state = initialState, action) {
       return {
         ...state,
         settings: prevSettings,
+        modified: true,
       };
     }
 
@@ -74,6 +75,7 @@ export default function (state = initialState, action) {
       return {
         ...state,
         accounts: { ...state.accounts, [action.name]: action.data },
+        modified: true,
       };
     }
 
@@ -89,6 +91,7 @@ export default function (state = initialState, action) {
       return {
         ...state,
         accounts: prevAccounts,
+        modified: true,
       };
     }
 
@@ -113,6 +116,7 @@ export default function (state = initialState, action) {
       return {
         ...state,
         accounts: newAccounts,
+        modified: true,
       };
     }
 
