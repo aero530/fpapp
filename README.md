@@ -1,7 +1,6 @@
 # financial planning app #
 
-A financial planning & simulation application based on [Electron Boiler Plate](https://github.com/jschr/electron-react-redux-boilerplate) using 
-<a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, and <a href="https://github.com/reactjs/react-router">React Router</a>.
+A financial planning & simulation application based on [Electron Boiler Plate](https://github.com/jschr/electron-react-redux-boilerplate) using <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, and <a href="https://github.com/reactjs/react-router">React Router</a>.
 
 ---
 
@@ -40,9 +39,9 @@ This config works when using nodejs installed for windows (not through ubuntu in
 
 Add vs code extension shell launcher.
 
-https://github.com/Tyriar/vscode-shell-launcher
+[https://github.com/Tyriar/vscode-shell-launcher](https://github.com/Tyriar/vscode-shell-launcher)
 
-Use it by crtl-shft-p 'shell'. Electron apps must be run from cmd.
+Use it by ctrl-shift-p 'shell'. Electron apps must be run from cmd.
 
 ### Clone the repo via git ###
 
