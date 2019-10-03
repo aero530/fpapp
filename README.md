@@ -1,4 +1,4 @@
-# financial planning app
+# financial planning app #
 
 A financial planning & simulation application based on [Electron Boiler Plate](https://github.com/jschr/electron-react-redux-boilerplate) using 
 <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, and <a href="https://github.com/reactjs/react-router">React Router</a>.
@@ -9,7 +9,7 @@ A financial planning & simulation application based on [Electron Boiler Plate](h
 
 ![screenshot_loan](https://github.com/aero530/fpapp/raw/master/resources/screenshots/loan.png "Loan")
 
-## Features
+## Features ##
 
 * Simulate income and expenses through retirement
 * Track historic account balances
@@ -28,18 +28,15 @@ A financial planning & simulation application based on [Electron Boiler Plate](h
 
 ---
 
-## Development Setup
-
-This project was based on 
+## Development Setup ##
 
 This config works when using nodejs installed for windows (not through ubuntu in windows).
 
-### Install / Update Node
+### Install / Update Node ###
 
-https://nodejs.org/en/
+[https://nodejs.org/en/](https://nodejs.org/en/)
 
-
-### Install shell launcher:
+### Install shell launcher ###
 
 Add vs code extension shell launcher.
 
@@ -47,7 +44,7 @@ https://github.com/Tyriar/vscode-shell-launcher
 
 Use it by crtl-shft-p 'shell'. Electron apps must be run from cmd.
 
-### Clone the repo via git:
+### Clone the repo via git ###
 
 ```cmd
 git clone https://github.com/aero530/fpapp.git fpapp
@@ -56,27 +53,28 @@ git clone https://github.com/aero530/fpapp.git fpapp
 And then install dependencies with npm (from the node.js command prompt).
 
 ```cmd
-$ cd fpapp
-$ npm install
+> cd fpapp
+> npm install
 ```
 
 Development
-```bash
-npm run develop
+
+```cmd
+> npm run develop
 ```
 
-## Packaging
+## Packaging ##
 
 Create a package for macOS, Windows or Linux using one of the following commands:
 
-```
-npm run pack:mac
-npm run pack:win
-npm run pack:linux
+```cmd
+> npm run pack:mac
+> npm run pack:win
+> npm run pack:linux
 ```
 
-## Tests
+## Tests ##
 
-```
-npm run test
+```cmd
+> npm run test
 ```
