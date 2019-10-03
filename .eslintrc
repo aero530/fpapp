@@ -1,26 +1,37 @@
 {
+  "root": true,
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "prettier"
+  ],
   "parser": "babel-eslint",
   "parserOptions": {
-    "sourceType": "module",
-    "allowImportExportEverywhere": true
-  },
-  "extends": "airbnb",
-  "env": {
-    "browser": true,
-    "node": true
-  },
-  "rules": {
-    "no-console": "off",
-    "max-len": ["error", {"code": 500}],
-    "object-curly-newline": ["error", {"ObjectPattern": {"multiline": true, "minProperties": 10}}],
-    "react/jsx-one-expression-per-line": "off"
-  },
-  "plugins": ["import", "promise", "compat", "react"],
-  "settings": {
-    "import/resolver": {
-      "webpack": {
-        "config": "webpack.config.eslint.js"
-      }
+    "ecmaFeatures": {
+      "jsx": true,
+      "modules": true
     }
+  },
+  "plugins": [ "react" ],
+  "rules": {
+    "prefer-const": "warn",
+    "no-console": "off",
+    "no-loop-func": "warn",
+    "new-cap": "off",
+    "no-param-reassign": "warn",
+    "func-names": "off",
+    "no-unused-expressions" : "error",
+    "block-scoped-var": "error",
+    "react/prop-types": "off"
+  },
+  "settings": {
+    "react": {
+      "pragma": "React",
+      "version": "16.10"
+    }
+  },
+  "env": {
+    "es6": true,
+    "node": true
   }
 }

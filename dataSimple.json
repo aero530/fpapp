@@ -1,0 +1,35 @@
+{
+  "accounts": {
+    "c3a24cf0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "utilities",
+      "table": {
+        "2017": 0
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 3700
+    },
+    "a62f20b0-e533-11e9-b3d0-25ff91c8bf2a": {
+      "name": "inone",
+      "table": "",
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "raise": "5",
+      "base": 30000,
+      "notes": "",
+      "type": "income"
+    }
+  },
+  "settings": {
+    "ageRetire": 67,
+    "ageDie": 100,
+    "yearBorn": 1982,
+    "yearStart": 2018,
+    "inflationBase": 3,
+    "taxIncome": 1,
+    "taxCapitalGains": 15,
+    "retirementCostOfLiving": 90
+  }
+}
