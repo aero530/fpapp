@@ -1,4 +1,4 @@
-import { LOAD_RESULTS, LOAD_ERRORS, CLEAR_ERRORS } from '../actions/results';
+import { LOAD_RESULTS, LOAD_ERRORS, CLEAR_ERRORS, INITIALIZE_RESULTS_STATE } from '../actions/results';
 
 const initialState = {
   accounts: {},
@@ -14,6 +14,18 @@ const initialState = {
 
 export default function (state = initialState, action) {
   switch (action.type) {
+    /**
+     * @function LOAD_RESULTS
+     * @description initialize results data in store
+     * @listens: reducer:LOAD_RESULTS
+     */
+    case INITIALIZE_RESULTS_STATE: {
+      return {
+        ...state,
+        ...initialState,
+      };
+    }
+
     /**
      * @function LOAD_RESULTS
      * @description update redux store results object with output from background analysis

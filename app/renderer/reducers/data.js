@@ -3,6 +3,7 @@
 import { v1 as uuidv1 } from 'uuid';
 
 import {
+  INITIALIZE_DATA_STATE,
   OPEN_DATA_FILE,
   SAVE_DATA_FILE,
   UPDATE_SETTING,
@@ -14,7 +15,20 @@ import {
 import { show } from '../constants/accountStructure';
 
 const initialState = {
-  settings: {},
+  settings: {
+    ageRetire: null,
+    ageDie: null,
+    yearBorn: null,
+    yearStart: null,
+    inflationBase: null,
+    taxIncome: null,
+    taxCapitalGains: null,
+    retirementCostOfLiving: null,
+    ssaBreakpointsLow: null,
+    ssaBreakpointsHigh: null,
+    ssaTaxableIncomePercentageLow: null,
+    ssaTaxableIncomePercentageHigh: null,
+  },
   accounts: {},
   incomeAccounts: [],
   hsaAccounts: [],
@@ -24,6 +38,17 @@ const initialState = {
 
 export default function (state = initialState, action) {
   switch (action.type) {
+    /**
+     * @function INITIALIZE_DATA_STATE
+     * @description update redux store data object to default (initialized) values
+     * @listens: reducer:INITIALIZE_DATA_STATE
+     */
+    case INITIALIZE_DATA_STATE:
+      return {
+        ...store,
+        ...initialState,
+      };
+
     /**
      * @function OPEN_DATA_FILE
      * @description update redux store data object with data from opened file

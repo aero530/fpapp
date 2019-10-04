@@ -1,11 +1,25 @@
 import fs from 'fs';
 
+export const INITIALIZE_DATA_STATE = 'INITIALIZE_DATA_STATE';
 export const OPEN_DATA_FILE = 'OPEN_DATA_FILE';
 export const SAVE_DATA_FILE = 'SAVE_DATA_FILE';
 export const UPDATE_SETTING = 'UPDATE_SETTING';
 export const UPDATE_ACCOUNT = 'UPDATE_ACCOUNT';
 export const DELETE_ACCOUNT = 'DELETE_ACCOUNT';
 export const ADD_ACCOUNT = 'ADD_ACCOUNT';
+
+import { analyze } from './results';
+
+/**
+ * @function newFileReducer
+ * @description action to apply new (empty) file to the redux store
+ * @fires reducer:INITIALIZE_DATA_STATE
+ */
+function newFileReducer() {
+  return {
+    type: INITIALIZE_DATA_STATE,
+  };
+}
 
 /**
  * @function openFileReducer
@@ -60,6 +74,20 @@ function getAccountsTypeOf(accounts, type) {
   return typeAccounts;
 }
 
+
+/**
+ * @function newFile
+ * @description action to clear existing data.  dispatches action to put empty data in redux store
+ * @fires: action:newFileReducer
+ */
+export function newFile() {
+  return (dispatch) => {
+    dispatch(
+      newFileReducer(),
+    );
+  };
+}
+
 /**
  * @function openFile
  * @description action to open a data file.  opens file, reads contents, then dispatches action to put data in redux store
@@ -85,6 +113,7 @@ export function openFile(filePath) {
           filePath,
         ),
       );
+      dispatch(analyze());
     });
   };
 }

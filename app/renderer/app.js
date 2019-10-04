@@ -14,8 +14,8 @@ import {
 import routes from './routes';
 import configureStore from './store';
 
-import { openFile, saveFile } from './actions/data';
-import { loadResults, loadErrors } from './actions/results';
+import { openFile, saveFile, newFile } from './actions/data';
+import { loadResults, loadErrors, initResults } from './actions/results';
 
 const { dialog } = require('electron').remote;
 
@@ -96,6 +96,47 @@ function showOpen() {
     },
   );
 }
+
+/**
+ * @description listen for fileNewOnClick from main. check if current file has been modified
+ * (in which case show dialog to save current or cancel).  then show open file dialog.
+ * @listens ipcRenderer:fileNewOnClick
+ * @fires store:newFile
+ * @fires store:initResults
+ */
+ipcRenderer.on('fileNewOnClick', () => {
+  const { modified } = store.getState().data;
+
+  if (modified) {
+    dialog.showMessageBox(
+      {
+        type: 'warning', // Can be "none", "info", "error", "question" or "warning".
+        buttons: ['Save', "Don't Save", 'Cancel'], // Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
+        defaultId: 0, // Index of the button in the buttons array which will be selected by default when the message box opens.
+        title: 'File has not been saved',
+        message: 'Unsaved file',
+        detail: 'Do you want to save or discard your current edits?',
+      },
+      (selection) => {
+        if (selection === 0) {
+          store.dispatch(saveFile());
+          store.dispatch(newFile());
+          store.dispatch(initResults());
+          
+        } else if (selection === 1) {
+          store.dispatch(newFile());
+          store.dispatch(initResults());
+          
+        } else if (selection === 2) {
+          return null;
+        }
+      },
+    );
+  } else {
+    store.dispatch(newFile());
+    store.dispatch(initResults());
+  }
+});
 
 /**
  * @description listen for fileOpenOnClick from main. check if current file has been modified

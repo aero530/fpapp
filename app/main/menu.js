@@ -184,6 +184,13 @@ export default class MenuBuilder {
         label: '&File',
         submenu: [
           {
+            label: '&New',
+            accelerator: 'Ctrl+N',
+            click: () => {
+              this.mainWindow.webContents.send('fileNewOnClick');
+            }
+          },
+          {
             label: '&Open',
             accelerator: 'Ctrl+O',
             click: () => {

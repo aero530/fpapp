@@ -1,9 +1,22 @@
 import { ipcRenderer } from 'electron';
 
+export const INITIALIZE_RESULTS_STATE = 'INITIALIZE_RESULTS_STATE';
 export const LOAD_RESULTS = 'LOAD_RESULTS';
 export const RUN_ANALYSIS = 'RUN_ANALYSIS';
 export const LOAD_ERRORS = 'LOAD_ERRORS';
 export const CLEAR_ERRORS = 'CLEAR_ERRORS';
+
+
+/**
+ * @function initResults
+ * @description initialize results state
+ * @fires: reducer:INITIALIZE_RESULTS_STATE
+ */
+export function initResults() {
+  return {
+    type: INITIALIZE_RESULTS_STATE,
+  };
+}
 
 /**
  * @function loadResults
