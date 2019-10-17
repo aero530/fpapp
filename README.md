@@ -64,7 +64,7 @@ Development
 
 ## Packaging ##
 
-Create a package for macOS, Windows or Linux using one of the following commands:
+Create a package for macOS, Windows, or Linux using one of the following commands:
 
 ```cmd
 > npm run pack:mac
