@@ -53,6 +53,7 @@ And then install dependencies with npm (from the node.js command prompt).
 
 ```cmd
 > cd fpapp
+> npm install -g electron-builder
 > npm install
 ```
 
