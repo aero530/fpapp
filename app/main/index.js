@@ -118,16 +118,27 @@ app.on('ready', async () => {
   // ------------------------------------------------
   // Background Window
   // ------------------------------------------------
-  backgroundWindow = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      nodeIntegration: true, // this must be included to allow the js code in this window to import node modules
-    },
-    parent: mainWindow,
-  });
+  if (isDevelopment) {
+    backgroundWindow = new BrowserWindow({
+      show: true,
+      webPreferences: {
+        nodeIntegration: true, // this must be included to allow the js code in this window to import node modules
+      },
+      parent: mainWindow,
+    });
+  } else {
+    backgroundWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: true, // this must be included to allow the js code in this window to import node modules
+      },
+      parent: mainWindow,
+    });
+  }
+  
 
   backgroundWindow.loadFile(path.resolve(path.join(__dirname, '../background/index.html')));
-  
+
   backgroundWindow.on('closed', () => {
     backgroundWindow = null;
   });

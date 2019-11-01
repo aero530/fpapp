@@ -205,12 +205,53 @@ export default function accountComputation(accounts, settings) {
   // make object for expense account types
   const expenseAccountsYearlyObject = {};
   Object.keys(accounts).forEach((key) => {
-    if (accounts[key].type === 'expense') {
+    if (accounts[key].type === 'expense' | accounts[key].type === 'loan' | accounts[key].type === 'mortgage' | accounts[key].type === 'college' | accounts[key].type === 'savings' | accounts[key].type === 'retirement' | accounts[key].type === 'hsa' ) {
       expenseAccountsYearlyObject[key] = 0;
     }
   });
+
   const expenseTotal = arrayToObject(yearTable, expenseAccountsYearlyObject);
 
+  /*
+  // This code was introduced to add historic 'table' expense data to the expenses graphs.
+  // It works but the graphs are misleading because the expense graphs also show
+  // loan, mortgage, college, savings, retirement, and hsa.  Since these other types use the 
+  // table object to track the account value (as a savings account) not the cost/expense of
+  // the account through time all these accounts show up as '0' value which makes the 
+  // total expense graphs arbitrarily low for the historic data.  So this effort was abandonded.
+  const expenseTotalFuture = arrayToObject(yearTable, expenseAccountsYearlyObject);
+
+  let yearMin = 99999;
+  // initialize expense table with historic data
+  Object.keys(accounts).forEach((key) => {
+    if (accounts[key].type === 'expense') {
+      if (Object.hasOwnProperty.call(accounts[key], 'table')) { // if there is a table object
+        Object.keys(accounts[key].table).forEach(year => {
+          if (year < yearMin) {
+            yearMin = year;
+          }
+        });
+      }
+    }
+  });
+
+  let yearDeltaPast = math.range(yearMin, yearStart);
+  let yearTablePast = yearDeltaPast.toArray();
+  const expenseTotalPast = arrayToObject(yearTablePast, expenseAccountsYearlyObject);
+
+  Object.keys(accounts).forEach((key) => {
+    if (accounts[key].type === 'expense') {
+      if (Object.hasOwnProperty.call(accounts[key], 'table')) { // if there is a table object
+        Object.keys(accounts[key].table).forEach(year => {
+          if (evalSuggestions(accounts[key].startOut) <= yearStart) {
+            expenseTotalPast[year][key] = accounts[key].table[year];
+          }
+        });
+      }
+    }
+  });
+  let expenseTotal = {...expenseTotalPast, ...expenseTotalFuture};
+  */
 
   const savingsTotalTable = arrayToObject(yearTable, 0);
   const incomeTotalTaxableTable = arrayToObject(yearTable, 0);
