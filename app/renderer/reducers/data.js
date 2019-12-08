@@ -97,6 +97,13 @@ export default function (state = initialState, action) {
      * @listens: reducer:UPDATE_ACCOUNT
      */
     case UPDATE_ACCOUNT: {
+      console.log(action.data.table);
+      let newTable = {};
+      Object.keys(action.data.table).forEach(year => {
+        newTable[parseFloat(year)] = parseFloat(action.data.table[year]);
+      });
+      action.data.table = newTable;
+      console.log(action.data.table);
       return {
         ...state,
         accounts: { ...state.accounts, [action.name]: action.data },

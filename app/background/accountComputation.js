@@ -374,6 +374,7 @@ export default function accountComputation(accounts, settings) {
   // ----------------------------------------------------------------------
   console.log(yearTable);
   yearTable.forEach((yearCurrent) => { // loop through all years
+    console.log('START A YEAR');
     // ----------------------------------------------------------------------
     // Initialize this year
     // ----------------------------------------------------------------------
@@ -385,6 +386,7 @@ export default function accountComputation(accounts, settings) {
     // Loop through accounts to make contributions and withdrawals
     // ---------------------------------------------------------------------
     accountOrderIndex.forEach((accountID) => {
+      
       // ----------------------------------------------------------------------
       // Initialize temp variables to zero
       // ----------------------------------------------------------------------
@@ -397,6 +399,7 @@ export default function accountComputation(accounts, settings) {
       let expense = 0;
 
       let account = accounts[accountID];
+      console.log('INIT '+account.name);
 
       // ----------------------------------------------------------------------
       // Initialize the value of the account for this year
@@ -418,12 +421,17 @@ export default function accountComputation(accounts, settings) {
 
         // pull the most recent year data forward to the current year
         if (mostRecentYear == yearCurrent) {
+          console.log('MOST CURRENT YEAR');
+          console.log(mostRecentYear);
           account.table[yearCurrent] = account.table[mostRecentYear];
         } else if (Object.hasOwnProperty.call(account.table, yearCurrent - 1)) {
+          console.log('YEAR MINUS ONE');
           account.table[yearCurrent] = account.table[yearCurrent - 1];
         } else if (mostRecentYear < yearCurrent) {
+          console.log('LESS THAN CURRENT YEAR');
           account.table[yearCurrent] = account.table[mostRecentYear];
         } else {
+          console.log('WHO KNOWS');
           account.table[yearCurrent] = 0;
         }
       } else {
@@ -438,6 +446,7 @@ export default function accountComputation(accounts, settings) {
       // ----------------------------------------------------------------------
       if (account.type === 'savings' || account.type === 'college' || account.type === 'retirement' || account.type === 'hsa') {
         // if this is a SAVINGS or COLLEGE etc account
+        
         earnings = (account.table[yearCurrent] * account.yearlyReturn) / 100; // calculate earnings from interest
         account.earnings[yearCurrent] = earnings; // set account earnings to current earnings value
       } else if (account.type === 'income') {
@@ -461,6 +470,13 @@ export default function accountComputation(accounts, settings) {
       
       
       if (isNaN(earnings) || earnings < 0) {
+        console.log("NAN or 0");
+        console.log(account.table[yearCurrent]);
+        console.log(account.yearlyReturn);
+        console.log(yearCurrent);
+        console.log(yearCurrent-1);
+        console.log(account.table);
+        console.log(' ');
         earnings = 0;
         errors.push({
           title: `${account.name} ${yearCurrent}`,
