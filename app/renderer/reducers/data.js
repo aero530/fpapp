@@ -97,13 +97,16 @@ export default function (state = initialState, action) {
      * @listens: reducer:UPDATE_ACCOUNT
      */
     case UPDATE_ACCOUNT: {
-      console.log(action.data.table);
+      
+      // MUI Editable table does not have a number datatype for the field.  Therefor the input numbers are stored as strings which breaks the analysis
+      // computation code.  This intercepts the data table and loops through the fields to ensure they are floats (not strings) before putting it in the 
+      // data store.
       let newTable = {};
       Object.keys(action.data.table).forEach(year => {
         newTable[parseFloat(year)] = parseFloat(action.data.table[year]);
       });
       action.data.table = newTable;
-      console.log(action.data.table);
+      
       return {
         ...state,
         accounts: { ...state.accounts, [action.name]: action.data },
