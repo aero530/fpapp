@@ -294,7 +294,7 @@ class Graphs extends React.Component {
                   left: 10,
                 }}
                 labelSkipSize={18}
-                labelTextColor="inherit:darker(1.6)"
+                labelTextColor="black"
                 borderWidth={1}
                 borderColor="inherit:darker(0.8)"
                 colors={colorsLightened}
