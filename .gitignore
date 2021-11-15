@@ -1,22 +1,5 @@
-# Development
-node_modules
-
-# Compiled
-dist
-dist-assets
-build
-
-# OSX
-.DS_Store
-
-# Logs
-logs
-*.log
-*.log
+/target
 
 # Data
 data.json
 dataSimple.json
-
-# vscode config
-.vscode
