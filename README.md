@@ -4,9 +4,9 @@ A financial planning & simulation application based on [Electron Boiler Plate](h
 
 ---
 
-![screenshot_graphs](https://github.com/aero530/fpapp/raw/master/resources/screenshots/graphs.png "Graph")
+![screenshot_graphs](https://github.com/aero530/fpapp/raw/main/resources/screenshots/graphs.png "Graph")
 
-![screenshot_loan](https://github.com/aero530/fpapp/raw/master/resources/screenshots/loan.png "Loan")
+![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/loan.png "Loan")
 
 ## Features ##
 
