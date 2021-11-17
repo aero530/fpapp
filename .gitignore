@@ -4,3 +4,5 @@
 # Data
 data.json
 dataSimple.json
+
+*.json
