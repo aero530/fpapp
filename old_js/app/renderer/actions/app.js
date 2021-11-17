@@ -1,1 +1,0 @@
-export const SET_APP_BAR_TITLE = 'SET_APP_BAR_TITLE';

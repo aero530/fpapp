@@ -1,0 +1,740 @@
+{
+  "accounts": {
+    "c02449c0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "income",
+      "name": "Phil Income",
+      "base": 107000,
+      "table": {
+        "2013": 79448,
+        "2014": 86500,
+        "2015": 92486,
+        "2016": 100664,
+        "2017": 106636,
+        "2018": 105151,
+        "2019": 111213,
+        "2020": 103253,
+        "2021": 107180
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "raise": "inflationBase",
+      "notes": "base pay + profitshare(estimate) + retainbonus"
+    },
+    "c07772d0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "income",
+      "name": "TD",
+      "base": 0,
+      "table": {
+        "2016": 1546,
+        "2017": 7508,
+        "2018": 7170,
+        "2019": 4898,
+        "2020": 722
+      },
+      "startIn": 2016,
+      "endIn": 2021,
+      "raise": "inflationBase"
+    },
+    "c0b34350-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "income",
+      "name": "Megan Studios",
+      "base": 1000,
+      "table": {
+        "2015": 6400,
+        "2016": 0,
+        "2017": 4500,
+        "2018": 3328,
+        "2019": 1800,
+        "2020": 884,
+        "2021": 0
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearStart",
+        "delta": 5
+      },
+      "raise": "inflationBase"
+    },
+    "c0e528c0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "income",
+      "name": "Megan PDC Income",
+      "base": 0,
+      "table": {
+        "2013": 6400,
+        "2014": 9000,
+        "2015": 8300
+      },
+      "startIn": 2013,
+      "endIn": 2015,
+      "raise": 0
+    },
+    "c10756c0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "income",
+      "name": "Deposit",
+      "base": 2000,
+      "table": {
+        "2013": 9600,
+        "2014": 9500,
+        "2015": 4889.17,
+        "2016": 11489.4,
+        "2017": 14172.89,
+        "2018": 3721.72,
+        "2019": 7200.33,
+        "2020": 10597.93,
+        "2021": 5444.75
+      },
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "raise": "inflationBase"
+    },
+    "c1287350-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Megans Roth IRA",
+      "table": {
+        "2008": 5835.07,
+        "2009": 7842.57,
+        "2010": 11287.37,
+        "2011": 13664.71,
+        "2012": 19577,
+        "2013": 25755.26,
+        "2014": 29130.55,
+        "2015": 30595.4,
+        "2016": 36327.81,
+        "2017": 44887.3,
+        "2018": 46118,
+        "2019": 58181,
+        "2020": 70899.64,
+        "2021": 83977.26
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 3000,
+      "contributionType": "fixed_with_inflation",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "taxStatus": "contribute_taxed_earnings_tax_deferred",
+      "notes": "https://www.tdameritrade.com\nCONTRIBUTIONS : For after saving works in the table above\n2009\t2000\n2010\t3000\n2011\t4000\n2012\t1000\n2013\t2250\n2014\t2000\n2015\t2250\n2016\t3000\n2017\t3000\n2018\t3000\n2019\t3000\n2020\t3000\n2021    3000\n"
+    },
+    "c146f7d0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Phils Roth IRA",
+      "table": {
+        "2008": 7034.55,
+        "2009": 10239.45,
+        "2010": 14244.72,
+        "2011": 15747.39,
+        "2012": 22042.76,
+        "2013": 29126.43,
+        "2014": 31812.21,
+        "2015": 33045.8,
+        "2016": 38406.93,
+        "2017": 49117.27,
+        "2018": 48529,
+        "2019": 61302,
+        "2020": 73354.64,
+        "2021": 89430.23
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 3000,
+      "contributionType": "fixed_with_inflation",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "taxStatus": "contribute_taxed_earnings_tax_deferred",
+      "notes": "https://www.tdameritrade.com\nCONTRIBUTIONS : For after saving works in the table above\n2009\t2000\n2010\t3000\n2011\t4000\n2012\t1000\n2013\t2250\n2014\t2000\n2015\t2250\n2016\t3000\n2017\t3000\n2018\t3000\n2019\t3000\n2020\t3000\n2021    3000"
+    },
+    "c169c210-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Phils Astronautics 401K",
+      "table": {
+        "2014": 8726.63,
+        "2015": 9583.51,
+        "2016": 0
+      },
+      "incomeLink": "c02449c0-c5bb-11e8-a00d-d173fe7faee3",
+      "startIn": 2013,
+      "endIn": 2015,
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 0,
+      "contributionType": "percent_of_income",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "employerMatch": 50,
+      "matchLimit": 6,
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "notes": "Rolled over to Phils DC 401K in 2016"
+    },
+    "c188e2d0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Phils DC 401K",
+      "table": {
+        "2014": 37310.88,
+        "2015": 43775.77,
+        "2016": 69769.76,
+        "2017": 95398.08,
+        "2018": 96513.47,
+        "2019": 135329.93,
+        "2020": 175438.5,
+        "2021": 220379.42
+      },
+      "incomeLink": "c02449c0-c5bb-11e8-a00d-d173fe7faee3",
+      "startIn": "incomeLink",
+      "endIn": "incomeLink",
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 6,
+      "contributionType": "percent_of_income",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "employerMatch": 50,
+      "matchLimit": 6,
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "notes": "employer matches 50% up to first 6% of income\nhttps://my.voya.com"
+    },
+    "c1a82aa0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Phils DC 401K suppliment",
+      "table": {
+        "2017": 0
+      },
+      "startIn": 2031,
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 5,
+      "contributionType": "percent_of_income",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "employerMatch": 0,
+      "matchLimit": 0,
+      "incomeLink": "c02449c0-c5bb-11e8-a00d-d173fe7faee3",
+      "taxStatus": "contribute_pretax_taxed_when_used"
+    },
+    "c1c94730-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Megans PDC 401K",
+      "table": {
+        "2014": 8431.45,
+        "2015": 9028.5,
+        "2016": 10905.63,
+        "2017": 0
+      },
+      "startIn": 2013,
+      "endIn": 2017,
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 0,
+      "contributionType": "percent_of_income",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "employerMatch": 100,
+      "matchLimit": 3,
+      "incomeLink": "c0e528c0-c5bb-11e8-a00d-d173fe7faee3",
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "notes": "consolidated with Megans Bergmeyer IRA in 2017"
+    },
+    "c1ec5f90-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "retirement",
+      "name": "Megans Bergmeyer IRA",
+      "table": {
+        "2008": 3888.11,
+        "2009": 5799.31,
+        "2010": 6753.79,
+        "2011": 5698.57,
+        "2012": 6386.75,
+        "2013": 7742.78,
+        "2014": 7461.57,
+        "2015": 6366.37,
+        "2016": 7347.7,
+        "2017": 20134.56,
+        "2018": 17760,
+        "2019": 21186.83,
+        "2020": 22243.41,
+        "2021": 26022.22
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "yearlyContribution": 0,
+      "contributionType": "percent_of_income",
+      "yearlyReturn": 5,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0,
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "notes": "401K rolled over to tranditional IRA\nhttps://www.tdameritrade.com\n2017 rollover PDC account into Bergmeyer of 11480.82"
+    },
+    "c2108960-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "hsa",
+      "name": "HSA Savings",
+      "table": {
+        "2013": 4469,
+        "2014": 4469,
+        "2015": 5295,
+        "2016": 10090,
+        "2017": 10962.08,
+        "2018": 18166,
+        "2019": 3924.84,
+        "2020": 9387.62,
+        "2021": 13033.91
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "yearlyContribution": 3000,
+      "employerContribution": 1500,
+      "contributionType": "fixed_with_inflation",
+      "yearlyReturn": 1,
+      "taxStatus": "contribute_pretax_untaxed_when_used",
+      "notes": "https://benefitslogin.wexhealth.com/Login.aspx"
+    },
+    "c235ebb0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "college",
+      "name": "Kaylin 529",
+      "table": {
+        "2012": 55,
+        "2013": 12880,
+        "2014": 16599.01,
+        "2015": 18982.67,
+        "2016": 23710.32,
+        "2017": 32054.15,
+        "2018": 33794.47,
+        "2019": 43970.17,
+        "2020": 53701.44,
+        "2021": 62416.78
+      },
+      "contribution": {
+        "2012": 3824.5,
+        "2013": 3824.5,
+        "2014": 3824.5,
+        "2015": 3824.5,
+        "2016": 2700,
+        "2017": 3600,
+        "2018": 3600,
+        "2019": 2700,
+        "2020": 3600,
+        "2021": 3150
+      },
+      "earnings": {
+        "2012": 971.8,
+        "2013": 971.8,
+        "2014": 971.8,
+        "2015": 971.8,
+        "2016": 1825.13,
+        "2017": 4743.83,
+        "2018": -1859.68,
+        "2019": 5229.2,
+        "2020": 5565.34,
+        "2021": 6131.27
+      },
+      "startIn": "yearStart",
+      "endIn": 2031,
+      "startOut": 2028,
+      "endOut": 2031,
+      "yearlyContribution": 3600,
+      "contributionType": "fixed_with_inflation",
+      "yearlyReturn": 5,
+      "withdrawalType": "end_at_zero",
+      "withdrawalValue": 0,
+      "taxStatus": "contribute_taxed_earnings_tax_deferred",
+      "notes": "As of 11/11/21\n\nEarnings is manually calculated by \nEarnings_(n) = Year_(n) - Year_(n-1) - Contribution_(n)\n\nhttps://www.edvest.com/\n# School                 2017             2027\n# UW Madison in state    $20,500/year     $40,000/year\n# UMN out of state       $32,500/year     $63,000/year\n# Purdue out of state    $40,000/year     $78,500/year\n# MIT                    $61,000/year     $120,000/year\n# Stanford               $61,200/year     $120,000/year\n# Harvard                $61,600/year     $121,000/year\n# Canegie Mellon         $64,500/year     $126,000/year\n# Yale                   $68,000/year     $133,600/year\n"
+    },
+    "c2614170-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "college",
+      "name": "Nathan 529",
+      "table": {
+        "2012": 0,
+        "2013": 4734,
+        "2014": 7233.56,
+        "2015": 9306.52,
+        "2016": 12595.33,
+        "2017": 17291.79,
+        "2018": 18267.99,
+        "2019": 25829.99,
+        "2020": 34711.78,
+        "2021": 43557.52
+      },
+      "contribution": {
+        "2012": 2133,
+        "2013": 2133,
+        "2014": 2133,
+        "2015": 2133,
+        "2016": 2178,
+        "2017": 2178,
+        "2018": 2178,
+        "2019": 2904,
+        "2020": 3450,
+        "2021": 3150
+      },
+      "earnings": {
+        "2012": 471.33,
+        "2013": 471.33,
+        "2014": 471.33,
+        "2015": 471.33,
+        "2016": 900.2,
+        "2017": 2518.46,
+        "2018": -1201.8,
+        "2019": 3096,
+        "2020": 5431.79,
+        "2021": 5820.74
+      },
+      "startIn": "yearStart",
+      "endIn": 2034,
+      "startOut": 2031,
+      "endOut": 2034,
+      "yearlyContribution": 3450,
+      "contributionType": "fixed_with_inflation",
+      "yearlyReturn": 5,
+      "withdrawalType": "end_at_zero",
+      "withdrawalValue": 0,
+      "taxStatus": "contribute_taxed_earnings_tax_deferred",
+      "notes": "As of 11/11/21\n\nEarnings is manually calculated by \nEarnings_(n) = Year_(n) - Year_(n-1) - Contribution_(n)\n\nhttps://www.edvest.com/\n# School                 2017             2027\n# UW Madison in state    $20,500/year     $40,000/year\n# UMN out of state       $32,500/year     $63,000/year\n# Purdue out of state    $40,000/year     $78,500/year\n# MIT                    $61,000/year     $120,000/year\n# Stanford               $61,200/year     $120,000/year\n# Harvard                $61,600/year     $121,000/year\n# Canegie Mellon         $64,500/year     $126,000/year\n# Yale                   $68,000/year     $133,600/year\n"
+    },
+    "c2910400-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "misc retail",
+      "table": {
+        "2015": 10935.04,
+        "2016": 11854.31,
+        "2017": 14805.4,
+        "2018": 9354.43,
+        "2019": 13030.73,
+        "2020": 21096.53,
+        "2021": 10796.97
+      },
+      "startOut": "yearStart",
+      "endOut": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 13200
+    },
+    "c2bad320-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "misc retail when retired",
+      "table": {
+        "2017": 0
+      },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 13000
+    },
+    "c2e71340-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "grocery",
+      "table": {
+        "2015": 9560.09,
+        "2016": 9147.83,
+        "2017": 10785.31,
+        "2018": 11165.95,
+        "2019": 10269.44,
+        "2020": 10123.03,
+        "2021": 11311.66
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 10500
+    },
+    "c3159d50-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "house upkeep",
+      "table": {
+        "2015": 8929.47,
+        "2016": 0,
+        "2017": 3601.97,
+        "2018": 7724.85,
+        "2019": 3291.18,
+        "2020": 7594.12,
+        "2021": 6178.4
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 5300
+    },
+    "c3433d00-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "car",
+      "table": {
+        "2015": 9973.01,
+        "2016": 8456.28,
+        "2017": 6859.34,
+        "2018": 6982.89,
+        "2019": 4910.47,
+        "2020": 1139.47,
+        "2021": 1961.17
+      },
+      "startOut": "yearStart",
+      "endOut": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 5868,
+      "notes": "When updating from accounting data, subtract out the amount paid for car loan as those are tracked seperately "
+    },
+    "c371ee20-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "car when retired",
+      "table": {
+        "2017": 0
+      },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 4000
+    },
+    "c3a24cf0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "utilities",
+      "table": {
+        "2015": 6377.85,
+        "2016": 4343.15,
+        "2017": 4038.52,
+        "2018": 3766.06,
+        "2019": 3643.49,
+        "2020": 3834.81,
+        "2021": 4036.57
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 4303
+    },
+    "c3d48080-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "insurance",
+      "table": {
+        "2015": 3438.08,
+        "2016": 3698.48,
+        "2017": 4088.84,
+        "2018": 4069.68,
+        "2019": 4061.61,
+        "2020": 4062.12,
+        "2021": 4105.14
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 4100
+    },
+    "c40888d0-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "isHealthcare": true,
+      "hsaLink": "c2108960-c5bb-11e8-a00d-d173fe7faee3",
+      "name": "health_personal",
+      "table": {
+        "2015": 3551.33,
+        "2016": 1841.61,
+        "2017": 3428.41,
+        "2018": 2878.19,
+        "2019": 5081.45,
+        "2020": 2747.1,
+        "2021": 5316.22
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 4500
+    },
+    "c43eb400-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "healthinsurance",
+      "table": {
+        "2017": 0,
+        "2019": 4828.8,
+        "2020": 4828.8,
+        "2021": 4828.8
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "taxStatus": 4,
+      "expenseValue": 4828.8,
+      "notes": "this is how much money comes out of my paycheck to pay for health insurance (health, dental, vision)"
+    },
+    "c474b820-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "entertainment travel restaurant cash gifts clothes etsy",
+      "table": {
+        "2015": 5390.53,
+        "2016": 10007.82,
+        "2017": 4826.92,
+        "2018": 7462.29,
+        "2019": 10151.05,
+        "2020": 5754.68,
+        "2021": 8696.42
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 8500
+    },
+    "c4af0200-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "expense",
+      "name": "megan cont education and kids school",
+      "table": {
+        "2015": 2087.35,
+        "2016": 624.99,
+        "2017": 1023.71,
+        "2018": 3306.65,
+        "2019": 1699.27,
+        "2020": 494.25,
+        "2021": 611.43
+      },
+      "startOut": "yearStart",
+      "endOut": 2028,
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 1200,
+      "notes": "saving for Kaylin and Nathan college happens elsewhere.  paying off student loans happens elsewhere"
+    },
+    "c4f22580-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "loan",
+      "name": "phil student loans",
+      "table": {
+        "2013": 17572.98,
+        "2014": 16535.72,
+        "2015": 15344.38,
+        "2016": 13381.55,
+        "2017": 12108.64,
+        "2019": 9060.28,
+        "2020": 7397.77,
+        "2021": 5795.21
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "paymentType": "fixed",
+      "paymentValue": 1964.76,
+      "rate": 3.5,
+      "notes": "https://www.navient.com/"
+    },
+    "c52f0770-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "loan",
+      "name": "mazda car loan",
+      "table": {
+        "2015": 15660.97,
+        "2016": 11004.66,
+        "2017": 8359.01,
+        "2018": 4800.3,
+        "2019": 1507.09,
+        "2020": 0
+      },
+      "startOut": "yearStart",
+      "endOut": 2020,
+      "paymentType": "fixed",
+      "paymentValue": 0,
+      "rate": 0.99,
+      "notes": "https://www.chase.com/business-banking/dealer-services/mazda-capital-services\nfixed payment was $3,625.32"
+    },
+    "c56b7430-c5bb-11e8-a00d-d173fe7faee3": {
+      "type": "mortgage",
+      "name": "house mortgage and escrow (property tax)",
+      "table": {
+        "2013": 217443,
+        "2014": 208859.55,
+        "2015": 201856.43,
+        "2016": 392500,
+        "2017": 386172,
+        "2018": 379613,
+        "2019": 372176,
+        "2020": 365587.97,
+        "2021": 358423.27
+      },
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "paymentType": "fixed",
+      "paymentValue": 18233.5,
+      "rate": 2.875,
+      "compoundTime": 12,
+      "mortgageInsurance": 0,
+      "ltvLimit": 80,
+      "escrowValue": 7428,
+      "homeValue": 495000,
+      "notes": "https://www.johnsonbank.com\n(Principal_and_Interest + Escrow + mortgage_insurance)*12 + ExtraPrincipal*12\nin 2012 ==  (309.67+816.22+466.39+107.11)*12 + 132.72*12\nin 2013 ==  (1012.43+466.98+105.45)*12 + 245.59*12\nin 2014 ==  ((379.61+632.82)+463.68+105.45)*12 + 245.59*12\nin 2015 ==  ((400.70+611.73)+452.76+105.45)*12 + 245.59*12\nin 2020 ==  ((642.03+877.43)+ 393.63 +0)*12 + 0*12\nin 2021 ==  (1519.46 + 0 + 0)*12 + 0*12\n\nLoan will be paid off in 2050\nhttps://www.bankrate.com/calculators/mortgages/amortization-calculator.aspx"
+    },
+    "96097c20-e610-11e9-9c0c-e3fa9de61b9b": {
+      "name": "Phil SSA",
+      "startIn": {
+        "base": "yearRetire",
+        "delta": 1
+      },
+      "endIn": "yearDie",
+      "base": 33636,
+      "notes": "",
+      "type": "ssa"
+    },
+    "3c7d7460-19f8-11ea-9eba-5364938f06eb": {
+      "name": "Megan Teaching",
+      "table": {
+        "2000": 0,
+        "2017": 0,
+        "2018": 4835,
+        "2019": 13708,
+        "2020": 5500,
+        "2021": 12000
+      },
+      "startIn": "yearStart",
+      "endIn": {
+        "base": "yearRetire",
+        "delta": -1
+      },
+      "raise": "1.5",
+      "base": 35000,
+      "notes": "",
+      "type": "income"
+    }
+  },
+  "settings": {
+    "ageRetire": 67,
+    "ageDie": 95,
+    "yearBorn": 1982,
+    "yearStart": 2021,
+    "inflationBase": 3,
+    "taxIncome": 22,
+    "taxCapitalGains": 15,
+    "retirementCostOfLiving": 100,
+    "ssa":{
+      "breakpoints" : {
+        "low": 32000,
+        "high": 44000
+      },
+      "taxableIncomePercentage": {
+        "low": 50,
+        "high": 85
+      }
+    }
+  }
+}
