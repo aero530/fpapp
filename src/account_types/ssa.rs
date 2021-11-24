@@ -1,11 +1,11 @@
 //! Social Security Account
 //!
-use std::error::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
 
-use super::inputs::{YearInput, YearEvalType};
-use super::{Account, AccountType, YearRange, AnalysisDates, Table};
+use super::inputs::{YearEvalType, YearInput};
+use super::{Account, AccountType, AnalysisDates, Table, YearRange, SimResult, YearlyTotal};
 use crate::settings::Settings;
 
 /// Social Security Account
@@ -34,9 +34,14 @@ impl Account for Ssa {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(&mut self, years: &Vec<u32>, dates: Option<AnalysisDates>, settings: &Settings) -> Result<(), Box<dyn Error>> {
+    fn init(
+        &mut self,
+        years: &Vec<u32>,
+        dates: Option<AnalysisDates>,
+        settings: &Settings,
+    ) -> Result<(), Box<dyn Error>> {
         if dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into())
+            return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: Table = Table {
             value: HashMap::new(),
@@ -66,13 +71,15 @@ impl Account for Ssa {
     fn get_range_in(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_in.value(settings, None, YearEvalType::StartIn),
-            end: self.end_in.value(settings, None, YearEvalType::EndIn)
+            end: self.end_in.value(settings, None, YearEvalType::EndIn),
         })
     }
     fn get_range_out(&self, _settings: &Settings) -> Option<YearRange> {
         None
     }
-    fn simulate(&mut self, year: u32, settings: &Settings) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    fn simulate(&mut self, year: u32, totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+        let mut result = SimResult::default();
+
+        Ok(result)
     }
 }

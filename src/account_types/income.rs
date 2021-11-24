@@ -1,11 +1,12 @@
 //! Source of income
 //!
-use std::error::Error;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
 
-use super::inputs::{PercentInput, YearInput, YearEvalType};
-use super::{Account, AccountType, YearRange, AnalysisDates, Table};
+use super::inputs::{PercentInput, YearEvalType, YearInput};
+use super::{Account, AccountType, AnalysisDates, Table, YearRange, SimResult, YearlyTotal};
 use crate::settings::Settings;
 
 /// Account to represent sources of income
@@ -36,9 +37,14 @@ impl Account for Income {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(&mut self, years: &Vec<u32>, dates: Option<AnalysisDates>, settings: &Settings) -> Result<(), Box<dyn Error>> {
+    fn init(
+        &mut self,
+        years: &Vec<u32>,
+        dates: Option<AnalysisDates>,
+        settings: &Settings,
+    ) -> Result<(), Box<dyn Error>> {
         if dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into())
+            return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: Table = Table {
             value: self.table.clone(),
@@ -68,31 +74,29 @@ impl Account for Income {
     fn get_range_in(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_in.value(settings, None, YearEvalType::StartIn),
-            end: self.end_in.value(settings, None, YearEvalType::EndIn)
+            end: self.end_in.value(settings, None, YearEvalType::EndIn),
         })
     }
     fn get_range_out(&self, _settings: &Settings) -> Option<YearRange> {
         None
     }
-    fn simulate(&mut self, year: u32, settings: &Settings) -> Result<(), Box<dyn Error>> {
-        let start = self.dates.as_ref().unwrap().year_in.unwrap().start;
-        let end = self.dates.as_ref().unwrap().year_in.unwrap().end;
+    fn simulate(&mut self, year: u32, _totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+        let start_in = self.dates.as_ref().unwrap().year_in.unwrap().start;
+        let tables = &mut self.analysis.as_mut().unwrap();
+      
+        let mut result = SimResult::default();
 
-        if year == start {
-            *(&mut self.analysis.as_mut().unwrap().value).get_mut(&year.to_string()).unwrap() = self.base;
-        } else if year > start  && year < end {
-            let prev_value = self.analysis.as_ref().unwrap().value.get(&(year-1).to_string()).unwrap();
-            let increase = self.raise.value(settings)/100.0 + 1.0;
-            let value = prev_value * increase;
-            // let thing = &mut self.analysis.as_mut().unwrap().value;
-            // *thing.entry(year.to_string()).or_insert(value) += value;
-            
-            //*(&mut self.analysis.as_mut().unwrap().value).entry(year.to_string()).or_insert(value) += value;
-            *(&mut self.analysis.as_mut().unwrap().value).get_mut(&year.to_string()).unwrap() = value;
-        } else {
-            //*self.analysis.unwrap().value.get_mut(&year.to_string()).unwrap() = 0.0;
-            *(&mut self.analysis.as_mut().unwrap().value).get_mut(&year.to_string()).unwrap() = 0.0;
+        // Calculate earnings
+        if self.dates.as_ref().unwrap().year_in.unwrap().contains(year) {
+            let raise = self.raise.value(settings) / 100.0 + 1.0;
+            result.earning = self.base * f64::powf(raise, (year - start_in) as f64);
         }
-        Ok(())
+
+        // Add earnings to value tables
+        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+            *x = result.earning;
+        }
+
+        Ok(result)
     }
 }

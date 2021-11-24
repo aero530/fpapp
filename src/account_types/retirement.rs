@@ -1,11 +1,13 @@
 //! Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
 //!
-use std::error::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
 
-use super::inputs::{ContributionOptions, PercentInput, TaxStatus, WithdrawalOptions, YearInput, YearEvalType};
-use super::{Account, AccountType, YearRange, AnalysisDates, SavingsTables};
+use super::inputs::{
+    ContributionOptions, PercentInput, TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
+};
+use super::{Account, AccountType, AnalysisDates, SavingsTables, YearRange, SimResult, YearlyTotal};
 use crate::settings::Settings;
 
 /// Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
@@ -49,8 +51,12 @@ impl Account for Retirement {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(&mut self, years: &Vec<u32>, dates: Option<AnalysisDates>, _settings: &Settings) -> Result<(), Box<dyn Error>> {
-        
+    fn init(
+        &mut self,
+        years: &Vec<u32>,
+        dates: Option<AnalysisDates>,
+        _settings: &Settings,
+    ) -> Result<(), Box<dyn Error>> {
         let mut output: SavingsTables = SavingsTables {
             value: self.table.clone(),
             contributions: match &self.contributions {
@@ -103,16 +109,18 @@ impl Account for Retirement {
     fn get_range_in(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_in.value(settings, None, YearEvalType::StartIn),
-            end: self.end_in.value(settings, None, YearEvalType::EndIn)
+            end: self.end_in.value(settings, None, YearEvalType::EndIn),
         })
     }
     fn get_range_out(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_out.value(settings, None, YearEvalType::StartOut),
-            end: self.end_out.value(settings, None, YearEvalType::EndOut)
+            end: self.end_out.value(settings, None, YearEvalType::EndOut),
         })
     }
-    fn simulate(&mut self, year: u32, settings: &Settings) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    fn simulate(&mut self, year: u32, totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+        let mut result = SimResult::default();
+
+        Ok(result)
     }
 }

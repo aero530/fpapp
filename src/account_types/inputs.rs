@@ -2,8 +2,8 @@
 //!
 use serde::{Deserialize, Serialize};
 
-use crate::settings;
 use super::Account;
+use crate::settings;
 
 /// Options for strings on year inputs
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -36,20 +36,51 @@ pub enum YearSuggestion {
 }
 
 impl YearSuggestion {
-    pub fn value(&self, settings: &settings::Settings, linked_account: Option<Box<dyn Account>>, eval_type: YearEvalType) -> u32 {
+    pub fn value(
+        &self,
+        settings: &settings::Settings,
+        linked_account: Option<Box<dyn Account>>,
+        eval_type: YearEvalType,
+    ) -> u32 {
         match self {
             Self::YearStart => settings.year_start(),
             Self::YearRetire => settings.year_retire(),
             Self::YearDie => settings.year_die(),
             Self::YearEnd => settings.year_end(),
-            Self::IncomeLink => {
-                match eval_type {
-                    YearEvalType::StartIn => linked_account.as_ref().unwrap().get_range_in(settings).unwrap().start,
-                    YearEvalType::EndIn => linked_account.as_ref().unwrap().get_range_in(settings).unwrap().end,
-                    YearEvalType::StartOut => linked_account.as_ref().unwrap().get_range_out(settings).unwrap().start,
-                    YearEvalType::EndOut => linked_account.as_ref().unwrap().get_range_out(settings).unwrap().end,
+            Self::IncomeLink => match eval_type {
+                YearEvalType::StartIn => {
+                    linked_account
+                        .as_ref()
+                        .unwrap()
+                        .get_range_in(settings)
+                        .unwrap()
+                        .start
                 }
-            }
+                YearEvalType::EndIn => {
+                    linked_account
+                        .as_ref()
+                        .unwrap()
+                        .get_range_in(settings)
+                        .unwrap()
+                        .end
+                }
+                YearEvalType::StartOut => {
+                    linked_account
+                        .as_ref()
+                        .unwrap()
+                        .get_range_out(settings)
+                        .unwrap()
+                        .start
+                }
+                YearEvalType::EndOut => {
+                    linked_account
+                        .as_ref()
+                        .unwrap()
+                        .get_range_out(settings)
+                        .unwrap()
+                        .end
+                }
+            },
         }
     }
 }
@@ -70,13 +101,20 @@ pub enum YearInput {
     /// Suggested values
     Suggested(YearSuggestion),
     /// Constant value
-    ConstantInt(u32)
+    ConstantInt(u32),
 }
 
 impl YearInput {
-    pub fn value(&self, settings: &settings::Settings, linked_account: Option<Box<dyn Account>>, eval_type: YearEvalType) -> u32 {
+    pub fn value(
+        &self,
+        settings: &settings::Settings,
+        linked_account: Option<Box<dyn Account>>,
+        eval_type: YearEvalType,
+    ) -> u32 {
         match self {
-            Self::Calculate(input) => (input.base.value(settings, linked_account, eval_type) as i32 + input.delta) as u32,
+            Self::Calculate(input) => {
+                (input.base.value(settings, linked_account, eval_type) as i32 + input.delta) as u32
+            }
             Self::Suggested(input) => input.value(settings, linked_account, eval_type),
             Self::ConstantInt(input) => *input,
         }
@@ -147,11 +185,31 @@ pub enum TaxStatus {
 pub enum ContributionOptions {
     /// fixed dollar amount
     Fixed,
-    /// percent of cost of current living
+    /// percent of income
     PercentOfIncome,
     /// fixed dollar amount compensated for inflation from year start (ie dollar amount is in current dollars)
     FixedWithInflation,
 }
+
+impl ContributionOptions {
+    pub fn value(self, contribution: f64, income: f64, duration: u32, inflation: f64) -> f64 {
+        match self {
+            ContributionOptions::Fixed => {
+                // set the contribution amount to the value input
+                contribution
+            },
+            ContributionOptions::PercentOfIncome => {
+                // calculate the contribution using the total income for the year
+                income * contribution / 100_f64
+            },
+            ContributionOptions::FixedWithInflation => {
+                // increase the value by inflation
+                contribution * f64::powf(1_f64 + inflation / 100_f64, duration as f64)
+            },
+        }
+    }
+}
+
 
 /// used to populate account dropdown for expense type selection
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -176,8 +234,6 @@ pub enum WithdrawalOptions {
     /// cost of living fraction of total savings
     /// take out the current cost of living * (this accounts value / total savings)
     ColFracOfSavings,
-    /// take out a percent of income in each year
-    PercentOfIncome,
 }
 
 /// used to populate account dropdown for payment type selection
@@ -188,4 +244,19 @@ pub enum PaymentOptions {
     Fixed,
     /// fixed dollar amount compensated for inflation from year start (ie dollar amount is in current dollars)
     FixedWithInflation,
+}
+
+impl PaymentOptions {
+
+    pub fn value(self, payment: f64, inflation: f64, duration: u32) -> f64 {
+        match self {
+            PaymentOptions::Fixed => {
+                payment
+            },
+            PaymentOptions::FixedWithInflation => {
+                payment * f64::powf(1_f64 + inflation / 100_f64, duration as f64)
+            },
+        }
+    }
+    
 }

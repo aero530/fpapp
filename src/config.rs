@@ -1,5 +1,5 @@
 //! Data used to configure how the application behaves.
-//! 
+//!
 //! This does not include anything that impacts the results of the simulation / analysis.
 //!
 use serde::Deserialize;

@@ -1,11 +1,11 @@
 //! Generic expense account (things you spend money on)
 //!
-use std::error::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
 
-use super::inputs::{ExpenseOptions, YearInput, YearEvalType};
-use super::{Account, AccountType, YearRange, AnalysisDates, Table};
+use super::inputs::{ExpenseOptions, YearEvalType, YearInput};
+use super::{Account, AccountType, AnalysisDates, Table, YearRange, SimResult, YearlyTotal};
 use crate::settings::Settings;
 
 /// Account type to represent generic expense
@@ -38,9 +38,14 @@ impl Account for Expense {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(&mut self, years: &Vec<u32>, dates: Option<AnalysisDates>, settings: &Settings) -> Result<(), Box<dyn Error>> {
+    fn init(
+        &mut self,
+        years: &Vec<u32>,
+        dates: Option<AnalysisDates>,
+        settings: &Settings,
+    ) -> Result<(), Box<dyn Error>> {
         if dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into())
+            return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: Table = Table {
             value: HashMap::new(),
@@ -73,10 +78,37 @@ impl Account for Expense {
     fn get_range_out(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_out.value(settings, None, YearEvalType::StartOut),
-            end: self.end_out.value(settings, None, YearEvalType::EndOut)
+            end: self.end_out.value(settings, None, YearEvalType::EndOut),
         })
     }
-    fn simulate(&mut self, year: u32, settings: &Settings) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    fn simulate(&mut self, year: u32, _totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+        let start = self.dates.as_ref().unwrap().year_out.unwrap().start;
+        let tables = &mut self.analysis.as_mut().unwrap();
+
+        let mut result = SimResult::default();
+
+        // Calculate expense
+        if self.dates.as_ref().unwrap().year_out.unwrap().contains(year) {
+            // Calculate expense amount for fixed, fixed_with_inflation
+            match self.expense_type {
+                ExpenseOptions::Fixed => {
+                    // if type is a fixed value set expense to the value
+                    result.expense = self.expense_value;
+                }
+                ExpenseOptions::FixedWithInflation => {
+                    // if type is a fixed number but should be compensated for with inflation
+                    let raise = settings.inflation_base / 100.0 + 1.0;
+                    let value = self.expense_value * f64::powf(raise, (year - start) as f64); // set expense to the value multiplied by an increase due to inflation
+                    result.expense = value;
+                }
+            }
+        }
+
+        // Update value table with expense value
+        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+            *x = result.expense;
+        }
+
+        Ok(result)
     }
 }

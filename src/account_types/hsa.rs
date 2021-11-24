@@ -1,11 +1,12 @@
 //! Health savings account
 //!
-use std::error::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
+use log::error;
 
-use super::inputs::{ContributionOptions, PercentInput, TaxStatus, YearInput, YearEvalType};
-use super::{Account, AccountType, YearRange, AnalysisDates, SavingsTables};
+use super::inputs::{ContributionOptions, PercentInput, TaxStatus, YearEvalType, YearInput};
+use super::{Account, AccountType, PullForward, AnalysisDates, SavingsTables, YearRange, SimResult, YearlyTotal};
 use crate::settings::Settings;
 
 /// Health Savings Account
@@ -41,9 +42,14 @@ impl Account for Hsa {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(&mut self, years: &Vec<u32>, dates: Option<AnalysisDates>, settings: &Settings) -> Result<(), Box<dyn Error>> {
+    fn init(
+        &mut self,
+        years: &Vec<u32>,
+        dates: Option<AnalysisDates>,
+        settings: &Settings,
+    ) -> Result<(), Box<dyn Error>> {
         if dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into())
+            return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: SavingsTables = SavingsTables {
             value: self.table.clone(),
@@ -92,16 +98,52 @@ impl Account for Hsa {
     fn get_range_in(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_in.value(settings, None, YearEvalType::StartIn),
-            end: self.end_in.value(settings, None, YearEvalType::EndIn)
+            end: self.end_in.value(settings, None, YearEvalType::EndIn),
         })
     }
     fn get_range_out(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_out.value(settings, None, YearEvalType::StartOut),
-            end: self.end_out.value(settings, None, YearEvalType::EndOut)
+            end: self.end_out.value(settings, None, YearEvalType::EndOut),
         })
     }
-    fn simulate(&mut self, year: u32, settings: &Settings) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    fn simulate(&mut self, year: u32, totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+        let start_in = self.dates.as_ref().unwrap().year_in.unwrap().start;
+        let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
+        let tables = &mut self.analysis.as_mut().unwrap();
+
+        let mut result = SimResult::default();
+
+        tables.pull_value_forward(year);
+
+        // Calculate earnings
+        result.earning = tables.value[&year.to_string()] * ( self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
+
+        // Add earnings to earnings and value tables
+        if let Some(x) = tables.earnings.get_mut(&year.to_string()) {
+            *x = result.earning;
+        }
+        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+            *x += result.earning;
+        }
+
+
+        // Calculate contribution
+        if self.dates.as_ref().unwrap().year_in.unwrap().contains(year) {
+            result.contribution = self.contribution_type.value(self.yearly_contribution, totals.income, year-start_in, settings.inflation_base);
+        }
+
+        // Add contribution to contribution and value tables
+        if let Some(x) = tables.contributions.get_mut(&year.to_string()) {
+            *x = result.contribution;
+        }
+        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+            *x += result.contribution;
+        }
+
+        // Calculate withdrawal
+        error!("Not done yet");
+
+        Ok(result)
     }
 }

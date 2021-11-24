@@ -2,7 +2,7 @@
 //!
 //! Application to simulate financial standing over time.
 //!
-use log::{info, debug, trace, LevelFilter};
+use log::{debug, info, trace, LevelFilter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
@@ -12,7 +12,7 @@ mod account_types;
 mod config;
 mod settings;
 
-use account_types::{Account, AccountWrapper, AccountType};
+use account_types::{Account, AccountType, AccountWrapper, YearlyTotal, SimResult};
 
 use crate::account_types::AnalysisDates;
 
@@ -40,18 +40,14 @@ impl From<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
 
 impl UserData<Box<dyn Account>> {
     fn total_income(&self, year: &String) -> f64 {
-        self.accounts
-            .iter()
-            .fold(0.0, |acc, (_uuid, account)| {
-                acc + account.get_income(year).unwrap_or(0.0)
-            })
+        self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
+            acc + account.get_income(year).unwrap_or(0.0)
+        })
     }
     fn total_expenses(&self, year: &String) -> f64 {
-        self.accounts
-            .iter()
-            .fold(0.0, |acc, (_uuid, account)| {
-                acc + account.get_expense(year).unwrap_or(0.0)
-            })
+        self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
+            acc + account.get_expense(year).unwrap_or(0.0)
+        })
     }
 }
 
@@ -79,69 +75,86 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let years: Vec<u32> = (data.settings.year_start()..data.settings.year_end())
-        .collect::<Vec<u32>>();
+    let years: Vec<u32> =
+        (data.settings.year_start()..data.settings.year_end()).collect::<Vec<u32>>();
     let mut net: HashMap<String, f64> = HashMap::new();
 
     // Initialize analysis tables
     account_order.iter().for_each(|uuid| {
-
-        let dates : Option<AnalysisDates> = match data.accounts.get(uuid).unwrap().type_id() {
+        let dates: Option<AnalysisDates> = match data.accounts.get(uuid).unwrap().type_id() {
             AccountType::Retirement => {
                 let link_id = data.accounts.get(uuid).unwrap().link_id();
                 match link_id {
-                    Some(id) => {
-                        Some(AnalysisDates {
-                            year_in: data.accounts.get(&id).unwrap().get_range_in(&data.settings),
-                            year_out: data.accounts.get(&id).unwrap().get_range_out(&data.settings),
-                        })
-                    },
-                    None => None
+                    Some(id) => Some(AnalysisDates {
+                        year_in: data.accounts.get(&id).unwrap().get_range_in(&data.settings),
+                        year_out: data
+                            .accounts
+                            .get(&id)
+                            .unwrap()
+                            .get_range_out(&data.settings),
+                    }),
+                    None => None,
                 }
-            },
+            }
             _ => None,
         };
 
-        data.accounts.get_mut(uuid).unwrap().init(&years, dates, &data.settings).unwrap();
+        data.accounts
+            .get_mut(uuid)
+            .unwrap()
+            .init(&years, dates, &data.settings)
+            .unwrap();
 
-        trace!("{:?}", data.accounts.get(uuid).unwrap());
+        debug!(
+            "{:?} {:?} {:?}",
+            data.accounts.get(uuid).unwrap().type_id(),
+            uuid,
+            data.accounts.get(uuid).unwrap().name(),
+        );
     });
 
-
-    // ----------------------------------------------------------------------
     // Main loop to loop through each year
-    // ----------------------------------------------------------------------
     years.iter().for_each(|year| {
         trace!("{:?}", year);
 
-        // If this is not the first year then pull the value from year-1 into the current year's value of net
+        // Initialize this year
         if *year > years[0] {
-            let net_prev = net[&(year-1).to_string()];
+            let net_prev = net[&(year - 1).to_string()];
             net.insert(year.to_string(), net_prev);
         }
 
+        // Loop through accounts to make contributions and withdrawals
         account_order.iter().for_each(|uuid| {
-            data.accounts.get_mut(uuid).unwrap().simulate(*year, &data.settings).unwrap();
-            let a = data.accounts.get(uuid).unwrap().get_income(&year.to_string());
-            match a {
+            // Initialize temp variables to zero
+            let _earnings = 0; // earnings is money that an account gains (ie interest for a savings account or retirement account.  for an income account earnings is the yearly income)
+            let _interest = 0; // interest is money that must be payed off (ie for a loan or mortgage)
+            let _contribution = 0; // contribution is money that goes from income to a savings type account (savings, college, retirement, etc)
+            let _employer_match = 0; // set employerMatch to zero
+            let _payment = 0; // payment is money that must come out of income
+            let _withdrawal = 0; // withdrawal is money that may be considered income (dependIng on account type)
+            let _expense = 0;
+
+            let account = data.accounts.get_mut(uuid).unwrap();
+
+            let totals = YearlyTotal::default();
+
+            let result: SimResult = account.simulate(*year, totals, &data.settings).unwrap();
+            debug!("{:?} {:?} {:?}",year, account.type_id(), result);
+
+            match account.get_income(&year.to_string()) {
                 Some(v) => {
                     *(&mut net).entry(year.to_string()).or_insert(v) += v;
-                },
+                }
                 None => {}
             }
         })
     });
 
-
-
-
-    // data.accounts.get("c188e2d0-c5bb-11e8-a00d-d173fe7faee3").unwrap().get_range_in(settings, linked_account)
-
-
-
     years.iter().for_each(|year| {
-        info!("{:?} - {:?}", year, net.get(&year.to_string()).unwrap());
+        //info!("{:?} - {:?}", year, net.get(&year.to_string()).unwrap());
+        info!("{:?} {:?}",year, data.accounts.get(&"c56b7430-c5bb-11e8-a00d-d173fe7faee3".to_string()).unwrap().get_value(&year.to_string()).unwrap() );
     });
+
     
     
     debug!("{:?}", data.total_income(&"2020".to_string()));

@@ -1,11 +1,11 @@
 //! Generic loan
-//! 
-use std::error::Error;
+//!
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
 
-use super::inputs::{PaymentOptions, PercentInput, YearInput, YearEvalType};
-use super::{Account, AccountType, YearRange, AnalysisDates, LoanTables};
+use super::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
+use super::{Account, AccountType, PullForward, AnalysisDates, LoanTables, YearRange, SimResult, YearlyTotal};
 use crate::settings::Settings;
 
 /// Generic loan
@@ -37,15 +37,21 @@ impl Account for Loan {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(&mut self, years: &Vec<u32>, dates: Option<AnalysisDates>, settings: &Settings) -> Result<(), Box<dyn Error>> {
+    fn init(
+        &mut self,
+        years: &Vec<u32>,
+        dates: Option<AnalysisDates>,
+        settings: &Settings,
+    ) -> Result<(), Box<dyn Error>> {
         if dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into())
+            return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: LoanTables = LoanTables {
             value: self.table.clone(),
             interest: HashMap::new(),
             payments: HashMap::new(),
             escrow: None,
+            insurance: None,
         };
         years.iter().for_each(|year| {
             output.value.entry(year.to_string()).or_insert(0.0);
@@ -79,10 +85,41 @@ impl Account for Loan {
     fn get_range_out(&self, settings: &Settings) -> Option<YearRange> {
         Some(YearRange {
             start: self.start_out.value(settings, None, YearEvalType::StartOut),
-            end: self.end_out.value(settings, None, YearEvalType::EndOut)
+            end: self.end_out.value(settings, None, YearEvalType::EndOut),
         })
     }
-    fn simulate(&mut self, year: u32, settings: &Settings) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    fn simulate(&mut self, year: u32, _totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+        let start_out = self.dates.as_ref().unwrap().year_out.unwrap().start;
+        let tables = &mut self.analysis.as_mut().unwrap();
+
+        let mut result = SimResult::default();
+        
+        tables.pull_value_forward(year);
+
+        // Calculate interest
+        result.interest = tables.value[&year.to_string()] * self.rate.value(settings) / 100_f64;
+
+        // Add interest to interest and value tables
+        if let Some(x) = tables.interest.get_mut(&year.to_string()) {
+            *x = result.interest;
+        }
+        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+            *x += result.interest;
+        }
+
+        // Calculate payment amount
+        if self.dates.as_ref().unwrap().year_out.unwrap().contains(year) {
+            result.payment = self.payment_type.value(self.payment_value, settings.inflation_base, year-start_out);
+        }
+
+        // Add payment to payment and value tables
+        if let Some(x) = tables.payments.get_mut(&year.to_string()) {
+            *x = result.payment;
+        }
+        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+            *x -= result.payment;
+        }
+
+        Ok(result)
     }
 }
