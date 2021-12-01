@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 
-use super::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
-use super::{Account, AccountType, PullForward, AnalysisDates, LoanTables, YearRange, SimResult, YearlyTotal};
+use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
+use super::{
+    Account, AccountType, AnalysisDates, LoanTables, PullForward, AccountResult, YearRange, YearlyTotal, YearlyImpact,
+};
 
 /// Loan type specifically tailored for mortgages
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -45,10 +47,10 @@ impl Account for Mortgage {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        dates: Option<AnalysisDates>,
+        linked_dates: Option<AnalysisDates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
-        if dates.is_some() {
+        if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: LoanTables = LoanTables {
@@ -72,12 +74,11 @@ impl Account for Mortgage {
                 .as_mut()
                 .unwrap()
                 .insert(year.to_string(), 0.0);
-                
         });
         self.analysis = Some(output);
         self.dates = Some(AnalysisDates {
-            year_in: self.get_range_in(settings),
-            year_out: self.get_range_out(settings),
+            year_in: self.get_range_in(settings, linked_dates),
+            year_out: self.get_range_out(settings, linked_dates),
         });
         Ok(())
     }
@@ -95,28 +96,50 @@ impl Account for Mortgage {
             .get(year)
             .map(|v| *v)
     }
-    fn get_range_in(&self, _settings: &Settings) -> Option<YearRange> {
+    fn get_range_in(
+        &self,
+        _settings: &Settings,
+        _linked_dates: Option<AnalysisDates>,
+    ) -> Option<YearRange> {
         None
     }
-    fn get_range_out(&self, settings: &Settings) -> Option<YearRange> {
+    fn get_range_out(
+        &self,
+        settings: &Settings,
+        linked_dates: Option<AnalysisDates>,
+    ) -> Option<YearRange> {
         Some(YearRange {
-            start: self.start_out.value(settings, None, YearEvalType::StartOut),
-            end: self.end_out.value(settings, None, YearEvalType::EndOut),
+            start: self
+                .start_out
+                .value(settings, linked_dates, YearEvalType::StartOut),
+            end: self
+                .end_out
+                .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    fn simulate(&mut self, year: u32, totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
+    fn simulate(
+        &mut self,
+        year: u32,
+        _totals: YearlyTotal,
+        settings: &Settings,
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_out = self.dates.as_ref().unwrap().year_out.unwrap().start;
         let tables = &mut self.analysis.as_mut().unwrap();
 
-        let mut result = SimResult::default();
-        
+        let mut result = AccountResult::default();
+
         tables.pull_value_forward(year);
 
         // Calculate payment available
-        result.payment = self.payment_type.value(self.payment_value, settings.inflation_base, year-start_out);
+        result.payment = self.payment_type.value(
+            self.payment_value,
+            settings.inflation_base,
+            year - start_out,
+        );
+        let mut remaining_payment = result.payment;
         // Add payment to payment and value tables
         if let Some(x) = tables.payments.get_mut(&year.to_string()) {
-            *x = result.payment;
+            *x = remaining_payment;
         }
 
         // Calculate insurance
@@ -126,22 +149,31 @@ impl Account for Mortgage {
             false => 0.0,
         };
         // Add insurance to table and pull out of payment
-        result.payment -= insurance_payment;
-        if let Some(x) = tables.insurance.as_mut().unwrap().get_mut(&year.to_string()) {
+        remaining_payment -= insurance_payment;
+        if let Some(x) = tables
+            .insurance
+            .as_mut()
+            .unwrap()
+            .get_mut(&year.to_string())
+        {
             *x = insurance_payment;
         }
 
         // Calculate escrow
         // Pull escrow out of payment and add to escrow table
-        result.payment -= self.escrow_value;
+        remaining_payment -= self.escrow_value;
         if let Some(x) = tables.escrow.as_mut().unwrap().get_mut(&year.to_string()) {
             *x = self.escrow_value;
         }
-        
+
         // Calculate interest
-        result.interest = tables.value[&year.to_string()] * f64::powf(self.rate.value(settings) / 100_f64 / self.compound_time,self.compound_time);
+        result.interest = tables.value[&year.to_string()]
+            * f64::powf(
+                self.rate.value(settings) / 100_f64 / self.compound_time,
+                self.compound_time,
+            );
         if let Some(x) = tables.interest.get_mut(&year.to_string()) {
-            *x =  result.interest;
+            *x = result.interest;
         }
         if let Some(x) = tables.value.get_mut(&year.to_string()) {
             *x += result.interest;
@@ -149,9 +181,15 @@ impl Account for Mortgage {
 
         // Apply remaining payment to value
         if let Some(x) = tables.value.get_mut(&year.to_string()) {
-            *x -= result.payment;
+            *x -= remaining_payment;
         }
 
-        Ok(result)
+        Ok(YearlyImpact {
+            expense: result.payment,
+            col: 0_f64,
+            saving: 0_f64,
+            income_taxable: 0_f64,
+            income: 0_f64,
+        })
     }
 }

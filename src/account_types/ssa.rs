@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 
-use super::inputs::{YearEvalType, YearInput};
-use super::{Account, AccountType, AnalysisDates, Table, YearRange, SimResult, YearlyTotal};
+use crate::inputs::{YearEvalType, YearInput};
 use crate::settings::Settings;
+use super::{Account, AccountType, AnalysisDates, AccountResult, Table, YearRange, YearlyTotal, YearlyImpact};
 
 /// Social Security Account
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -37,10 +37,10 @@ impl Account for Ssa {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        dates: Option<AnalysisDates>,
+        linked_dates: Option<AnalysisDates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
-        if dates.is_some() {
+        if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
         let mut output: Table = Table {
@@ -51,8 +51,8 @@ impl Account for Ssa {
         });
         self.analysis = Some(output);
         self.dates = Some(AnalysisDates {
-            year_in: self.get_range_in(settings),
-            year_out: self.get_range_out(settings),
+            year_in: self.get_range_in(settings, linked_dates),
+            year_out: self.get_range_out(settings, linked_dates),
         });
         Ok(())
     }
@@ -68,18 +68,41 @@ impl Account for Ssa {
     fn get_expense(&self, _year: &String) -> Option<f64> {
         None
     }
-    fn get_range_in(&self, settings: &Settings) -> Option<YearRange> {
+    fn get_range_in(
+        &self,
+        settings: &Settings,
+        linked_dates: Option<AnalysisDates>,
+    ) -> Option<YearRange> {
         Some(YearRange {
-            start: self.start_in.value(settings, None, YearEvalType::StartIn),
-            end: self.end_in.value(settings, None, YearEvalType::EndIn),
+            start: self
+                .start_in
+                .value(settings, linked_dates, YearEvalType::StartIn),
+            end: self
+                .end_in
+                .value(settings, linked_dates, YearEvalType::EndIn),
         })
     }
-    fn get_range_out(&self, _settings: &Settings) -> Option<YearRange> {
+    fn get_range_out(
+        &self,
+        _settings: &Settings,
+        _linked_dates: Option<AnalysisDates>,
+    ) -> Option<YearRange> {
         None
     }
-    fn simulate(&mut self, year: u32, totals: YearlyTotal, settings: &Settings) -> Result<SimResult, Box<dyn Error>> {
-        let mut result = SimResult::default();
+    fn simulate(
+        &mut self,
+        _year: u32,
+        _totals: YearlyTotal,
+        _settings: &Settings,
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
+        let mut _result = AccountResult::default();
 
-        Ok(result)
+        Ok(YearlyImpact {
+            expense: 0_f64,
+            col: 0_f64,
+            saving: 0_f64,
+            income_taxable: 0_f64,
+            income: 0_f64,
+        })
     }
 }
