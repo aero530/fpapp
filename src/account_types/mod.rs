@@ -1,14 +1,16 @@
 //! Types of financial accounts
 //!
 //! Simulate accounts such as income, expense, retirement, 529, loan, mortgage, etc.
-//!
+
 //use log::error;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
+// use std::collections::HashMap;
 use std::error::Error;
+use std::io::Write;
 
+use crate::analysis_types::{AccountResult, AnalysisDates, YearRange, YearlyImpact, YearlyTotals};
 use crate::settings::Settings;
-use crate::analysis_types::{AnalysisDates, AccountResult, YearlyImpact, YearlyTotal, YearRange};
 
 mod expense;
 use expense::Expense;
@@ -37,41 +39,177 @@ use loan::Loan;
 mod mortgage;
 use mortgage::Mortgage;
 
+pub fn range(input: Vec<&Table<u32>>) -> (u32, u32, f64, f64) {
+    let x_min = *input
+        .iter()
+        .map(|table| {
+            *table
+                .0
+                .keys()
+                .copied()
+                .collect::<Vec<u32>>()
+                .iter()
+                .min()
+                .unwrap()
+        })
+        .collect::<Vec<u32>>()
+        .iter()
+        .min()
+        .unwrap();
+    let x_max = *input
+        .iter()
+        .map(|table| {
+            *table
+                .0
+                .keys()
+                .copied()
+                .collect::<Vec<u32>>()
+                .iter()
+                .max()
+                .unwrap()
+        })
+        .collect::<Vec<u32>>()
+        .iter()
+        .max()
+        .unwrap();
+    let y_min = input
+        .iter()
+        .map(|table| {
+            table
+                .0
+                .values()
+                .copied()
+                .collect::<Vec<f64>>()
+                .iter()
+                .fold(0.0/0.0, |m, v| v.min(m))
+        })
+        .collect::<Vec<f64>>()
+        .iter()
+        .fold(0.0/0.0, |m, v| v.min(m));
+    let y_max = input
+        .iter()
+        .map(|table| {
+            table
+                .0
+                .values()
+                .copied()
+                .collect::<Vec<f64>>()
+                .iter()
+                .fold(0.0/0.0, |m, v| v.max(m))
+        })
+        .collect::<Vec<f64>>()
+        .iter()
+        .fold(0.0/0.0, |m, v| v.max(m));
+    (x_min, x_max, y_min, y_max)
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct Table<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord>(
+    BTreeMap<T, f64>,
+);
+
+impl Table<u32> {
+    pub fn get(&self, year: u32) -> Option<f64> {
+        match self.0.get(&year) {
+            Some(v) => Some(*v),
+            None => None,
+        }
+    }
+    pub fn to_vec(&self) -> (Vec<u32>, Vec<f64>) {
+        let years: Vec<u32> = self.0.keys().copied().collect();
+        let values: Vec<f64> = self.0.values().copied().collect();
+        (years, values)
+    }
+    // pub fn plotter(&self) -> core::slice::Iter<(u32, f64)> {
+    //     self.0.keys().copied().map(|year| {
+    //         (year, *self.0.get(&year).unwrap())
+    //     })
+    // }
+}
+
+// and we'll implement IntoIterator
+impl IntoIterator for Table<u32> {
+    type Item = (u32,f64);
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        //self.0.into_iter()
+        //self.0.keys().copied().map(|year| {
+        //    (year, *self.0.get(&year).unwrap())
+        //}).collect::<Vec<u32, f64>>().into_iter()
+        self.0.keys().zip(self.0.values()).map(|(x,y)| (*x,*y)).collect::<Vec<(u32, f64)>>().into_iter()
+    }
+}
+
+impl From<Table<String>> for Table<u32> {
+    fn from(other: Table<String>) -> Self {
+        Self(
+            other
+                .0
+                .iter()
+                .map(|(k, v)| (k.parse::<u32>().unwrap(), *v))
+                .collect(),
+        )
+    }
+}
+
 /// A single table of account values
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct Table {
-    value: HashMap<String, f64>,
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct SingleTable {
+    value: Table<u32>,
+}
+
+impl SingleTable {
+    fn new(value: &Table<u32>) -> SingleTable {
+        SingleTable {
+            value: value.clone(),
+        }
+    }
+    pub fn write(&self, filename: String) {
+        let years: Vec<u32> = self.value.0.keys().copied().collect();
+
+        let mut file = std::fs::File::create(filename).unwrap();
+        file.write_all("year, value\n".as_bytes()).unwrap();
+
+        years.iter().for_each(|year| {
+            file.write_all(
+                format!("{}, {:.2}\n", year, self.value.get(*year).unwrap_or(0_f64),).as_bytes(),
+            )
+            .unwrap();
+        });
+    }
 }
 
 pub trait PullForward: std::fmt::Debug {
     /// Return the most recent year in the value table that has a value greater than zero
     fn most_recent_populated_year(&self) -> Option<u32>;
 
-    /// If the most recent non-zero value is in year-1 then set the value table entry for year to the value tables entry from year - 1 
+    /// If the most recent non-zero value is in year-1 then set the value table entry for year to the value tables entry from year - 1
     fn pull_value_forward(&mut self, year: u32);
 }
 
 /// A set of tables for use with loans and mortgage accounts
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LoanTables {
     /// Outstanding loan amount
-    value: HashMap<String, f64>,
+    value: Table<u32>,
     /// Interest accrued this year
-    interest: HashMap<String, f64>,
+    interest: Table<u32>,
     /// Payments made against the loan
-    payments: HashMap<String, f64>,
+    payments: Table<u32>,
     /// Escrow amount used for mortgage type loans
-    escrow: Option<HashMap<String, f64>>,
+    escrow: Option<Table<u32>>,
     /// PMI used for mortgage type loans
-    insurance: Option<HashMap<String, f64>>,
+    insurance: Option<Table<u32>>,
 }
 
 impl PullForward for LoanTables {
     fn most_recent_populated_year(&self) -> Option<u32> {
         self.value
+            .0
             .iter()
             .filter(|(_k, v)| **v > f64::EPSILON) // only take years that have a value associated with them
-            .map(|(k, _v)| k.parse::<u32>().unwrap()) // pull just the year (we don't need the value anymore)
+            .map(|(k, _v)| *k) // pull just the year (we don't need the value anymore)
             .collect::<Vec<u32>>() // put into an
             .iter()
             .copied()
@@ -82,31 +220,82 @@ impl PullForward for LoanTables {
         match self.most_recent_populated_year() {
             Some(recent_year) => {
                 if recent_year == year - 1 {
-                    *(self.value).get_mut(&year.to_string()).unwrap() =
-                        self.value[&(year - 1).to_string()];
+                    *(self.value.0).get_mut(&year).unwrap() = self.value.0[&(year - 1)];
                 }
             }
             None => {}
         }
     }
 }
+impl LoanTables {
+    fn new(
+        value: &Table<u32>,
+        interest: &Table<u32>,
+        payments: &Table<u32>,
+        escrow: &Option<Table<u32>>,
+        insurance: &Option<Table<u32>>,
+    ) -> LoanTables {
+        LoanTables {
+            // These keys must always have tables
+            value: value.clone(),
+            interest: interest.clone(),
+            payments: payments.clone(),
+            // These keys will only have tables if mortgage type
+            escrow: escrow.clone(),
+            insurance: insurance.clone(),
+        }
+    }
+
+    pub fn write(&self, filename: String) {
+        let years: Vec<u32> = self.value.0.keys().copied().collect();
+
+        let mut file = std::fs::File::create(filename).unwrap();
+        file.write_all("year, value, interest, payments, escrow, insurance\n".as_bytes())
+            .unwrap();
+
+        years.iter().for_each(|year| {
+            file.write_all(
+                format!(
+                    "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
+                    year,
+                    self.value.get(*year).unwrap_or(0_f64),
+                    self.interest.get(*year).unwrap_or(0_f64),
+                    self.payments.get(*year).unwrap_or(0_f64),
+                    self.escrow
+                        .as_ref()
+                        .unwrap_or(&Table::default())
+                        .get(*year)
+                        .unwrap_or(0_f64),
+                    self.insurance
+                        .as_ref()
+                        .unwrap_or(&Table::default())
+                        .get(*year)
+                        .unwrap_or(0_f64),
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+        });
+    }
+}
 
 /// A set of tables for use with savings types of accounts
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SavingsTables {
-    value: HashMap<String, f64>,
-    contributions: HashMap<String, f64>,
-    employer_contributions: Option<HashMap<String, f64>>,
-    earnings: HashMap<String, f64>,
-    withdrawals: HashMap<String, f64>,
+    value: Table<u32>,
+    contributions: Table<u32>,
+    employer_contributions: Option<Table<u32>>,
+    earnings: Table<u32>,
+    withdrawals: Table<u32>,
 }
 
 impl PullForward for SavingsTables {
     fn most_recent_populated_year(&self) -> Option<u32> {
         self.value
+            .0
             .iter()
             .filter(|(_k, v)| **v > f64::EPSILON)
-            .map(|(k, _v)| k.parse::<u32>().unwrap())
+            .map(|(k, _v)| *k)
             .collect::<Vec<u32>>()
             .iter()
             .copied()
@@ -117,12 +306,69 @@ impl PullForward for SavingsTables {
         match self.most_recent_populated_year() {
             Some(recent_year) => {
                 if recent_year == year - 1 {
-                    *(self.value).get_mut(&year.to_string()).unwrap() =
-                        self.value[&(year - 1).to_string()];
+                    *(self.value.0).get_mut(&year).unwrap() = self.value.0[&(year - 1)];
                 }
             }
             None => {}
         }
+    }
+}
+impl SavingsTables {
+    fn new(
+        value: &Table<u32>,
+        contributions: &Option<Table<u32>>,
+        employer_contributions: &Option<Table<u32>>,
+        earnings: &Option<Table<u32>>,
+        withdrawals: &Option<Table<u32>>,
+    ) -> SavingsTables {
+        SavingsTables {
+            value: value.clone(),
+            contributions: match contributions {
+                Some(table) => table.clone(),
+                None => Table::default(),
+            },
+            employer_contributions: employer_contributions.clone(),
+            earnings: match earnings {
+                Some(table) => table.clone(),
+                None => Table::default(),
+            },
+            withdrawals: match withdrawals {
+                Some(table) => table.clone(),
+                None => Table::default(),
+            },
+        }
+    }
+
+    pub fn write(&self, filename: String) {
+        let mut years: Vec<u32> = self.value.0.keys().map(|k| *k).collect();
+        years.sort();
+
+        let mut file = std::fs::File::create(filename).unwrap();
+        file.write_all(
+            "year, value, contributions, employer_contributions, earnings, withdrawals\n"
+                .as_bytes(),
+        )
+        .unwrap();
+
+        years.iter().for_each(|year| {
+            file.write_all(
+                format!(
+                    "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
+                    year,
+                    self.value.get(*year).unwrap_or(0_f64),
+                    self.contributions.get(*year).unwrap_or(0_f64),
+                    self.employer_contributions
+                        .as_ref()
+                        .unwrap_or(&Table::default())
+                        .get(*year)
+                        .unwrap_or(0_f64),
+                    self.earnings.get(*year).unwrap_or(0_f64),
+                    self.withdrawals.get(*year).unwrap_or(0_f64),
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+        });
     }
 }
 
@@ -148,13 +394,13 @@ pub trait Account: std::fmt::Debug {
     ) -> Result<(), Box<dyn Error>>;
 
     /// Return the value for the specified year
-    fn get_value(&self, year: &String) -> Option<f64>;
+    fn get_value(&self, year: u32) -> Option<f64>;
 
     /// Return the income value for the specified year
-    fn get_income(&self, year: &String) -> Option<f64>;
+    fn get_income(&self, year: u32) -> Option<f64>;
 
     /// Return the expense value for the specified year
-    fn get_expense(&self, year: &String) -> Option<f64>;
+    fn get_expense(&self, year: u32) -> Option<f64>;
 
     /// Return start_in and end_in
     fn get_range_in(
@@ -176,9 +422,13 @@ pub trait Account: std::fmt::Debug {
     fn simulate(
         &mut self,
         year: u32,
-        totals: YearlyTotal,
+        totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>>;
+
+    fn write(&self, filepath: String);
+
+    fn plot(&self, filepath: String);
 }
 
 /// List of the types of accounts that are available
@@ -196,32 +446,32 @@ pub enum AccountType {
 }
 
 /// Account Wrapper for json data storage
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum AccountWrapper {
-    Income(Income),
+    Income(Income<String>),
     Ssa(Ssa),
-    Retirement(Retirement),
-    Hsa(Hsa),
-    College(College),
-    Expense(Expense),
-    Loan(Loan),
-    Mortgage(Mortgage),
-    Savings(Savings),
+    Retirement(Retirement<String>),
+    Hsa(Hsa<String>),
+    College(College<String>),
+    Expense(Expense<String>),
+    Loan(Loan<String>),
+    Mortgage(Mortgage<String>),
+    Savings(Savings<String>),
 }
 
 impl AccountWrapper {
     pub fn to_account_object(self) -> Box<dyn Account> {
         match self {
-            AccountWrapper::Income(account) => Box::new(account),
+            AccountWrapper::Income(account) => Box::new(Income::<u32>::from(account)),
             AccountWrapper::Ssa(account) => Box::new(account),
-            AccountWrapper::Retirement(account) => Box::new(account),
-            AccountWrapper::Hsa(account) => Box::new(account),
-            AccountWrapper::College(account) => Box::new(account),
-            AccountWrapper::Expense(account) => Box::new(account),
-            AccountWrapper::Loan(account) => Box::new(account),
-            AccountWrapper::Mortgage(account) => Box::new(account),
-            AccountWrapper::Savings(account) => Box::new(account),
+            AccountWrapper::Retirement(account) => Box::new(Retirement::<u32>::from(account)),
+            AccountWrapper::Hsa(account) => Box::new(Hsa::<u32>::from(account)),
+            AccountWrapper::College(account) => Box::new(College::<u32>::from(account)),
+            AccountWrapper::Expense(account) => Box::new(Expense::<u32>::from(account)),
+            AccountWrapper::Loan(account) => Box::new(Loan::<u32>::from(account)),
+            AccountWrapper::Mortgage(account) => Box::new(Mortgage::<u32>::from(account)),
+            AccountWrapper::Savings(account) => Box::new(Savings::<u32>::from(account)),
         }
     }
     pub fn order() -> Vec<AccountType> {

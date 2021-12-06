@@ -1,11 +1,11 @@
 //! Settings that impact the simulation / analysis results
 
-use std::io::Write;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::io::Write;
 
-use crate::settings;
 use crate::account_types::{Account, AccountWrapper};
+use crate::settings;
 
 /// Generic range
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -68,7 +68,6 @@ impl Settings {
     }
 }
 
-
 /// Represents the user data file
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct UserData<T> {
@@ -92,12 +91,12 @@ impl From<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
 }
 
 impl UserData<Box<dyn Account>> {
-    pub fn total_income(&self, year: &String) -> f64 {
+    pub fn total_income(&self, year: u32) -> f64 {
         self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
             acc + account.get_income(year).unwrap_or(0.0)
         })
     }
-    pub fn total_expenses(&self, year: &String) -> f64 {
+    pub fn total_expenses(&self, year: u32) -> f64 {
         self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
             acc + account.get_expense(year).unwrap_or(0.0)
         })
@@ -106,7 +105,7 @@ impl UserData<Box<dyn Account>> {
         print!("{:?} ", year);
         order.iter().for_each(|uuid| {
             let account = self.accounts.get(uuid).unwrap();
-            let value = account.get_value(&year.to_string()).unwrap();
+            let value = account.get_value(year).unwrap();
             print!("{:.2} ", value);
         });
         println!("");
@@ -125,8 +124,9 @@ impl UserData<Box<dyn Account>> {
             file.write_all(format!("{:?}, ", year).as_bytes()).unwrap();
             order.iter().for_each(|uuid| {
                 let account = self.accounts.get(uuid).unwrap();
-                let value = account.get_value(&year.to_string()).unwrap();
-                file.write_all(format!("{:.2}, ", value).as_bytes()).unwrap();
+                let value = account.get_value(*year).unwrap();
+                file.write_all(format!("{:.2}, ", value).as_bytes())
+                    .unwrap();
             });
             file.write_all("\n".as_bytes()).unwrap();
         });

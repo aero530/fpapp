@@ -1,21 +1,22 @@
 //! Loan type specifically tailored for mortgages
 //!
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::error::Error;
+use plotters::prelude::*;
 
+use super::{
+    Account, AccountResult, AccountType, AnalysisDates, LoanTables, PullForward, Table, YearRange,
+    YearlyImpact, YearlyTotals, range
+};
 use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
-use super::{
-    Account, AccountType, AnalysisDates, LoanTables, PullForward, AccountResult, YearRange, YearlyTotal, YearlyImpact,
-};
 
 /// Loan type specifically tailored for mortgages
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Mortgage {
+pub struct Mortgage<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
     name: String,
-    table: HashMap<String, f64>,
+    table: Table<T>,
     start_out: YearInput,
     end_out: YearInput,
     payment_type: PaymentOptions,
@@ -34,7 +35,29 @@ pub struct Mortgage {
     dates: Option<AnalysisDates>,
 }
 
-impl Account for Mortgage {
+impl From<Mortgage<String>> for Mortgage<u32> {
+    fn from(other: Mortgage<String>) -> Self {
+        Self {
+            name: other.name,
+            table: other.table.into(),
+            start_out: other.start_out,
+            end_out: other.end_out,
+            payment_type: other.payment_type,
+            payment_value: other.payment_value,
+            rate: other.rate,
+            compound_time: other.compound_time,
+            mortgage_insurance: other.mortgage_insurance,
+            ltv_limit: other.ltv_limit,
+            escrow_value: other.escrow_value,
+            home_value: other.home_value,
+            notes: other.notes,
+            analysis: other.analysis,
+            dates: other.dates,
+        }
+    }
+}
+
+impl Account for Mortgage<u32> {
     fn type_id(&self) -> AccountType {
         AccountType::Mortgage
     }
@@ -53,27 +76,20 @@ impl Account for Mortgage {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut output: LoanTables = LoanTables {
-            value: self.table.clone(),
-            interest: HashMap::new(),
-            payments: HashMap::new(),
-            escrow: Some(HashMap::new()),
-            insurance: Some(HashMap::new()),
-        };
-        years.iter().for_each(|year| {
-            output.value.entry(year.to_string()).or_insert(0.0);
-            output.interest.insert(year.to_string(), 0.0);
-            output.payments.insert(year.to_string(), 0.0);
-            output
-                .escrow
-                .as_mut()
-                .unwrap()
-                .insert(year.to_string(), 0.0);
-            output
-                .insurance
-                .as_mut()
-                .unwrap()
-                .insert(year.to_string(), 0.0);
+        let mut output = LoanTables::new(
+            &self.table,
+            &Table::default(),
+            &Table::default(),
+            &Some(Table::default()),
+            &Some(Table::default()),
+        );
+
+        years.iter().copied().for_each(|year| {
+            output.value.0.entry(year).or_insert(0.0);
+            output.interest.0.insert(year, 0.0);
+            output.payments.0.insert(year, 0.0);
+            output.escrow.as_mut().unwrap().0.insert(year, 0.0);
+            output.insurance.as_mut().unwrap().0.insert(year, 0.0);
         });
         self.analysis = Some(output);
         self.dates = Some(AnalysisDates {
@@ -82,18 +98,25 @@ impl Account for Mortgage {
         });
         Ok(())
     }
-    fn get_value(&self, year: &String) -> Option<f64> {
-        self.analysis.as_ref().unwrap().value.get(year).map(|v| *v)
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis
+            .as_ref()
+            .unwrap()
+            .value
+            .0
+            .get(&year)
+            .map(|v| *v)
     }
-    fn get_income(&self, _year: &String) -> Option<f64> {
+    fn get_income(&self, _year: u32) -> Option<f64> {
         None
     }
-    fn get_expense(&self, year: &String) -> Option<f64> {
+    fn get_expense(&self, year: u32) -> Option<f64> {
         self.analysis
             .as_ref()
             .unwrap()
             .payments
-            .get(year)
+            .0
+            .get(&year)
             .map(|v| *v)
     }
     fn get_range_in(
@@ -117,10 +140,57 @@ impl Account for Mortgage {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
+    fn plot(&self, filepath: String) {
+        let value = self.analysis.as_ref().unwrap().value.clone();
+        let interest = self.analysis.as_ref().unwrap().interest.clone();
+        let payments = self.analysis.as_ref().unwrap().payments.clone();
+        let escrow = self.analysis.as_ref().unwrap().escrow.clone().unwrap();
+        let insurance = self.analysis.as_ref().unwrap().insurance.clone().unwrap();
+
+        let (x_min, x_max, y_min, y_max) = range(vec![&value, &interest, &payments, &escrow, &insurance]);
+
+        let root = BitMapBackend::new(&filepath, (640, 480)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+        let mut chart = ChartBuilder::on(&root)
+            .caption(self.name(), ("sans-serif", 50).into_font())
+            .margin(5)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
+
+        chart.configure_mesh().draw().unwrap();
+
+        chart
+            .draw_series(LineSeries::new(value.into_iter(),&RED)).unwrap()
+            .label("balance")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        chart
+            .draw_series(LineSeries::new(interest.into_iter(),&GREEN)).unwrap()
+            .label("interest")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+        chart
+            .draw_series(LineSeries::new(payments.into_iter(),&BLUE)).unwrap()
+            .label("payments")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        chart
+            .draw_series(LineSeries::new(escrow.into_iter(),&YELLOW)).unwrap()
+            .label("escrow")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW));
+        chart
+            .draw_series(LineSeries::new(insurance.into_iter(),&CYAN)).unwrap()
+            .label("insurance")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw().unwrap();
+    }
     fn simulate(
         &mut self,
         year: u32,
-        _totals: YearlyTotal,
+        _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_out = self.dates.as_ref().unwrap().year_out.unwrap().start;
@@ -130,58 +200,67 @@ impl Account for Mortgage {
 
         tables.pull_value_forward(year);
 
-        // Calculate payment available
-        result.payment = self.payment_type.value(
-            self.payment_value,
-            settings.inflation_base,
-            year - start_out,
-        );
-        let mut remaining_payment = result.payment;
-        // Add payment to payment and value tables
-        if let Some(x) = tables.payments.get_mut(&year.to_string()) {
-            *x = remaining_payment;
-        }
-
         // Calculate insurance
-        let loan_to_value = tables.value[&year.to_string()] / self.home_value * 100_f64;
+        let loan_to_value = tables.value.0[&year] / self.home_value * 100_f64;
         let insurance_payment = match loan_to_value > self.ltv_limit {
             true => self.mortgage_insurance,
             false => 0.0,
         };
         // Add insurance to table and pull out of payment
-        remaining_payment -= insurance_payment;
-        if let Some(x) = tables
-            .insurance
-            .as_mut()
-            .unwrap()
-            .get_mut(&year.to_string())
-        {
+        if let Some(x) = tables.insurance.as_mut().unwrap().0.get_mut(&year) {
             *x = insurance_payment;
         }
 
         // Calculate escrow
         // Pull escrow out of payment and add to escrow table
-        remaining_payment -= self.escrow_value;
-        if let Some(x) = tables.escrow.as_mut().unwrap().get_mut(&year.to_string()) {
+        if let Some(x) = tables.escrow.as_mut().unwrap().0.get_mut(&year) {
             *x = self.escrow_value;
         }
 
         // Calculate interest
-        result.interest = tables.value[&year.to_string()]
+        // The formula for compound interest is P (1 + r/n)^(nt)
+        //  P is the initial principal balance
+        //  r is the interest rate
+        //  n is the number of times interest is compounded per time period
+        //  t is the number of time periods
+        result.interest = tables.value.0[&year]
             * f64::powf(
-                self.rate.value(settings) / 100_f64 / self.compound_time,
+                1_f64 + (self.rate.value(settings) / 100_f64) / self.compound_time,
                 self.compound_time,
-            );
-        if let Some(x) = tables.interest.get_mut(&year.to_string()) {
+            )
+            - tables.value.0[&year];
+        if let Some(x) = tables.interest.0.get_mut(&year) {
             *x = result.interest;
         }
-        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+        if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.interest;
         }
 
-        // Apply remaining payment to value
-        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+        // Calculate payment available
+        result.payment = self.payment_type.value(
+            self.payment_value,
+            settings.inflation_base,
+            year - start_out,
+            *tables.value.0.get(&year).unwrap() + insurance_payment + self.escrow_value,
+        );
+
+        // Add payment to payment and value tables
+        if let Some(x) = tables.payments.0.get_mut(&year) {
+            *x = result.payment;
+        }
+
+        // Calculate how much of the payment will actually go toward the loan (principal & interest)
+        let mut remaining_payment = result.payment; // initial amount that is set to be paid to this loan
+        remaining_payment -= insurance_payment; // reduced by the insurance costs for the year
+        remaining_payment -= self.escrow_value; // reduced by escrow / property taxes for the year
+
+        // Apply remaining payment to loan balance
+        if let Some(x) = tables.value.0.get_mut(&year) {
             *x -= remaining_payment;
+            // Limit min value of the loan balance to account for floating point math rounding
+            if *x < 0.0001 {
+                *x = 0_f64;
+            }
         }
 
         Ok(YearlyImpact {
@@ -191,5 +270,11 @@ impl Account for Mortgage {
             income_taxable: 0_f64,
             income: 0_f64,
         })
+    }
+    fn write(&self, filepath: String) {
+        match &self.analysis {
+            Some(results) => results.write(filepath),
+            None => {}
+        }
     }
 }

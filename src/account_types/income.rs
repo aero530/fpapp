@@ -2,32 +2,51 @@
 //!
 //use log::debug;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::error::Error;
+use plotters::prelude::*;
 
+use super::{
+    Account, AccountResult, AccountType, AnalysisDates, SingleTable, Table, YearRange,
+    YearlyImpact, YearlyTotals, range
+};
 use crate::inputs::{PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
-use super::{Account, AccountType, AnalysisDates, AccountResult, Table, YearRange, YearlyTotal, YearlyImpact};
 
 /// Account to represent sources of income
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Income {
+pub struct Income<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
     name: String,
     base: f64,
-    table: HashMap<String, f64>,
+    table: Table<T>,
     start_in: YearInput,
     end_in: YearInput,
     raise: PercentInput,
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
     #[serde(skip)]
-    analysis: Option<Table>,
+    analysis: Option<SingleTable>,
     #[serde(skip)]
     dates: Option<AnalysisDates>,
 }
 
-impl Account for Income {
+impl From<Income<String>> for Income<u32> {
+    fn from(other: Income<String>) -> Self {
+        Self {
+            name: other.name,
+            base: other.base,
+            table: other.table.into(),
+            start_in: other.start_in,
+            end_in: other.end_in,
+            raise: other.raise,
+            notes: other.notes,
+            analysis: other.analysis,
+            dates: other.dates,
+        }
+    }
+}
+
+impl Account for Income<u32> {
     fn type_id(&self) -> AccountType {
         AccountType::Income
     }
@@ -46,11 +65,9 @@ impl Account for Income {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut output: Table = Table {
-            value: self.table.clone(),
-        };
-        years.iter().for_each(|year| {
-            output.value.entry(year.to_string()).or_insert(0.0);
+        let mut output = SingleTable::new(&self.table);
+        years.iter().copied().for_each(|year| {
+            output.value.0.entry(year).or_insert(0.0);
         });
         self.analysis = Some(output);
         self.dates = Some(AnalysisDates {
@@ -59,16 +76,16 @@ impl Account for Income {
         });
         Ok(())
     }
-    fn get_value(&self, year: &String) -> Option<f64> {
+    fn get_value(&self, year: u32) -> Option<f64> {
         match &self.analysis {
-            Some(result) => result.value.get(year).map(|v| *v),
+            Some(result) => result.value.0.get(&year).map(|v| *v),
             None => None,
         }
     }
-    fn get_income(&self, year: &String) -> Option<f64> {
+    fn get_income(&self, year: u32) -> Option<f64> {
         self.get_value(year)
     }
-    fn get_expense(&self, _year: &String) -> Option<f64> {
+    fn get_expense(&self, _year: u32) -> Option<f64> {
         None
     }
     fn get_range_in(
@@ -92,10 +109,36 @@ impl Account for Income {
     ) -> Option<YearRange> {
         None
     }
+    fn plot(&self, filepath: String) {
+        let value = self.analysis.as_ref().unwrap().value.clone();
+        let (x_min, x_max, y_min, y_max) = range(vec![&value]);
+
+        let root = BitMapBackend::new(&filepath, (640, 480)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+        let mut chart = ChartBuilder::on(&root)
+            .caption(self.name(), ("sans-serif", 50).into_font())
+            .margin(5)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
+
+        chart.configure_mesh().draw().unwrap();
+
+        chart
+            .draw_series(LineSeries::new(value.into_iter(),&RED)).unwrap()
+            .label("income")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw().unwrap();
+    }
     fn simulate(
         &mut self,
         year: u32,
-        _totals: YearlyTotal,
+        _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.as_ref().unwrap().year_in.unwrap().start;
@@ -110,7 +153,7 @@ impl Account for Income {
         }
 
         // Add earnings to value tables
-        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+        if let Some(x) = tables.value.0.get_mut(&year) {
             *x = result.earning;
         }
 
@@ -121,5 +164,11 @@ impl Account for Income {
             income_taxable: result.earning,
             income: result.earning,
         })
+    }
+    fn write(&self, filepath: String) {
+        match &self.analysis {
+            Some(results) => results.write(filepath),
+            None => {}
+        }
     }
 }

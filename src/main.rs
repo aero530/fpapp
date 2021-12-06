@@ -6,6 +6,10 @@ use log::{debug, error, info, trace, LevelFilter};
 use std::error::Error;
 use std::fs::read_to_string;
 
+// extern crate plotly;
+// use plotly::common::Mode;
+// use plotly::{Plot, Scatter, ImageFormat};
+
 mod account_types;
 mod analysis_types;
 mod config;
@@ -13,9 +17,8 @@ mod inputs;
 mod settings;
 
 use account_types::{Account, AccountWrapper};
+use analysis_types::{AnalysisDates, YearlyTotal, YearlyTotals};
 use settings::UserData;
-use analysis_types::{YearlyTotal, YearlyTotals, AnalysisDates};
-
 
 /// Main loop
 fn main() -> Result<(), Box<dyn Error>> {
@@ -26,6 +29,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Read in simulated system pattern
     let filename = "archive/fp_data.json";
     let json_file_str = read_to_string(std::path::Path::new(&filename))?;
+
+    let _a = serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str)?;
 
     let mut data: UserData<Box<dyn Account>> =
         serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str)?.into();
@@ -40,6 +45,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+
+    // print out account order
+    // account_order.iter().for_each(|uuid| {
+    //     debug!("{:?}",data.accounts.get(uuid).unwrap().name());
+    // });
 
     let years: Vec<u32> =
         (data.settings.year_start()..data.settings.year_end()).collect::<Vec<u32>>();
@@ -89,36 +99,38 @@ fn main() -> Result<(), Box<dyn Error>> {
     years.iter().copied().for_each(|year| {
         trace!("{:?}", year);
 
-        let mut this_year = YearlyTotal::default();
-
         // Initialize this year
-        // Pull forward the value of net and savings
-        if year > years[0] {
-            this_year.set_net(yearly_totals.get(year - 1).net);
-            this_year.set_savings(yearly_totals.get(year - 1).saving);
-        }
+        yearly_totals.init(year);
 
         // Loop through accounts to make contributions and withdrawals
         account_order.iter().for_each(|uuid| {
             let account = data.accounts.get_mut(uuid).unwrap();
             let result = account
-                .simulate(year, this_year, &data.settings)
+                .simulate(year, &yearly_totals, &data.settings)
                 .unwrap();
-                this_year.update(result);
+            yearly_totals.update(year, result);
+            //this_year.update(result);
         });
-        
-        this_year.deposit_income_in_net();
-        this_year.pay_income_tax_from_net(data.settings.tax_income);
-        this_year.pay_expenses_from_net();
 
-        yearly_totals.insert(year.to_string(), this_year);
+        yearly_totals.deposit_income_in_net(year).unwrap();
+        yearly_totals
+            .pay_income_tax_from_net(year, data.settings.tax_income)
+            .unwrap();
+        yearly_totals.pay_expenses_from_net(year).unwrap();
     });
 
     data.write_tables(&account_order, years.clone(), "tables.csv".into());
     yearly_totals.write_summary("summary.csv".into());
 
+    account_order.iter().for_each(|uuid| {
+        let account = data.accounts.get(uuid).unwrap();
+        account.write(format!("{}.csv", account.name()));
+        account.plot(format!("{}.png", account.name()));
+    });
+
     // debug!("{:?}", data.total_income(&"2020".to_string()));
     // debug!("{:?}", data.total_expenses(&"2020".to_string()));
+    //debug!("{:?}", data.accounts.get("c56b7430-c5bb-11e8-a00d-d173fe7faee3"));
 
     Ok(())
 }

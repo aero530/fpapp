@@ -2,28 +2,29 @@
 //!
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::error::Error;
+use plotters::prelude::*;
 
+use super::{
+    Account, AccountResult, AccountType, AnalysisDates, PullForward, SavingsTables, Table,
+    YearRange, YearlyImpact, YearlyTotals, range
+};
 use crate::inputs::{
-    ContributionOptions, EmployerMatch, PercentInput, TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
+    ContributionOptions, EmployerMatch, PercentInput, TaxStatus, WithdrawalOptions, YearEvalType,
+    YearInput,
 };
 use crate::settings::Settings;
-use super::{
-    Account, AccountType, AnalysisDates, PullForward, SavingsTables, AccountResult, YearRange,
-    YearlyTotal, YearlyImpact,
-};
 
 /// Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Retirement {
+pub struct Retirement<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
     name: String,
-    table: HashMap<String, f64>,
-    contributions: Option<HashMap<String, f64>>,
-    earnings: Option<HashMap<String, f64>>,
-    withdrawals: Option<HashMap<String, f64>>,
-    employer_contributions: Option<HashMap<String, f64>>,
+    table: Table<T>,
+    contributions: Option<Table<T>>,
+    earnings: Option<Table<T>>,
+    withdrawals: Option<Table<T>>,
+    employer_contributions: Option<Table<T>>,
     start_in: YearInput,
     end_in: YearInput,
     start_out: YearInput,
@@ -46,7 +47,47 @@ pub struct Retirement {
     dates: Option<AnalysisDates>,
 }
 
-impl Account for Retirement {
+impl From<Retirement<String>> for Retirement<u32> {
+    fn from(other: Retirement<String>) -> Self {
+        Self {
+            name: other.name,
+            table: other.table.into(),
+            contributions: match other.contributions {
+                Some(v) => Some(v.into()),
+                None => None,
+            },
+            earnings: match other.earnings {
+                Some(v) => Some(v.into()),
+                None => None,
+            },
+            withdrawals: match other.withdrawals {
+                Some(v) => Some(v.into()),
+                None => None,
+            },
+            employer_contributions: match other.employer_contributions {
+                Some(v) => Some(v.into()),
+                None => None,
+            },
+            start_in: other.start_in,
+            end_in: other.end_in,
+            start_out: other.start_out,
+            end_out: other.end_out,
+            yearly_contribution: other.yearly_contribution,
+            contribution_type: other.contribution_type,
+            yearly_return: other.yearly_return,
+            withdrawal_type: other.withdrawal_type,
+            withdrawal_value: other.withdrawal_value,
+            tax_status: other.tax_status,
+            income_link: other.income_link,
+            matching: other.matching,
+            notes: other.notes,
+            analysis: other.analysis,
+            dates: other.dates,
+        }
+    }
+}
+
+impl Account for Retirement<u32> {
     fn type_id(&self) -> AccountType {
         AccountType::Retirement
     }
@@ -63,36 +104,24 @@ impl Account for Retirement {
         linked_dates: Option<AnalysisDates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
-        let mut output: SavingsTables = SavingsTables {
-            value: self.table.clone(),
-            contributions: match &self.contributions {
-                Some(table) => table.clone(),
-                None => HashMap::new(),
-            },
-            employer_contributions: Some(match &self.employer_contributions {
-                Some(table) => table.clone(),
-                None => HashMap::new(),
-            }),
-            earnings: match &self.earnings {
-                Some(table) => table.clone(),
-                None => HashMap::new(),
-            },
-            withdrawals: match &self.withdrawals {
-                Some(table) => table.clone(),
-                None => HashMap::new(),
-            },
-        };
-        years.iter().for_each(|year| {
-            output.value.entry(year.to_string()).or_insert(0.0);
-            output.contributions.entry(year.to_string()).or_insert(0.0);
-            output
-                .employer_contributions
-                .as_mut()
-                .unwrap()
-                .entry(year.to_string())
-                .or_insert(0.0);
-            output.earnings.entry(year.to_string()).or_insert(0.0);
-            output.withdrawals.entry(year.to_string()).or_insert(0.0);
+        let mut output = SavingsTables::new(
+            &self.table,
+            &self.contributions,
+            &self.employer_contributions,
+            &self.earnings,
+            &self.withdrawals,
+        );
+        years.iter().copied().for_each(|year| {
+            output.value.0.entry(year).or_insert(0.0);
+            output.contributions.0.entry(year).or_insert(0.0);
+            match output.employer_contributions.as_mut() {
+                Some(v) => {
+                    v.0.entry(year).or_insert(0.0);
+                }
+                None => {}
+            };
+            output.earnings.0.entry(year).or_insert(0.0);
+            output.withdrawals.0.entry(year).or_insert(0.0);
         });
         self.analysis = Some(output);
         self.dates = Some(AnalysisDates {
@@ -101,18 +130,25 @@ impl Account for Retirement {
         });
         Ok(())
     }
-    fn get_value(&self, year: &String) -> Option<f64> {
-        self.analysis.as_ref().unwrap().value.get(year).map(|v| *v)
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis
+            .as_ref()
+            .unwrap()
+            .value
+            .0
+            .get(&year)
+            .map(|v| *v)
     }
-    fn get_income(&self, _year: &String) -> Option<f64> {
+    fn get_income(&self, _year: u32) -> Option<f64> {
         None
     }
-    fn get_expense(&self, year: &String) -> Option<f64> {
+    fn get_expense(&self, year: u32) -> Option<f64> {
         self.analysis
             .as_ref()
             .unwrap()
             .contributions
-            .get(year)
+            .0
+            .get(&year)
             .map(|v| *v)
     }
     fn get_range_in(
@@ -143,14 +179,56 @@ impl Account for Retirement {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
+    fn plot(&self, filepath: String) {
+        let value = self.analysis.as_ref().unwrap().value.clone();
+        let contributions = self.analysis.as_ref().unwrap().contributions.clone();
+        // let employer_contributions = self.analysis.as_ref().unwrap().employer_contributions.clone();
+        let earnings = self.analysis.as_ref().unwrap().earnings.clone();
+        let withdrawals = self.analysis.as_ref().unwrap().withdrawals.clone();
+
+        let (x_min, x_max, y_min, y_max) = range(vec![&value, &contributions, &earnings, &withdrawals]);
+
+        let root = BitMapBackend::new(&filepath, (640, 480)).into_drawing_area();
+        root.fill(&WHITE).unwrap();
+        let mut chart = ChartBuilder::on(&root)
+            .caption(self.name(), ("sans-serif", 50).into_font())
+            .margin(5)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
+
+        chart.configure_mesh().draw().unwrap();
+
+        chart
+            .draw_series(LineSeries::new(value.into_iter(),&RED)).unwrap()
+            .label("balance")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        chart
+            .draw_series(LineSeries::new(contributions.into_iter(),&GREEN)).unwrap()
+            .label("contributions")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+        chart
+            .draw_series(LineSeries::new(earnings.into_iter(),&BLUE)).unwrap()
+            .label("earnings")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        chart
+            .draw_series(LineSeries::new(withdrawals.into_iter(),&YELLOW)).unwrap()
+            .label("withdrawals")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW));
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw().unwrap();
+    }
     fn simulate(
         &mut self,
         year: u32,
-        totals: YearlyTotal,
+        totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.unwrap().year_in.unwrap().start;
-        //let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
         let tables = self.analysis.as_mut().unwrap();
 
         let mut result = AccountResult::default();
@@ -159,14 +237,13 @@ impl Account for Retirement {
         tables.pull_value_forward(year);
 
         // Calculate earnings
-        result.earning =
-            tables.value[&year.to_string()] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
+        result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
         // Add earnings to earnings and value tables
-        if let Some(x) = tables.earnings.get_mut(&year.to_string()) {
+        if let Some(x) = tables.earnings.0.get_mut(&year) {
             *x = result.earning;
         }
-        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+        if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.earning;
         }
 
@@ -174,7 +251,7 @@ impl Account for Retirement {
         if self.dates.as_ref().unwrap().year_in.unwrap().contains(year) {
             result.contribution = self.contribution_type.value(
                 self.yearly_contribution,
-                totals.income,
+                totals.get(year).income,
                 year - start_in,
                 settings.inflation_base,
             );
@@ -184,9 +261,11 @@ impl Account for Retirement {
                     if self.income_link.is_some() {
                         // somehow get the income value from income link
                     } else {
-                        return Err(String::from("Matching is set but there is no linked account").into());
+                        return Err(
+                            String::from("Matching is set but there is no linked account").into(),
+                        );
                     }
-    
+
                     // if (account.matchLimit.length > 1) {
                     //     // and if it is a complex employer matching (more than one level)
                     //     if (contribution >= (account.matchLimit[0] / 100 + account.matchLimit[1] / 100) * accounts[account.incomeLink].table[yearCurrent]) {
@@ -209,32 +288,33 @@ impl Account for Retirement {
                     //     }
                     // }
                     let link_income = 500_f64;
-                    let emp_cont = match result.contribution >= employer_match.limit.value(settings) / 100_f64 * link_income {
-                        true => link_income * (employer_match.amount.value(settings) / 100_f64) * (employer_match.limit.value(settings) / 100_f64), // calculate the employer matching based on the match limits,
-                        false => result.contribution * (employer_match.amount.value(settings) / 100_f64) // the employer contribution is computed based on the entire contribution,
+                    result.employer_match = match result.contribution
+                        >= employer_match.limit.value(settings) / 100_f64 * link_income
+                    {
+                        true => {
+                            link_income
+                                * (employer_match.amount.value(settings) / 100_f64)
+                                * (employer_match.limit.value(settings) / 100_f64)
+                        } // calculate the employer matching based on the match limits,
+                        false => {
+                            result.contribution * (employer_match.amount.value(settings) / 100_f64)
+                        } // the employer contribution is computed based on the entire contribution,
                     };
-                    println!("{}",emp_cont);
-                },
+                    //println!("{}",emp_cont);
+                }
                 None => {}
             }
-            
         }
 
         // Add contribution to contribution and value tables
-        if let Some(x) = tables.contributions.get_mut(&year.to_string()) {
+        if let Some(x) = tables.contributions.0.get_mut(&year) {
             *x = result.contribution;
+            *x += result.employer_match;
         }
-        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+        if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.contribution;
+            *x += result.employer_match; // ADD EMPLOYER CONTRIBUTION
         }
-
-        //
-        //
-        //
-        // ADD EMPLOYER CONTRIBUTION !!
-        //
-        //
-        
 
         // Calculate withdrawal
         if self
@@ -245,7 +325,6 @@ impl Account for Retirement {
             .unwrap()
             .contains(year)
         {
-            
             let col_scale = match settings.is_retired(year) {
                 true => settings.retirement_cost_of_living / 100_f64,
                 false => 1_f64,
@@ -256,32 +335,30 @@ impl Account for Retirement {
                 settings.inflation_base,
                 self.dates.unwrap(),
                 year,
-                tables.value[&year.to_string()],
-                tables.value[&(year - 1).to_string()],
-                totals.col * col_scale,
-                totals.saving,
+                tables.value.0[&year],
+                tables.value.0[&(year - 1)],
+                totals.get(year).col * col_scale,
+                totals.get(year - 1).saving,
                 settings.tax_income,
                 self.tax_status,
             );
-            debug!("{}", result.withdrawal);
-        }
-
-        // Dont allow an account to become overdrawn
-        if result.withdrawal > tables.value[&year.to_string()] {
-            result.withdrawal = tables.value[&year.to_string()];
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
-        if let Some(x) = tables.withdrawals.get_mut(&year.to_string()) {
+        if let Some(x) = tables.withdrawals.0.get_mut(&year) {
             *x = result.withdrawal;
         }
-        if let Some(x) = tables.value.get_mut(&year.to_string()) {
+        if let Some(x) = tables.value.0.get_mut(&year) {
             *x -= result.withdrawal;
         }
 
+        debug!(
+            "w{:?} c{:?} e{:?}",
+            result.withdrawal, result.contribution, result.earning
+        );
         match self.tax_status {
             // Paid with taxed income, earnings are not taxed, withdrawals are not taxed
-            // 
+            //
             // Contributions count as an expense (will be subtracted from net for the year)
             // Contributions do not impact taxable income (as they are made with dollars that have already been taxed)
             // Withdrawals count as income but do not to taxable income
@@ -293,7 +370,7 @@ impl Account for Retirement {
                 income: result.withdrawal,
             }),
             // Paid with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)
-            // 
+            //
             // Contributions count as an expense (will be subtracted from net for the year)
             // Contributions do not impact taxable income (as they are made with dollars that have already been taxed)
             // Withdrawals count as income but do not to taxable income
@@ -306,7 +383,7 @@ impl Account for Retirement {
                 income: result.withdrawal,
             }),
             // Paid with pretax income and taxed in year of use as income
-            // 
+            //
             // Contributions count as an expense (will be subtracted from net for the year)
             // Contributions reduce taxable income (they are a deduction)
             // Withdrawals count as income and add to taxable income
@@ -318,7 +395,7 @@ impl Account for Retirement {
                 income: result.withdrawal,
             }),
             // Paid with pretax income and not taxed as income (use with HSA)
-            // 
+            //
             // Contributions count as an expense (will be subtracted from net for the year)
             // Contributions reduce taxable income (they are a deduction)
             // Withdrawals count as income but do not add to taxable income
@@ -329,6 +406,12 @@ impl Account for Retirement {
                 income_taxable: 0_f64 - result.contribution,
                 income: result.withdrawal,
             }),
+        }
+    }
+    fn write(&self, filepath: String) {
+        match &self.analysis {
+            Some(results) => results.write(filepath),
+            None => {}
         }
     }
 }

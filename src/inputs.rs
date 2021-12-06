@@ -1,6 +1,6 @@
 //! Definitions for user input fields
 //!
-use log::{debug, error};
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use super::AnalysisDates;
@@ -68,12 +68,23 @@ pub enum PaymentOptions {
 }
 
 impl PaymentOptions {
-    pub fn value(self, payment: f64, inflation: f64, duration: u32) -> f64 {
-        match self {
+    pub fn value(
+        self,
+        payment: f64,
+        inflation: f64,
+        duration: u32,
+        outstanding_balance: f64,
+    ) -> f64 {
+        let output = match self {
             PaymentOptions::Fixed => payment,
             PaymentOptions::FixedWithInflation => {
                 payment * f64::powf(1_f64 + inflation / 100_f64, duration as f64)
             }
+        };
+        if output > outstanding_balance {
+            outstanding_balance
+        } else {
+            output
         }
     }
 }
@@ -120,39 +131,37 @@ impl PercentSuggestions {
 #[serde(rename_all = "snake_case")]
 pub enum TaxStatus {
     /// Paid with taxed income, earnings are not taxed, withdrawals are not taxed
-    /// 
-    /// Contributions count as an expense (will be subtracted from net for the year). 
-    /// Contributions do not impact taxable income (as they are made with dollars that have already been taxed). 
-    /// Withdrawals count as income but do not to taxable income. 
+    ///
+    /// Contributions count as an expense (will be subtracted from net for the year).
+    /// Contributions do not impact taxable income (as they are made with dollars that have already been taxed).
+    /// Withdrawals count as income but do not to taxable income.
     /// aka 0
     ContributeTaxedEarningsUntaxedWhenUsed,
     /// Paid with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)
-    /// 
-    /// Contributions count as an expense (will be subtracted from net for the year). 
-    /// Contributions do not impact taxable income (as they are made with dollars that have already been taxed). 
-    /// Withdrawals count as income but do not to taxable income. 
+    ///
+    /// Contributions count as an expense (will be subtracted from net for the year).
+    /// Contributions do not impact taxable income (as they are made with dollars that have already been taxed).
+    /// Withdrawals count as income but do not to taxable income.
     /// aka 1
     ContributeTaxedEarningsTaxed,
     // not implemented.
     // NOT IMPLEMENTED ## 2=payed with taxed income, earnings are taxed in year taken out as capital gains, withdrawals are not taxed
     // aka 2
     // NotImpliemented,
-    
     /// Paid with pretax income and taxed in year of use as income
-    /// 
-    /// Contributions count as an expense (will be subtracted from net for the year). 
-    /// Contributions reduce taxable income (they are a deduction). 
-    /// Withdrawals count as income and add to taxable income. 
+    ///
+    /// Contributions count as an expense (will be subtracted from net for the year).
+    /// Contributions reduce taxable income (they are a deduction).
+    /// Withdrawals count as income and add to taxable income.
     /// aka 3
     ContributePretaxTaxedWhenUsed,
     /// Paid with pretax income and not taxed as income (use with HSA)
-    /// 
-    /// Contributions count as an expense (will be subtracted from net for the year). 
-    /// Contributions reduce taxable income (they are a deduction). 
-    /// Withdrawals count as income but do not add to taxable income. 
+    ///
+    /// Contributions count as an expense (will be subtracted from net for the year).
+    /// Contributions reduce taxable income (they are a deduction).
+    /// Withdrawals count as income but do not add to taxable income.
     /// aka 4
     ContributePretaxUntaxedWhenUsed,
-
 }
 
 /// used to populate account dropdown for withdrawal type selection
@@ -186,13 +195,13 @@ impl WithdrawalOptions {
         account_value: f64,
         prev_account_value: f64,
         col: f64,
-        savings: f64,
+        prev_savings: f64,
         tax_income: f64,
         tax_status: TaxStatus,
     ) -> f64 {
-        match self {
+        let output = match self {
             WithdrawalOptions::Fixed => {
-                debug!("{}", withdrawal);
+                // debug!("{}", withdrawal);
                 withdrawal
             }
             WithdrawalOptions::FixedWithInflation => {
@@ -200,12 +209,12 @@ impl WithdrawalOptions {
                 // let y = year.ok_or::<String>("Year not provided".into())?;
                 // let s = start_in.ok_or::<String>("Start In not provided".into())?;
                 let start_in = dates.year_in.unwrap().start;
-                debug!("{} {}", withdrawal, start_in);
+                // debug!("{} {}", withdrawal, start_in);
                 withdrawal * f64::powf(1_f64 + inflation / 100_f64, (year - start_in) as f64)
             }
             WithdrawalOptions::EndAtZero => {
                 let end_out = dates.year_out.unwrap().end;
-                debug!("{} {} {}", year, end_out, account_value);
+                // debug!("{} {} {}", year, end_out, account_value);
                 if year <= end_out {
                     // if the year to stop taking money out of the account is beyond or equal to the current year
                     // calculate the fraction of the account balance to withdraw
@@ -216,8 +225,8 @@ impl WithdrawalOptions {
             }
             WithdrawalOptions::ColFracOfSavings => {
                 debug!(
-                    "{} {} {} {} {:?}",
-                    prev_account_value, savings, tax_income, col, tax_status
+                    "pv{} ps{} ti{} col{} ts{:?}",
+                    prev_account_value, prev_savings, tax_income, col, tax_status
                 );
                 if prev_account_value > 0_f64 {
                     // if there is money left in the account
@@ -228,21 +237,22 @@ impl WithdrawalOptions {
                     //      const totalExpensesThisYear = Object.values(expenseTotal[yearCurrent]).reduce((acc, cur) => acc + cur, 0) - incomeDuringRetirement[yearCurrent];
                     //      withdrawal = (totalExpensesThisYear * account.table[yearCurrent - 1]) / savingsTotalTable[yearCurrent - 1];
 
-                    error!("This calculation should be updated to compare this accounts savings from last year and total savings from last year");
-
                     match tax_status {
                         TaxStatus::ContributePretaxTaxedWhenUsed => {
                             // add extra to amount withdrawal value to account for taxes.
-                            col
-                                * (prev_account_value / savings)
+                            col * (prev_account_value / prev_savings)
                                 * (tax_income / 100_f64 + 1_f64)
                         }
-                        _ => col * (prev_account_value / savings),
+                        _ => col * (prev_account_value / prev_savings),
                     }
                 } else {
                     0_f64
                 }
             }
+        };
+        match output > account_value {
+            true => account_value,
+            false => output,
         }
     }
 }
@@ -334,4 +344,3 @@ impl YearSuggestion {
         }
     }
 }
-
