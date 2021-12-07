@@ -6,10 +6,6 @@ use log::{debug, error, info, trace, LevelFilter};
 use std::error::Error;
 use std::fs::read_to_string;
 
-// extern crate plotly;
-// use plotly::common::Mode;
-// use plotly::{Plot, Scatter, ImageFormat};
-
 mod account_types;
 mod analysis_types;
 mod config;
@@ -17,7 +13,7 @@ mod inputs;
 mod settings;
 
 use account_types::{Account, AccountWrapper};
-use analysis_types::{AnalysisDates, YearlyTotal, YearlyTotals};
+use analysis_types::{AnalysisDates, YearlyTotals};
 use settings::UserData;
 
 /// Main loop
@@ -119,13 +115,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         yearly_totals.pay_expenses_from_net(year).unwrap();
     });
 
-    data.write_tables(&account_order, years.clone(), "tables.csv".into());
-    yearly_totals.write_summary("summary.csv".into());
+    data.write_tables(&account_order, years.clone(), "target/tables.csv".into());
+    yearly_totals.write_summary("target/summary.csv".into());
 
     account_order.iter().for_each(|uuid| {
         let account = data.accounts.get(uuid).unwrap();
-        account.write(format!("{}.csv", account.name()));
-        account.plot(format!("{}.png", account.name()));
+        account.write(format!("target/{}.csv", account.name()));
+        account.plot(format!("target/{}.png", account.name()));
     });
 
     // debug!("{:?}", data.total_income(&"2020".to_string()));

@@ -2,11 +2,10 @@
 //!
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use plotters::prelude::*;
 
 use super::{
     Account, AccountResult, AccountType, AnalysisDates, SingleTable, YearRange, YearlyImpact,
-    YearlyTotals, range
+    YearlyTotals, scatter_plot,
 };
 use crate::inputs::{YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -63,12 +62,6 @@ impl Account for Ssa {
             None => None,
         }
     }
-    fn get_income(&self, year: u32) -> Option<f64> {
-        self.get_value(year)
-    }
-    fn get_expense(&self, _year: u32) -> Option<f64> {
-        None
-    }
     fn get_range_in(
         &self,
         settings: &Settings,
@@ -91,31 +84,13 @@ impl Account for Ssa {
         None
     }
     fn plot(&self, filepath: String) {
-
-        let value = self.analysis.as_ref().unwrap().value.clone();
-        let (x_min, x_max, y_min, y_max) = range(vec![&value]);
-
-        let root = BitMapBackend::new(&filepath, (640, 480)).into_drawing_area();
-        root.fill(&WHITE).unwrap();
-        let mut chart = ChartBuilder::on(&root)
-            .caption(self.name(), ("sans-serif", 50).into_font())
-            .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
-
-        chart.configure_mesh().draw().unwrap();
-
-        chart
-            .draw_series(LineSeries::new(value.into_iter(),&RED)).unwrap()
-            .label("balance")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-
-        chart
-            .configure_series_labels()
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
-            .draw().unwrap();
+        scatter_plot(
+            filepath, 
+            vec![
+                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
+                ],
+            self.name()
+        );
     }
     fn simulate(
         &mut self,

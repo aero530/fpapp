@@ -5,9 +5,10 @@
 //use log::error;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-// use std::collections::HashMap;
+
 use std::error::Error;
 use std::io::Write;
+use plotters::prelude::*;
 
 use crate::analysis_types::{AccountResult, AnalysisDates, YearRange, YearlyImpact, YearlyTotals};
 use crate::settings::Settings;
@@ -38,6 +39,21 @@ use loan::Loan;
 
 mod mortgage;
 use mortgage::Mortgage;
+
+
+
+pub const COLORS : [RGBColor; 9] = [
+    RGBColor(24, 171, 221),
+    RGBColor(176, 75, 207),
+    RGBColor(29, 229, 188),
+    RGBColor(234, 115, 105),
+    RGBColor(220, 75, 179),
+    RGBColor(223, 84, 44),
+    RGBColor(234, 189, 60),
+    RGBColor(110, 240, 210),
+    RGBColor(239, 166, 143),
+    ];
+
 
 pub fn range(input: Vec<&Table<u32>>) -> (u32, u32, f64, f64) {
     let x_min = *input
@@ -396,11 +412,11 @@ pub trait Account: std::fmt::Debug {
     /// Return the value for the specified year
     fn get_value(&self, year: u32) -> Option<f64>;
 
-    /// Return the income value for the specified year
-    fn get_income(&self, year: u32) -> Option<f64>;
+    // /// Return the income value for the specified year
+    // fn get_income(&self, year: u32) -> Option<f64>;
 
-    /// Return the expense value for the specified year
-    fn get_expense(&self, year: u32) -> Option<f64>;
+    // /// Return the expense value for the specified year
+    // fn get_expense(&self, year: u32) -> Option<f64>;
 
     /// Return start_in and end_in
     fn get_range_in(
@@ -430,6 +446,56 @@ pub trait Account: std::fmt::Debug {
 
     fn plot(&self, filepath: String);
 }
+
+
+pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: String) {
+
+    let (x_min, x_max, y_min, y_max) = range(data.iter().map(|(_table_name, table)| *table).collect());
+
+    let root = BitMapBackend::new(&filepath, (1600, 1200)).into_drawing_area();
+    root.fill(&WHITE).unwrap();
+    let mut chart = ChartBuilder::on(&root)
+        .caption(title, ("sans-serif", 60).into_font())
+        .margin(25)
+        .x_label_area_size(60)
+        .y_label_area_size(100)
+        .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
+
+    chart
+        .configure_mesh()
+        .x_label_style(("sans-serif", 25).into_font())
+        .y_label_style(("sans-serif", 25).into_font())
+        .bold_line_style(&BLACK.mix(0.8))
+        .light_line_style(&BLACK.mix(0.1))
+        .y_label_formatter(&|v| format!("${}", v))
+        .draw()
+        .unwrap();
+    
+    chart
+        .configure_mesh()
+        .disable_x_axis()
+        .disable_y_axis()
+        .x_label_style(("sans-serif", 40).into_font())
+        .x_desc("Year")
+        .draw()
+        .unwrap();
+
+    data.iter().enumerate().for_each(|(idx, (table_name, table))| {
+        chart
+            .draw_series(LineSeries::new(table.0.clone().into_iter(),COLORS[idx % COLORS.len()].stroke_width(4))).unwrap()
+            .label(table_name)
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 30, y)], COLORS[idx % COLORS.len()].stroke_width(4)));
+    });
+    chart
+        .configure_series_labels()
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .legend_area_size(40)
+        .label_font(("sans-serif", 20).into_font())
+        .position(SeriesLabelPosition::UpperRight)
+        .draw().unwrap();
+}
+
 
 /// List of the types of accounts that are available
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]

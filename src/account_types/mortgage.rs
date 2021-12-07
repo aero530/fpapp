@@ -2,11 +2,10 @@
 //!
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use plotters::prelude::*;
 
 use super::{
     Account, AccountResult, AccountType, AnalysisDates, LoanTables, PullForward, Table, YearRange,
-    YearlyImpact, YearlyTotals, range
+    YearlyImpact, YearlyTotals, scatter_plot,
 };
 use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -107,18 +106,7 @@ impl Account for Mortgage<u32> {
             .get(&year)
             .map(|v| *v)
     }
-    fn get_income(&self, _year: u32) -> Option<f64> {
-        None
-    }
-    fn get_expense(&self, year: u32) -> Option<f64> {
-        self.analysis
-            .as_ref()
-            .unwrap()
-            .payments
-            .0
-            .get(&year)
-            .map(|v| *v)
-    }
+
     fn get_range_in(
         &self,
         _settings: &Settings,
@@ -141,51 +129,17 @@ impl Account for Mortgage<u32> {
         })
     }
     fn plot(&self, filepath: String) {
-        let value = self.analysis.as_ref().unwrap().value.clone();
-        let interest = self.analysis.as_ref().unwrap().interest.clone();
-        let payments = self.analysis.as_ref().unwrap().payments.clone();
-        let escrow = self.analysis.as_ref().unwrap().escrow.clone().unwrap();
-        let insurance = self.analysis.as_ref().unwrap().insurance.clone().unwrap();
-
-        let (x_min, x_max, y_min, y_max) = range(vec![&value, &interest, &payments, &escrow, &insurance]);
-
-        let root = BitMapBackend::new(&filepath, (640, 480)).into_drawing_area();
-        root.fill(&WHITE).unwrap();
-        let mut chart = ChartBuilder::on(&root)
-            .caption(self.name(), ("sans-serif", 50).into_font())
-            .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
-
-        chart.configure_mesh().draw().unwrap();
-
-        chart
-            .draw_series(LineSeries::new(value.into_iter(),&RED)).unwrap()
-            .label("balance")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-        chart
-            .draw_series(LineSeries::new(interest.into_iter(),&GREEN)).unwrap()
-            .label("interest")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
-        chart
-            .draw_series(LineSeries::new(payments.into_iter(),&BLUE)).unwrap()
-            .label("payments")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
-        chart
-            .draw_series(LineSeries::new(escrow.into_iter(),&YELLOW)).unwrap()
-            .label("escrow")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW));
-        chart
-            .draw_series(LineSeries::new(insurance.into_iter(),&CYAN)).unwrap()
-            .label("insurance")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
-
-        chart
-            .configure_series_labels()
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
-            .draw().unwrap();
+        scatter_plot(
+            filepath, 
+            vec![
+                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
+                ("Interest".into(), &self.analysis.as_ref().unwrap().interest),
+                ("Payments".into(), &self.analysis.as_ref().unwrap().payments),
+                ("Escrow".into(), &self.analysis.as_ref().unwrap().escrow.clone().unwrap()),
+                ("Insurance".into(), &self.analysis.as_ref().unwrap().insurance.clone().unwrap()),
+                ],
+            self.name()
+        );
     }
     fn simulate(
         &mut self,

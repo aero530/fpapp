@@ -3,11 +3,10 @@
 use log::error;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use plotters::prelude::*;
 
 use super::{
     Account, AccountResult, AccountType, AnalysisDates, PullForward, SavingsTables, Table,
-    YearRange, YearlyImpact, YearlyTotals, range
+    YearRange, YearlyImpact, YearlyTotals, scatter_plot,
 };
 use crate::inputs::{ContributionOptions, PercentInput, TaxStatus, YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -82,13 +81,6 @@ impl Account for Hsa<u32> {
             &Some(Table::default()),
             &Some(Table::default()),
         );
-        // let mut output: SavingsTables = SavingsTables {
-        //     value: self.table.clone(),
-        //     contributions: HashMap::new(),
-        //     employer_contributions: Some(HashMap::new()),
-        //     earnings: HashMap::new(),
-        //     withdrawals: HashMap::new(),
-        // };
         years.iter().copied().for_each(|year| {
             output.value.0.entry(year).or_insert(0.0);
             output.contributions.0.insert(year, 0.0);
@@ -113,24 +105,6 @@ impl Account for Hsa<u32> {
             .as_ref()
             .unwrap()
             .value
-            .0
-            .get(&year)
-            .map(|v| *v)
-    }
-    fn get_income(&self, year: u32) -> Option<f64> {
-        self.analysis
-            .as_ref()
-            .unwrap()
-            .withdrawals
-            .0
-            .get(&year)
-            .map(|v| *v)
-    }
-    fn get_expense(&self, year: u32) -> Option<f64> {
-        self.analysis
-            .as_ref()
-            .unwrap()
-            .contributions
             .0
             .get(&year)
             .map(|v| *v)
@@ -164,30 +138,13 @@ impl Account for Hsa<u32> {
         })
     }
     fn plot(&self, filepath: String) {
-        let value = self.analysis.as_ref().unwrap().value.clone();
-        let (x_min, x_max, y_min, y_max) = range(vec![&value]);
-
-        let root = BitMapBackend::new(&filepath, (640, 480)).into_drawing_area();
-        root.fill(&WHITE).unwrap();
-        let mut chart = ChartBuilder::on(&root)
-            .caption(self.name(), ("sans-serif", 50).into_font())
-            .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
-
-        chart.configure_mesh().draw().unwrap();
-
-        chart
-            .draw_series(LineSeries::new(value.into_iter(),&RED)).unwrap()
-            .label("balance")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-
-        chart
-            .configure_series_labels()
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
-            .draw().unwrap();
+        scatter_plot(
+            filepath, 
+            vec![
+                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
+                ],
+            self.name()
+        );
     }
     fn simulate(
         &mut self,
