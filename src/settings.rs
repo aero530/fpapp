@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::Write;
 
-use crate::account_types::{Account, AccountWrapper};
+use crate::accounts::{Account, AccountWrapper};
 use crate::settings;
 
 /// Generic range

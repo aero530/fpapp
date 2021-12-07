@@ -2,17 +2,17 @@
 //!
 //! Application to simulate financial standing over time.
 //!
-use log::{debug, error, info, trace, LevelFilter};
+use log::{info, trace, LevelFilter};
 use std::error::Error;
 use std::fs::read_to_string;
 
-mod account_types;
+mod accounts;
 mod analysis_types;
 mod config;
 mod inputs;
 mod settings;
 
-use account_types::{Account, AccountWrapper};
+use accounts::{Account, AccountWrapper};
 use analysis_types::{AnalysisDates, YearlyTotals};
 use settings::UserData;
 
@@ -117,10 +117,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     data.write_tables(&account_order, years.clone(), "target/tables.csv".into());
     yearly_totals.write_summary("target/summary.csv".into());
+    yearly_totals.plot("target/totals.png".into());
 
     account_order.iter().for_each(|uuid| {
         let account = data.accounts.get(uuid).unwrap();
-        account.write(format!("target/{}.csv", account.name()));
+        // account.write(format!("target/{}.csv", account.name()));
         account.plot(format!("target/{}.png", account.name()));
     });
 

@@ -1,11 +1,12 @@
 //! Types used during the analysis / simulation
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::io::Write;
 
-use log::error;
+// use log::error;
+use crate::accounts::plotting::scatter_plot;
 
 /// Set of year ranges used for analysis
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -103,12 +104,12 @@ impl YearlyTotal {
 
 /// YearlyTotals tracked over multiple years
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct YearlyTotals(pub HashMap<u32, YearlyTotal>);
+pub struct YearlyTotals(pub BTreeMap<u32, YearlyTotal>);
 
 impl YearlyTotals {
     /// Initiate a new object with an empty hashmap
     pub fn new() -> YearlyTotals {
-        YearlyTotals(HashMap::new())
+        YearlyTotals(BTreeMap::new())
     }
     /// Initialize a new year, pulling forward net & savings if they exist in the previous year
     pub fn init(&mut self, year: u32) {
@@ -214,6 +215,33 @@ impl YearlyTotals {
             .unwrap();
         });
     }
+    /// Generate plot
+    pub fn plot(&self, filepath: String) {
+        
+        let net : Vec<f64> = self.0.values().map(|v| v.net).collect();
+        let saving : Vec<f64> = self.0.values().map(|v| v.saving).collect();
+        let expense : Vec<f64> = self.0.values().map(|v| v.expense).collect();
+        let col : Vec<f64> = self.0.values().map(|v| v.col).collect();
+        let income : Vec<f64> = self.0.values().map(|v| v.income).collect();
+        let income_taxable : Vec<f64> = self.0.values().map(|v| v.income_taxable).collect();
+        let tax_burden : Vec<f64> = self.0.values().map(|v| v.tax_burden).collect();
+
+        scatter_plot(
+            filepath, 
+            vec![
+                ("Net".into(), &(self.get_years(),net).into()),
+                ("Saving".into(), &(self.get_years(),saving).into()),
+                ("Expense".into(), &(self.get_years(),expense).into()),
+                ("COL".into(), &(self.get_years(),col).into()),
+                ("Income".into(), &(self.get_years(),income).into()),
+                ("Taxable Income".into(), &(self.get_years(),income_taxable).into()),
+                ("Tax Burden".into(), &(self.get_years(),tax_burden).into()),
+                ],
+            "Summary".into()
+        );
+
+    }
+    
     /// Get the YearlyTotal for the specified year
     /// If the year is not found then a default object is returned (containing zeros)
     pub fn get(&self, year: u32) -> YearlyTotal {
@@ -224,9 +252,7 @@ impl YearlyTotals {
     }
     /// Return a sorted list of keys (years)
     pub fn get_years(&self) -> Vec<u32> {
-        let mut years: Vec<u32> = self.0.keys().map(|k| *k).collect();
-        years.sort();
-        years
+        self.0.keys().map(|k| *k).collect()
     }
 }
 

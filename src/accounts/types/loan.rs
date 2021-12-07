@@ -1,46 +1,44 @@
-//! Generic expense account (things you spend money on)
+//! Generic loan
 //!
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::{
-    Account, AccountResult, AccountType, AnalysisDates, SingleTable, Table, YearRange,
-    YearlyImpact, YearlyTotals, scatter_plot
+use super::super::{
+    Account, AccountResult, AccountType, AnalysisDates, LoanTables, PullForward, Table, YearRange,
+    YearlyImpact, YearlyTotals, scatter_plot,
 };
-use crate::inputs::{ExpenseOptions, YearEvalType, YearInput};
+use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
 
-/// Account type to represent generic expense
+/// Generic loan
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Expense<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Loan<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
     name: String,
     table: Table<T>,
     start_out: YearInput,
     end_out: YearInput,
-    expense_type: ExpenseOptions,
-    expense_value: f64,
-    is_healthcare: Option<bool>,
-    hsa_link: Option<String>,
+    payment_type: PaymentOptions,
+    payment_value: f64,
+    rate: PercentInput,
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
     #[serde(skip)]
-    analysis: Option<SingleTable>,
+    analysis: Option<LoanTables>,
     #[serde(skip)]
     dates: Option<AnalysisDates>,
 }
 
-impl From<Expense<String>> for Expense<u32> {
-    fn from(other: Expense<String>) -> Self {
+impl From<Loan<String>> for Loan<u32> {
+    fn from(other: Loan<String>) -> Self {
         Self {
             name: other.name,
             table: other.table.into(),
             start_out: other.start_out,
             end_out: other.end_out,
-            expense_type: other.expense_type,
-            expense_value: other.expense_value,
-            is_healthcare: other.is_healthcare,
-            hsa_link: other.hsa_link,
+            payment_type: other.payment_type,
+            payment_value: other.payment_value,
+            rate: other.rate,
             notes: other.notes,
             analysis: other.analysis,
             dates: other.dates,
@@ -48,9 +46,9 @@ impl From<Expense<String>> for Expense<u32> {
     }
 }
 
-impl Account for Expense<u32> {
+impl Account for Loan<u32> {
     fn type_id(&self) -> AccountType {
-        AccountType::Expense
+        AccountType::Loan
     }
     fn link_id(&self) -> Option<String> {
         None
@@ -67,12 +65,19 @@ impl Account for Expense<u32> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        // let mut output: SingleTable = SingleTable {
-        //     value: HashMap::new(),
-        // };
-        let mut output = SingleTable::default();
+
+        let mut output = LoanTables::new(
+            &self.table,
+            &Table::default(),
+            &Table::default(),
+            &None,
+            &None,
+        );
+
         years.iter().copied().for_each(|year| {
-            output.value.0.insert(year, 0.0);
+            output.value.0.entry(year).or_insert(0.0);
+            output.interest.0.insert(year, 0.0);
+            output.payments.0.insert(year, 0.0);
         });
         self.analysis = Some(output);
         self.dates = Some(AnalysisDates {
@@ -82,10 +87,13 @@ impl Account for Expense<u32> {
         Ok(())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
-        match &self.analysis {
-            Some(result) => result.value.0.get(&year).map(|v| *v),
-            None => None,
-        }
+        self.analysis
+            .as_ref()
+            .unwrap()
+            .value
+            .0
+            .get(&year)
+            .map(|v| *v)
     }
     fn get_range_in(
         &self,
@@ -109,10 +117,13 @@ impl Account for Expense<u32> {
         })
     }
     fn plot(&self, filepath: String) {
+
         scatter_plot(
             filepath, 
             vec![
-                ("Amount".into(), &self.analysis.as_ref().unwrap().value),
+                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
+                ("Interest".into(), &self.analysis.as_ref().unwrap().interest),
+                ("Payments".into(), &self.analysis.as_ref().unwrap().payments),
                 ],
             self.name()
         );
@@ -123,12 +134,25 @@ impl Account for Expense<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start = self.dates.as_ref().unwrap().year_out.unwrap().start;
+        let start_out = self.dates.as_ref().unwrap().year_out.unwrap().start;
         let tables = &mut self.analysis.as_mut().unwrap();
 
         let mut result = AccountResult::default();
 
-        // Calculate expense
+        tables.pull_value_forward(year);
+
+        // Calculate interest
+        result.interest = tables.value.0[&year] * self.rate.value(settings) / 100_f64;
+
+        // Add interest to interest and value tables
+        if let Some(x) = tables.interest.0.get_mut(&year) {
+            *x = result.interest;
+        }
+        if let Some(x) = tables.value.0.get_mut(&year) {
+            *x += result.interest;
+        }
+
+        // Calculate payment amount
         if self
             .dates
             .as_ref()
@@ -137,29 +161,29 @@ impl Account for Expense<u32> {
             .unwrap()
             .contains(year)
         {
-            // Calculate expense amount for fixed, fixed_with_inflation
-            match self.expense_type {
-                ExpenseOptions::Fixed => {
-                    // if type is a fixed value set expense to the value
-                    result.expense = self.expense_value;
-                }
-                ExpenseOptions::FixedWithInflation => {
-                    // if type is a fixed number but should be compensated for with inflation
-                    let raise = settings.inflation_base / 100.0 + 1.0;
-                    let value = self.expense_value * f64::powf(raise, (year - start) as f64); // set expense to the value multiplied by an increase due to inflation
-                    result.expense = value;
-                }
+            result.payment = self.payment_type.value(
+                self.payment_value,
+                settings.inflation_base,
+                year - start_out,
+                *tables.value.0.get(&year).unwrap(),
+            );
+        }
+
+        // Add payment to payment and value tables
+        if let Some(x) = tables.payments.0.get_mut(&year) {
+            *x = result.payment;
+        }
+        if let Some(x) = tables.value.0.get_mut(&year) {
+            *x -= result.payment;
+            // Limit min value of the loan balance to account for floating point math rounding
+            if *x < 0.0001 {
+                *x = 0_f64;
             }
         }
 
-        // Update value table with expense value
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x = result.expense;
-        }
-
         Ok(YearlyImpact {
-            expense: result.expense,
-            col: result.expense,
+            expense: result.payment,
+            col: 0_f64,
             saving: 0_f64,
             income_taxable: 0_f64,
             income: 0_f64,
