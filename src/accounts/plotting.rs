@@ -2,7 +2,7 @@ use plotters::prelude::*;
 
 use super::tables::Table;
 
-pub const COLORS : [RGBColor; 9] = [
+pub const COLORS: [RGBColor; 9] = [
     RGBColor(24, 171, 221),
     RGBColor(176, 75, 207),
     RGBColor(29, 229, 188),
@@ -12,7 +12,7 @@ pub const COLORS : [RGBColor; 9] = [
     RGBColor(234, 189, 60),
     RGBColor(110, 240, 210),
     RGBColor(239, 166, 143),
-    ];
+];
 
 pub fn range(input: Vec<&Table<u32>>) -> (u32, u32, f64, f64) {
     let x_min = *input
@@ -56,11 +56,11 @@ pub fn range(input: Vec<&Table<u32>>) -> (u32, u32, f64, f64) {
                 .copied()
                 .collect::<Vec<f64>>()
                 .iter()
-                .fold(0.0/0.0, |m, v| v.min(m))
+                .fold(0.0 / 0.0, |m, v| v.min(m))
         })
         .collect::<Vec<f64>>()
         .iter()
-        .fold(0.0/0.0, |m, v| v.min(m));
+        .fold(0.0 / 0.0, |m, v| v.min(m));
     let y_max = input
         .iter()
         .map(|table| {
@@ -70,17 +70,17 @@ pub fn range(input: Vec<&Table<u32>>) -> (u32, u32, f64, f64) {
                 .copied()
                 .collect::<Vec<f64>>()
                 .iter()
-                .fold(0.0/0.0, |m, v| v.max(m))
+                .fold(0.0 / 0.0, |m, v| v.max(m))
         })
         .collect::<Vec<f64>>()
         .iter()
-        .fold(0.0/0.0, |m, v| v.max(m));
+        .fold(0.0 / 0.0, |m, v| v.max(m));
     (x_min, x_max, y_min, y_max)
 }
 
 pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: String) {
-
-    let (x_min, x_max, y_min, y_max) = range(data.iter().map(|(_table_name, table)| *table).collect());
+    let (x_min, x_max, y_min, y_max) =
+        range(data.iter().map(|(_table_name, table)| *table).collect());
 
     let root = BitMapBackend::new(&filepath, (1600, 1200)).into_drawing_area();
     root.fill(&WHITE).unwrap();
@@ -89,7 +89,8 @@ pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: S
         .margin(25)
         .x_label_area_size(60)
         .y_label_area_size(100)
-        .build_cartesian_2d(x_min..x_max, y_min..y_max).unwrap();
+        .build_cartesian_2d(x_min..x_max, y_min..y_max)
+        .unwrap();
 
     chart
         .configure_mesh()
@@ -100,7 +101,7 @@ pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: S
         .y_label_formatter(&|v| format!("${}", v))
         .draw()
         .unwrap();
-    
+
     chart
         .configure_mesh()
         .disable_x_axis()
@@ -110,12 +111,23 @@ pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: S
         .draw()
         .unwrap();
 
-    data.iter().enumerate().for_each(|(idx, (table_name, table))| {
-        chart
-            .draw_series(LineSeries::new(table.0.clone().into_iter(),COLORS[idx % COLORS.len()].stroke_width(4))).unwrap()
-            .label(table_name)
-            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 30, y)], COLORS[idx % COLORS.len()].stroke_width(4)));
-    });
+    data.iter()
+        .enumerate()
+        .for_each(|(idx, (table_name, table))| {
+            chart
+                .draw_series(LineSeries::new(
+                    table.0.clone().into_iter(),
+                    COLORS[idx % COLORS.len()].stroke_width(4),
+                ))
+                .unwrap()
+                .label(table_name)
+                .legend(move |(x, y)| {
+                    PathElement::new(
+                        vec![(x, y), (x + 30, y)],
+                        COLORS[idx % COLORS.len()].stroke_width(4),
+                    )
+                });
+        });
     chart
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
@@ -123,5 +135,6 @@ pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: S
         .legend_area_size(40)
         .label_font(("sans-serif", 20).into_font())
         .position(SeriesLabelPosition::UpperRight)
-        .draw().unwrap();
+        .draw()
+        .unwrap();
 }

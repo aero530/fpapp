@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 use super::super::{
-    Account, AccountResult, AccountType, AnalysisDates, LoanTables, PullForward, Table, YearRange,
-    YearlyImpact, YearlyTotals, scatter_plot,
+    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, LoanTables, Table, YearRange,
+    YearlyImpact, YearlyTotals,
 };
 use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -29,9 +29,9 @@ pub struct Mortgage<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + st
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
     #[serde(skip)]
-    analysis: Option<LoanTables>,
+    analysis: LoanTables,
     #[serde(skip)]
-    dates: Option<AnalysisDates>,
+    dates: AnalysisDates,
 }
 
 impl From<Mortgage<String>> for Mortgage<u32> {
@@ -90,23 +90,22 @@ impl Account for Mortgage<u32> {
             output.escrow.as_mut().unwrap().0.insert(year, 0.0);
             output.insurance.as_mut().unwrap().0.insert(year, 0.0);
         });
-        self.analysis = Some(output);
-        self.dates = Some(AnalysisDates {
+        self.analysis = output;
+        self.dates = AnalysisDates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
-        });
+        };
         Ok(())
     }
-    fn get_value(&self, year: u32) -> Option<f64> {
-        self.analysis
-            .as_ref()
-            .unwrap()
-            .value
-            .0
-            .get(&year)
-            .map(|v| *v)
-    }
-
+    // fn get_value(&self, year: u32) -> Option<f64> {
+    //     self.analysis
+    //         .as_ref()
+    //         .unwrap()
+    //         .value
+    //         .0
+    //         .get(&year)
+    //         .map(|v| *v)
+    // }
     fn get_range_in(
         &self,
         _settings: &Settings,
@@ -130,15 +129,18 @@ impl Account for Mortgage<u32> {
     }
     fn plot(&self, filepath: String) {
         scatter_plot(
-            filepath, 
+            filepath,
             vec![
-                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
-                ("Interest".into(), &self.analysis.as_ref().unwrap().interest),
-                ("Payments".into(), &self.analysis.as_ref().unwrap().payments),
-                ("Escrow".into(), &self.analysis.as_ref().unwrap().escrow.clone().unwrap()),
-                ("Insurance".into(), &self.analysis.as_ref().unwrap().insurance.clone().unwrap()),
-                ],
-            self.name()
+                ("Balance".into(), &self.analysis.value),
+                ("Interest".into(), &self.analysis.interest),
+                ("Payments".into(), &self.analysis.payments),
+                ("Escrow".into(), &self.analysis.escrow.clone().unwrap()),
+                (
+                    "Insurance".into(),
+                    &self.analysis.insurance.clone().unwrap(),
+                ),
+            ],
+            self.name(),
         );
     }
     fn simulate(
@@ -147,12 +149,12 @@ impl Account for Mortgage<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_out = self.dates.as_ref().unwrap().year_out.unwrap().start;
-        let tables = &mut self.analysis.as_mut().unwrap();
+        let start_out = self.dates.year_out.unwrap().start;
+        let tables = &mut self.analysis;
 
         let mut result = AccountResult::default();
 
-        tables.pull_value_forward(year);
+        tables.value.pull_value_forward(year);
 
         // Calculate insurance
         let loan_to_value = tables.value.0[&year] / self.home_value * 100_f64;
@@ -226,9 +228,6 @@ impl Account for Mortgage<u32> {
         })
     }
     fn write(&self, filepath: String) {
-        match &self.analysis {
-            Some(results) => results.write(filepath),
-            None => {}
-        }
+        self.analysis.write(filepath);
     }
 }

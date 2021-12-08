@@ -14,20 +14,40 @@ impl Table<u32> {
             None => None,
         }
     }
-    // pub fn to_vec(&self) -> (Vec<u32>, Vec<f64>) {
-    //     let years: Vec<u32> = self.0.keys().copied().collect();
-    //     let values: Vec<f64> = self.0.values().copied().collect();
-    //     (years, values)
-    // }
+    pub fn most_recent_populated_year(&self) -> Option<u32> {
+        self.0
+            .iter()
+            .filter(|(_k, v)| **v > f64::EPSILON)
+            .map(|(k, _v)| *k)
+            .collect::<Vec<u32>>()
+            .iter()
+            .copied()
+            .max()
+    }
+    pub fn pull_value_forward(&mut self, year: u32) {
+        match self.most_recent_populated_year() {
+            Some(recent_year) => {
+                if recent_year == year - 1 {
+                    *self.0.get_mut(&year).unwrap() = self.0[&(year - 1)];
+                }
+            }
+            None => {}
+        }
+    }
 }
 
 // and we'll implement IntoIterator
 impl IntoIterator for Table<u32> {
-    type Item = (u32,f64);
+    type Item = (u32, f64);
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.keys().zip(self.0.values()).map(|(x,y)| (*x,*y)).collect::<Vec<(u32, f64)>>().into_iter()
+        self.0
+            .keys()
+            .zip(self.0.values())
+            .map(|(x, y)| (*x, *y))
+            .collect::<Vec<(u32, f64)>>()
+            .into_iter()
     }
 }
 
@@ -46,15 +66,26 @@ impl From<Table<String>> for Table<u32> {
 impl From<(Vec<u32>, Vec<f64>)> for Table<u32> {
     fn from(other: (Vec<u32>, Vec<f64>)) -> Self {
         let mut map = BTreeMap::new();
-        other.0.iter().zip(other.1).into_iter().for_each(|(year, value)| {
-            map.insert(*year, value);
-        });
+        other
+            .0
+            .iter()
+            .zip(other.1)
+            .into_iter()
+            .for_each(|(year, value)| {
+                map.insert(*year, value);
+            });
         Self(map)
     }
 }
 
+// /// Trait used to define what each account type must be able to provide
+// pub trait Result: std::fmt::Debug {
+//     fn new(&self) -> AccountType;
+//     fn write(&self, filepath: String);
+//     fn plot(&self, filepath: String);
+// }
 
-/// A single table of account values
+/// A single table of values
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct SingleTable {
     pub value: Table<u32>,
@@ -81,16 +112,8 @@ impl SingleTable {
     }
 }
 
-pub trait PullForward: std::fmt::Debug {
-    /// Return the most recent year in the value table that has a value greater than zero
-    fn most_recent_populated_year(&self) -> Option<u32>;
-
-    /// If the most recent non-zero value is in year-1 then set the value table entry for year to the value tables entry from year - 1
-    fn pull_value_forward(&mut self, year: u32);
-}
-
 /// A set of tables for use with loans and mortgage accounts
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct LoanTables {
     /// Outstanding loan amount
     pub value: Table<u32>,
@@ -104,30 +127,6 @@ pub struct LoanTables {
     pub insurance: Option<Table<u32>>,
 }
 
-impl PullForward for LoanTables {
-    fn most_recent_populated_year(&self) -> Option<u32> {
-        self.value
-            .0
-            .iter()
-            .filter(|(_k, v)| **v > f64::EPSILON) // only take years that have a value associated with them
-            .map(|(k, _v)| *k) // pull just the year (we don't need the value anymore)
-            .collect::<Vec<u32>>() // put into an
-            .iter()
-            .copied()
-            .max()
-    }
-    /// if there was a value in this account last year then pull it forward
-    fn pull_value_forward(&mut self, year: u32) {
-        match self.most_recent_populated_year() {
-            Some(recent_year) => {
-                if recent_year == year - 1 {
-                    *(self.value.0).get_mut(&year).unwrap() = self.value.0[&(year - 1)];
-                }
-            }
-            None => {}
-        }
-    }
-}
 impl LoanTables {
     pub fn new(
         value: &Table<u32>,
@@ -149,7 +148,6 @@ impl LoanTables {
 
     pub fn write(&self, filename: String) {
         let years: Vec<u32> = self.value.0.keys().copied().collect();
-
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all("year, value, interest, payments, escrow, insurance\n".as_bytes())
             .unwrap();
@@ -181,7 +179,7 @@ impl LoanTables {
 }
 
 /// A set of tables for use with savings types of accounts
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct SavingsTables {
     pub value: Table<u32>,
     pub contributions: Table<u32>,
@@ -190,30 +188,6 @@ pub struct SavingsTables {
     pub withdrawals: Table<u32>,
 }
 
-impl PullForward for SavingsTables {
-    fn most_recent_populated_year(&self) -> Option<u32> {
-        self.value
-            .0
-            .iter()
-            .filter(|(_k, v)| **v > f64::EPSILON)
-            .map(|(k, _v)| *k)
-            .collect::<Vec<u32>>()
-            .iter()
-            .copied()
-            .max()
-    }
-    /// if there was a value in this account last year then pull it forward
-    fn pull_value_forward(&mut self, year: u32) {
-        match self.most_recent_populated_year() {
-            Some(recent_year) => {
-                if recent_year == year - 1 {
-                    *(self.value.0).get_mut(&year).unwrap() = self.value.0[&(year - 1)];
-                }
-            }
-            None => {}
-        }
-    }
-}
 impl SavingsTables {
     pub fn new(
         value: &Table<u32>,
@@ -272,3 +246,107 @@ impl SavingsTables {
         });
     }
 }
+
+// #[derive(Debug, Clone, Deserialize, Serialize)]
+// pub enum AnalysisTable {
+//     Single(SingleTable),
+//     Savings(SavingsTables),
+//     Loan(LoanTables),
+// }
+
+// impl AnalysisTable {
+//     // pub fn most_recent_populated_year(&self) -> Option<u32> {
+//     //     match self {
+//     //         AnalysisTable::Single(tables) => tables.value.most_recent_populated_year(),
+//     //         AnalysisTable::Savings(tables) => tables.value.most_recent_populated_year(),
+//     //         AnalysisTable::Loan(tables) => tables.value.most_recent_populated_year(),
+//     //     }
+//     // }
+//     pub fn pull_value_forward(&mut self, year: u32) {
+//         match self {
+//             AnalysisTable::Single(tables) => {tables.value.pull_value_forward(year);},
+//             AnalysisTable::Savings(tables) => {tables.value.pull_value_forward(year);},
+//             AnalysisTable::Loan(tables) => {tables.value.pull_value_forward(year);},
+//         }
+//     }
+//     pub fn value_table(&self) -> &Table<u32> {
+//         match self {
+//             AnalysisTable::Single(tables) => &tables.value,
+//             AnalysisTable::Savings(tables) => &tables.value,
+//             AnalysisTable::Loan(tables) => &tables.value,
+//         }
+//     }
+//     // pub fn value_table_as_mut(&self) -> &mut Table<u32> {
+//     //     match self {
+//     //         AnalysisTable::Single(tables) => {
+
+//     //             &mut tables.as_mut().value
+//     //         },
+//     //         AnalysisTable::Savings(tables) => &mut tables.value,
+//     //         AnalysisTable::Loan(tables) => &mut tables.value,
+//     //     }
+//     // }
+//     pub fn contributions_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Savings(tables) => Some(&tables.contributions),
+//             _ => None,
+//         }
+//     }
+//     pub fn employer_contributions_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Savings(tables) => tables.employer_contributions.as_ref(),
+//             _ => None,
+//         }
+//     }
+//     pub fn earnings_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Savings(tables) => Some(&tables.earnings),
+//             _ => None,
+//         }
+//     }
+//     pub fn withdrawals_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Savings(tables) => Some(&tables.withdrawals),
+//             _ => None,
+//         }
+//     }
+//     pub fn interest_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Loan(tables) => Some(&tables.interest),
+//             _ => None,
+//         }
+//     }
+//     pub fn payments_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Loan(tables) => Some(&tables.payments),
+//             _ => None,
+//         }
+//     }
+//     pub fn escrow_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Loan(tables) => tables.escrow.as_ref(),
+//             _ => None,
+//         }
+//     }
+//     pub fn insurance_table(&self) -> Option<&Table<u32>> {
+//         match self {
+//             AnalysisTable::Loan(tables) => tables.insurance.as_ref(),
+//             _ => None,
+//         }
+//     }
+//     pub fn value(&self, year: u32) -> f64 {
+//         self.value_table().get(year).unwrap_or_default()
+//         // self.analysis
+//         //     .as_ref()
+//         //     .unwrap()
+//         //     .value
+//         //     .0
+//         //     .get(&year)
+//         //     .map(|v| *v)
+//     }
+//     pub fn write(&self, filepath: String) {
+//         println!("{}", filepath);
+
+//     }
+
+// }

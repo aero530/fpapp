@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 use super::super::{
-    Account, AccountResult, AccountType, AnalysisDates, PullForward, SavingsTables, Table,
-    YearRange, YearlyImpact, YearlyTotals, scatter_plot,
+    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SavingsTables, Table,
+    YearRange, YearlyImpact, YearlyTotals,
 };
 use crate::inputs::{ContributionOptions, PercentInput, TaxStatus, YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -29,9 +29,9 @@ pub struct Hsa<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cm
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
     #[serde(skip)]
-    analysis: Option<SavingsTables>,
+    analysis: SavingsTables,
     #[serde(skip)]
-    dates: Option<AnalysisDates>,
+    dates: AnalysisDates,
 }
 
 impl From<Hsa<String>> for Hsa<u32> {
@@ -93,22 +93,22 @@ impl Account for Hsa<u32> {
             output.earnings.0.insert(year, 0.0);
             output.withdrawals.0.insert(year, 0.0);
         });
-        self.analysis = Some(output);
-        self.dates = Some(AnalysisDates {
+        self.analysis = output;
+        self.dates = AnalysisDates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
-        });
+        };
         Ok(())
     }
-    fn get_value(&self, year: u32) -> Option<f64> {
-        self.analysis
-            .as_ref()
-            .unwrap()
-            .value
-            .0
-            .get(&year)
-            .map(|v| *v)
-    }
+    // fn get_value(&self, year: u32) -> Option<f64> {
+    //     self.analysis
+    //         .as_ref()
+    //         .unwrap()
+    //         .value
+    //         .0
+    //         .get(&year)
+    //         .map(|v| *v)
+    // }
     fn get_range_in(
         &self,
         settings: &Settings,
@@ -139,11 +139,9 @@ impl Account for Hsa<u32> {
     }
     fn plot(&self, filepath: String) {
         scatter_plot(
-            filepath, 
-            vec![
-                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
-                ],
-            self.name()
+            filepath,
+            vec![("Balance".into(), &self.analysis.value)],
+            self.name(),
         );
     }
     fn simulate(
@@ -152,13 +150,13 @@ impl Account for Hsa<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_in = self.dates.as_ref().unwrap().year_in.unwrap().start;
+        let start_in = self.dates.year_in.unwrap().start;
         //let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
-        let tables = &mut self.analysis.as_mut().unwrap();
+        let tables = &mut self.analysis;
 
         let mut result = AccountResult::default();
 
-        tables.pull_value_forward(year);
+        tables.value.pull_value_forward(year);
 
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
@@ -172,7 +170,7 @@ impl Account for Hsa<u32> {
         }
 
         // Calculate contribution
-        if self.dates.as_ref().unwrap().year_in.unwrap().contains(year) {
+        if self.dates.year_in.unwrap().contains(year) {
             result.contribution = self.contribution_type.value(
                 self.yearly_contribution,
                 totals.get(year).income,
@@ -218,9 +216,6 @@ impl Account for Hsa<u32> {
         })
     }
     fn write(&self, filepath: String) {
-        match &self.analysis {
-            Some(results) => results.write(filepath),
-            None => {}
-        }
+        self.analysis.write(filepath);
     }
 }

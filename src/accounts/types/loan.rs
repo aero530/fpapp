@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 use super::super::{
-    Account, AccountResult, AccountType, AnalysisDates, LoanTables, PullForward, Table, YearRange,
-    YearlyImpact, YearlyTotals, scatter_plot,
+    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, LoanTables, Table, YearRange,
+    YearlyImpact, YearlyTotals,
 };
 use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -24,9 +24,9 @@ pub struct Loan<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::c
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
     #[serde(skip)]
-    analysis: Option<LoanTables>,
+    analysis: LoanTables,
     #[serde(skip)]
-    dates: Option<AnalysisDates>,
+    dates: AnalysisDates,
 }
 
 impl From<Loan<String>> for Loan<u32> {
@@ -79,22 +79,22 @@ impl Account for Loan<u32> {
             output.interest.0.insert(year, 0.0);
             output.payments.0.insert(year, 0.0);
         });
-        self.analysis = Some(output);
-        self.dates = Some(AnalysisDates {
+        self.analysis = output;
+        self.dates = AnalysisDates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
-        });
+        };
         Ok(())
     }
-    fn get_value(&self, year: u32) -> Option<f64> {
-        self.analysis
-            .as_ref()
-            .unwrap()
-            .value
-            .0
-            .get(&year)
-            .map(|v| *v)
-    }
+    // fn get_value(&self, year: u32) -> Option<f64> {
+    //     self.analysis
+    //         .as_ref()
+    //         .unwrap()
+    //         .value
+    //         .0
+    //         .get(&year)
+    //         .map(|v| *v)
+    // }
     fn get_range_in(
         &self,
         _settings: &Settings,
@@ -117,15 +117,14 @@ impl Account for Loan<u32> {
         })
     }
     fn plot(&self, filepath: String) {
-
         scatter_plot(
-            filepath, 
+            filepath,
             vec![
-                ("Balance".into(), &self.analysis.as_ref().unwrap().value),
-                ("Interest".into(), &self.analysis.as_ref().unwrap().interest),
-                ("Payments".into(), &self.analysis.as_ref().unwrap().payments),
-                ],
-            self.name()
+                ("Balance".into(), &self.analysis.value),
+                ("Interest".into(), &self.analysis.interest),
+                ("Payments".into(), &self.analysis.payments),
+            ],
+            self.name(),
         );
     }
     fn simulate(
@@ -134,12 +133,12 @@ impl Account for Loan<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_out = self.dates.as_ref().unwrap().year_out.unwrap().start;
-        let tables = &mut self.analysis.as_mut().unwrap();
+        let start_out = self.dates.year_out.unwrap().start;
+        let tables = &mut self.analysis;
 
         let mut result = AccountResult::default();
 
-        tables.pull_value_forward(year);
+        tables.value.pull_value_forward(year);
 
         // Calculate interest
         result.interest = tables.value.0[&year] * self.rate.value(settings) / 100_f64;
@@ -153,14 +152,7 @@ impl Account for Loan<u32> {
         }
 
         // Calculate payment amount
-        if self
-            .dates
-            .as_ref()
-            .unwrap()
-            .year_out
-            .unwrap()
-            .contains(year)
-        {
+        if self.dates.year_out.unwrap().contains(year) {
             result.payment = self.payment_type.value(
                 self.payment_value,
                 settings.inflation_base,
@@ -190,9 +182,6 @@ impl Account for Loan<u32> {
         })
     }
     fn write(&self, filepath: String) {
-        match &self.analysis {
-            Some(results) => results.write(filepath),
-            None => {}
-        }
+        self.analysis.write(filepath);
     }
 }

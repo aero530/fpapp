@@ -10,13 +10,13 @@ use crate::analysis_types::{AccountResult, AnalysisDates, YearRange, YearlyImpac
 use crate::settings::Settings;
 
 mod types;
-use types::{Expense, Income, Ssa, College, Hsa, Retirement, Savings, Loan, Mortgage};
+use types::{College, Expense, Hsa, Income, Loan, Mortgage, Retirement, Savings, Ssa};
 
 pub mod plotting;
 use plotting::scatter_plot;
 
 mod tables;
-use tables::{LoanTables, SavingsTables, SingleTable, Table, PullForward};
+use tables::{LoanTables, SavingsTables, SingleTable, Table};
 
 /// Trait used to define what each account type must be able to provide
 pub trait Account: std::fmt::Debug {
@@ -39,8 +39,8 @@ pub trait Account: std::fmt::Debug {
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>>;
 
-    /// Return the value for the specified year
-    fn get_value(&self, year: u32) -> Option<f64>;
+    // /// Return the value for the specified year
+    // fn get_value(&self, year: u32) -> Option<f64>;
 
     // /// Return the income value for the specified year
     // fn get_income(&self, year: u32) -> Option<f64>;

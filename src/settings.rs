@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::Write;
+//use std::io::Write;
 
 use crate::accounts::{Account, AccountWrapper};
 use crate::settings;
@@ -90,45 +90,45 @@ impl From<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
     }
 }
 
-impl UserData<Box<dyn Account>> {
-    // pub fn total_income(&self, year: u32) -> f64 {
-    //     self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
-    //         acc + account.get_income(year).unwrap_or(0.0)
-    //     })
-    // }
-    // pub fn total_expenses(&self, year: u32) -> f64 {
-    //     self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
-    //         acc + account.get_expense(year).unwrap_or(0.0)
-    //     })
-    // }
-    // pub fn print_year(&self, order: &Vec<String>, year: u32) {
-    //     print!("{:?} ", year);
-    //     order.iter().for_each(|uuid| {
-    //         let account = self.accounts.get(uuid).unwrap();
-    //         let value = account.get_value(year).unwrap();
-    //         print!("{:.2} ", value);
-    //     });
-    //     println!("");
-    // }
-    /// Write value of each account for each year to a csv file
-    pub fn write_tables(&self, order: &Vec<String>, years: Vec<u32>, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, ".as_bytes()).unwrap();
-        order.iter().for_each(|uuid| {
-            let account = self.accounts.get(uuid).unwrap();
-            let value = account.name();
-            file.write_all(format!("{}, ", value).as_bytes()).unwrap();
-        });
-        file.write_all("\n".as_bytes()).unwrap();
-        years.iter().for_each(|year| {
-            file.write_all(format!("{:?}, ", year).as_bytes()).unwrap();
-            order.iter().for_each(|uuid| {
-                let account = self.accounts.get(uuid).unwrap();
-                let value = account.get_value(*year).unwrap();
-                file.write_all(format!("{:.2}, ", value).as_bytes())
-                    .unwrap();
-            });
-            file.write_all("\n".as_bytes()).unwrap();
-        });
-    }
-}
+// impl UserData<Box<dyn Account>> {
+// pub fn total_income(&self, year: u32) -> f64 {
+//     self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
+//         acc + account.get_income(year).unwrap_or(0.0)
+//     })
+// }
+// pub fn total_expenses(&self, year: u32) -> f64 {
+//     self.accounts.iter().fold(0.0, |acc, (_uuid, account)| {
+//         acc + account.get_expense(year).unwrap_or(0.0)
+//     })
+// }
+// pub fn print_year(&self, order: &Vec<String>, year: u32) {
+//     print!("{:?} ", year);
+//     order.iter().for_each(|uuid| {
+//         let account = self.accounts.get(uuid).unwrap();
+//         let value = account.get_value(year).unwrap();
+//         print!("{:.2} ", value);
+//     });
+//     println!("");
+// }
+// /// Write value of each account for each year to a csv file
+// pub fn write_tables(&self, order: &Vec<String>, years: Vec<u32>, filename: String) {
+//     let mut file = std::fs::File::create(filename).unwrap();
+//     file.write_all("year, ".as_bytes()).unwrap();
+//     order.iter().for_each(|uuid| {
+//         let account = self.accounts.get(uuid).unwrap();
+//         let value = account.name();
+//         file.write_all(format!("{}, ", value).as_bytes()).unwrap();
+//     });
+//     file.write_all("\n".as_bytes()).unwrap();
+//     years.iter().for_each(|year| {
+//         file.write_all(format!("{:?}, ", year).as_bytes()).unwrap();
+//         order.iter().for_each(|uuid| {
+//             let account = self.accounts.get(uuid).unwrap();
+//             let value = account.get_value(*year).unwrap();
+//             file.write_all(format!("{:.2}, ", value).as_bytes())
+//                 .unwrap();
+//         });
+//         file.write_all("\n".as_bytes()).unwrap();
+//     });
+// }
+// }

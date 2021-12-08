@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 use super::super::{
-    Account, AccountResult, AccountType, AnalysisDates, SingleTable, Table, YearRange,
-    YearlyImpact, YearlyTotals, scatter_plot
+    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SingleTable, Table,
+    YearRange, YearlyImpact, YearlyTotals,
 };
 use crate::inputs::{ExpenseOptions, YearEvalType, YearInput};
 use crate::settings::Settings;
@@ -25,9 +25,9 @@ pub struct Expense<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
     #[serde(skip)]
-    analysis: Option<SingleTable>,
+    analysis: SingleTable,
     #[serde(skip)]
-    dates: Option<AnalysisDates>,
+    dates: AnalysisDates,
 }
 
 impl From<Expense<String>> for Expense<u32> {
@@ -74,19 +74,19 @@ impl Account for Expense<u32> {
         years.iter().copied().for_each(|year| {
             output.value.0.insert(year, 0.0);
         });
-        self.analysis = Some(output);
-        self.dates = Some(AnalysisDates {
+        self.analysis = output;
+        self.dates = AnalysisDates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
-        });
+        };
         Ok(())
     }
-    fn get_value(&self, year: u32) -> Option<f64> {
-        match &self.analysis {
-            Some(result) => result.value.0.get(&year).map(|v| *v),
-            None => None,
-        }
-    }
+    // fn get_value(&self, year: u32) -> Option<f64> {
+    //     match &self.analysis {
+    //         Some(result) => result.value.0.get(&year).map(|v| *v),
+    //         None => None,
+    //     }
+    // }
     fn get_range_in(
         &self,
         _settings: &Settings,
@@ -110,11 +110,9 @@ impl Account for Expense<u32> {
     }
     fn plot(&self, filepath: String) {
         scatter_plot(
-            filepath, 
-            vec![
-                ("Amount".into(), &self.analysis.as_ref().unwrap().value),
-                ],
-            self.name()
+            filepath,
+            vec![("Amount".into(), &self.analysis.value)],
+            self.name(),
         );
     }
     fn simulate(
@@ -123,20 +121,13 @@ impl Account for Expense<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start = self.dates.as_ref().unwrap().year_out.unwrap().start;
-        let tables = &mut self.analysis.as_mut().unwrap();
+        let start = self.dates.year_out.unwrap().start;
+        let tables = &mut self.analysis;
 
         let mut result = AccountResult::default();
 
         // Calculate expense
-        if self
-            .dates
-            .as_ref()
-            .unwrap()
-            .year_out
-            .unwrap()
-            .contains(year)
-        {
+        if self.dates.year_out.unwrap().contains(year) {
             // Calculate expense amount for fixed, fixed_with_inflation
             match self.expense_type {
                 ExpenseOptions::Fixed => {
@@ -166,9 +157,6 @@ impl Account for Expense<u32> {
         })
     }
     fn write(&self, filepath: String) {
-        match &self.analysis {
-            Some(results) => results.write(filepath),
-            None => {}
-        }
+        self.analysis.write(filepath);
     }
 }

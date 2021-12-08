@@ -115,7 +115,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         yearly_totals.pay_expenses_from_net(year).unwrap();
     });
 
-    data.write_tables(&account_order, years.clone(), "target/tables.csv".into());
+    //data.write_tables(&account_order, years.clone(), "target/tables.csv".into());
     yearly_totals.write_summary("target/summary.csv".into());
     yearly_totals.plot("target/totals.png".into());
 

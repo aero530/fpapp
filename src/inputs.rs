@@ -1,6 +1,6 @@
 //! Definitions for user input fields
 //!
-use log::debug;
+// use log::debug;
 use serde::{Deserialize, Serialize};
 
 use super::AnalysisDates;
@@ -224,10 +224,10 @@ impl WithdrawalOptions {
                 }
             }
             WithdrawalOptions::ColFracOfSavings => {
-                debug!(
-                    "pv{} ps{} ti{} col{} ts{:?}",
-                    prev_account_value, prev_savings, tax_income, col, tax_status
-                );
+                // debug!(
+                //     "pv{} ps{} ti{} col{} ts{:?}",
+                //     prev_account_value, prev_savings, tax_income, col, tax_status
+                // );
                 if prev_account_value > 0_f64 {
                     // if there is money left in the account
                     // withdrawal from this account = total expenses this year  * fraction of total savings this account represents
