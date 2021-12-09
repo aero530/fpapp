@@ -1,47 +1,57 @@
-//! College savings account (529)
+//! Generic savings account
 
-//use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SavingsTables, Table,
-    YearRange, YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{
-    ContributionOptions, PercentInput, TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
-};
-use crate::settings::Settings;
+use super::*;
 
-/// College savings accounts specifically designed to represent 529 accounts
+/// Generic savings account
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct College<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Savings<T: std::cmp::Ord> {
+    /// String describing this account
     name: String,
+    /// Table of account balance
     table: Table<T>,
+    /// Table of contributions to this account
     contributions: Option<Table<T>>,
+    /// Table of account earnings
     earnings: Option<Table<T>>,
+    /// Table of withdrawals from this account
     withdrawals: Option<Table<T>>,
+    /// Calendar year when money starts being added to this account
     start_in: YearInput,
+    /// Calendar year when money is no longer added to this account (this value is inclusive)
     end_in: YearInput,
+    /// Calendar year when money starts being withdrawn from this account
     start_out: YearInput,
+    /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
+    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
     yearly_contribution: f64,
+    /// Determines how to interpret the value in yearly_contribution
     contribution_type: ContributionOptions,
+    /// Percent interest earned each year
     yearly_return: PercentInput,
+    /// Determines how to interpret the value in withdrawal_value
     withdrawal_type: WithdrawalOptions,
+    /// How much money should be take out per year (either as a percentage or a fixed dollar amount)
     withdrawal_value: f64,
+    /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: SavingsTables,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
-impl From<College<String>> for College<u32> {
-    fn from(other: College<String>) -> Self {
+impl From<Savings<String>> for Savings<u32> {
+    fn from(other: Savings<String>) -> Self {
         Self {
             name: other.name,
             table: other.table.into(),
@@ -74,9 +84,9 @@ impl From<College<String>> for College<u32> {
     }
 }
 
-impl Account for College<u32> {
+impl Account for Savings<u32> {
     fn type_id(&self) -> AccountType {
-        AccountType::College
+        AccountType::Savings
     }
     fn link_id(&self) -> Option<String> {
         None
@@ -87,7 +97,7 @@ impl Account for College<u32> {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
@@ -100,7 +110,6 @@ impl Account for College<u32> {
             &self.earnings,
             &self.withdrawals,
         );
-
         years.iter().copied().for_each(|year| {
             output.value.0.entry(year).or_insert(0.0);
             output.contributions.0.entry(year).or_insert(0.0);
@@ -108,7 +117,7 @@ impl Account for College<u32> {
             output.withdrawals.0.entry(year).or_insert(0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -123,23 +132,7 @@ impl Account for College<u32> {
     //         .get(&year)
     //         .map(|v| *v)
     // }
-    // fn get_income(&self, _year: u32) -> Option<f64> {
-    //     None
-    // }
-    // fn get_expense(&self, year: u32) -> Option<f64> {
-    //     self.analysis
-    //         .as_ref()
-    //         .unwrap()
-    //         .contributions
-    //         .0
-    //         .get(&year)
-    //         .map(|v| *v)
-    // }
-    fn get_range_in(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_in
@@ -149,11 +142,7 @@ impl Account for College<u32> {
                 .value(settings, linked_dates, YearEvalType::EndIn),
         })
     }
-    fn get_range_out(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_out
@@ -185,18 +174,18 @@ impl Account for College<u32> {
         //let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
         let tables = &mut self.analysis;
 
-        let mut result = AccountResult::default();
+        let mut result = WorkingValues::default();
 
-        // Init value table with previous year's value
         tables.value.pull_value_forward(year);
 
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
-        // Add earnings to earnings and value tables
+        // Add earnings to earnings table
         if let Some(x) = tables.earnings.0.get_mut(&year) {
             *x = result.earning;
         }
+        // Increase account value by earnings
         if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.earning;
         }
@@ -211,10 +200,11 @@ impl Account for College<u32> {
             );
         }
 
-        // Add contribution to contribution and value tables
+        // Add contribution to contribution table
         if let Some(x) = tables.contributions.0.get_mut(&year) {
             *x = result.contribution;
         }
+        // Increase account value by contribution
         if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.contribution;
         }
@@ -228,16 +218,11 @@ impl Account for College<u32> {
                 year,
                 tables.value.0[&year],
                 tables.value.0[&(year - 1)],
-                totals.get(year).col,
+                totals.get(year - 1).col,
                 totals.get(year - 1).saving,
                 settings.tax_income,
                 self.tax_status,
             );
-        }
-
-        // Dont allow an account to become overdrawn
-        if result.withdrawal > tables.value.0[&year] {
-            result.withdrawal = tables.value.0[&year];
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
@@ -248,20 +233,13 @@ impl Account for College<u32> {
             *x -= result.withdrawal;
         }
 
-        match self.tax_status {
-            // contribute taxed income
-            // payed with taxed income, earnings are not taxed, withdrawals are not taxed
-            TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => Ok(YearlyImpact {
-                expense: result.contribution,
-                col: 0_f64,
-                saving: 0_f64,
-                income_taxable: 0_f64,
-                income: 0_f64,
-            }),
-            TaxStatus::ContributeTaxedEarningsTaxed => todo!(),
-            TaxStatus::ContributePretaxTaxedWhenUsed => todo!(),
-            TaxStatus::ContributePretaxUntaxedWhenUsed => todo!(),
-        }
+        Ok(YearlyImpact {
+            expense: result.contribution,
+            col: 0_f64,
+            saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
+            income_taxable: result.earning,
+            income: result.withdrawal,
+        })
     }
     fn write(&self, filepath: String) {
         self.analysis.write(filepath);

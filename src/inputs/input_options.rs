@@ -1,10 +1,9 @@
 //! Definitions for user input fields
-//!
-// use log::debug;
+
 use serde::{Deserialize, Serialize};
 
-use super::AnalysisDates;
-use crate::settings;
+use super::settings;
+use crate::Dates;
 
 /// description used to populate account dropdown for contribution type selection
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -190,7 +189,7 @@ impl WithdrawalOptions {
         &self,
         withdrawal: f64,
         inflation: f64,
-        dates: AnalysisDates,
+        dates: Dates,
         year: u32,
         account_value: f64,
         prev_account_value: f64,
@@ -290,7 +289,7 @@ impl YearInput {
     pub fn value(
         &self,
         settings: &settings::Settings,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         eval_type: YearEvalType,
     ) -> u32 {
         match self {
@@ -327,7 +326,7 @@ impl YearSuggestion {
     pub fn value(
         &self,
         settings: &settings::Settings,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         eval_type: YearEvalType,
     ) -> u32 {
         match self {

@@ -7,14 +7,18 @@ use std::error::Error;
 use std::fs::read_to_string;
 
 mod accounts;
-mod analysis_types;
+// mod analysis_types;
 mod config;
 mod inputs;
-mod settings;
+mod plot;
+// mod settings;
+// mod tables;
+mod simulation;
 
 use accounts::{Account, AccountWrapper};
-use analysis_types::{AnalysisDates, YearlyTotals};
-use settings::UserData;
+// use analysis_types::{AnalysisDates, YearlyTotals};
+use inputs::UserData;
+use simulation::{Dates, YearlyTotals};
 
 /// Main loop
 fn main() -> Result<(), Box<dyn Error>> {
@@ -56,10 +60,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Initialize analysis tables
     account_order.iter().for_each(|uuid| {
         // Get dates from the linked account if this account has a link ID
-        let linked_dates: Option<AnalysisDates> = match data.accounts.get(uuid).unwrap().link_id() {
+        let linked_dates: Option<Dates> = match data.accounts.get(uuid).unwrap().link_id() {
             Some(link_id) => {
                 // This explicitly does not allow recursion in linked_dates
-                Some(AnalysisDates {
+                Some(Dates {
                     year_in: data
                         .accounts
                         .get(&link_id)

@@ -1,32 +1,37 @@
 //! Generic loan
-//!
+
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, LoanTables, Table, YearRange,
-    YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{PaymentOptions, PercentInput, YearEvalType, YearInput};
-use crate::settings::Settings;
+use super::*;
 
 /// Generic loan
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Loan<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Loan<T: std::cmp::Ord> {
+    /// String describing this account
     name: String,
+    /// Table of outstanding loan balance
     table: Table<T>,
+    /// Calendar year when payments to this account start
     start_out: YearInput,
+    /// Calendar year when payments to this account stop
     end_out: YearInput,
+    /// Determines how to interpret payment_value
     payment_type: PaymentOptions,
+    /// How much money should be payed each year (either as a percentage or a fixed dollar amount)
     payment_value: f64,
+    /// Interest rate on borrowed money. This is an APR this is then compounded based on the compound time setting.  Used for LOAN and MORTGAGE account types.
     rate: PercentInput,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: LoanTables,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
 impl From<Loan<String>> for Loan<u32> {
@@ -59,7 +64,7 @@ impl Account for Loan<u32> {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
@@ -80,7 +85,7 @@ impl Account for Loan<u32> {
             output.payments.0.insert(year, 0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -98,15 +103,11 @@ impl Account for Loan<u32> {
     fn get_range_in(
         &self,
         _settings: &Settings,
-        _linked_dates: Option<AnalysisDates>,
+        _linked_dates: Option<Dates>,
     ) -> Option<YearRange> {
         None
     }
-    fn get_range_out(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_out
@@ -136,7 +137,7 @@ impl Account for Loan<u32> {
         let start_out = self.dates.year_out.unwrap().start;
         let tables = &mut self.analysis;
 
-        let mut result = AccountResult::default();
+        let mut result = WorkingValues::default();
 
         tables.value.pull_value_forward(year);
 

@@ -6,50 +6,25 @@ use std::error::Error;
 use std::io::Write;
 
 // use log::error;
-use crate::accounts::plotting::scatter_plot;
-
-/// Set of year ranges used for analysis
-#[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
-pub struct AnalysisDates {
-    /// Time range when the account has positive cashflow
-    pub year_in: Option<YearRange>,
-    /// Time range when the account has negative cashflow
-    pub year_out: Option<YearRange>,
-}
-
-/// Common result structure used in yearly account simulation
-#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
-pub struct AccountResult {
-    /// earnings is money that an account gains (ie interest for a savings account or retirement account.  for an income account earnings is the yearly income)
-    pub earning: f64,
-    /// interest is money that must be payed off (ie for a loan or mortgage)
-    pub interest: f64,
-    /// contribution is money that goes from income to a savings type account (savings, college, retirement, etc)
-    pub contribution: f64,
-    /// set employerMatch to zero
-    pub employer_match: f64,
-    /// payment is money that must come out of income
-    pub payment: f64,
-    /// withdrawal is money that may be considered income (dependIng on account type)
-    pub withdrawal: f64,
-    pub expense: f64,
-}
-
-/// Results of the simulation of an account that impact the YearlyTotal
-#[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
-pub struct YearlyImpact {
-    /// Expenses get pulled out of net (dollars we already paid tax on)
-    pub expense: f64,
-    /// Cost of Living - tracks to total of the 'expense' account type
-    pub col: f64,
-    pub saving: f64,
-    /// Taxable income
-    pub income_taxable: f64,
-    /// Total income (taxable + non-taxable)
-    pub income: f64,
-}
+use crate::plot::scatter_plot;
 
 /// Running totals within a single year
+///
+/// Each year the values from all the accounts are summed and thier impact is
+/// applied to the yearly totals.  If an account type effectily costs money or
+/// makes money then that value is applied to 'net'.  As such we can think of net
+/// as an overall cash checking account that all money flows in and out of.
+/// If the total income for a year is not consumed by all the expenses, payments, and withdrawals
+/// then the leftover will sit in net and be carried over to the next year.
+///
+/// net: overall cash account that all money flows in and out of (the value of this account rolls over from year to year)
+/// expense: total expenses for a year
+/// col: cost of living
+/// saving: total value of all savings accounts (the value of this account rolls over from year to year)
+/// income_taxable: total taxable income for a year
+/// income: total income for a year
+/// tax_burden: amount of income tax paid for a year
+/// income_during_retirement: currently unused
 #[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub struct YearlyTotal {
     pub net: f64,
@@ -102,7 +77,21 @@ impl YearlyTotal {
     }
 }
 
-/// YearlyTotals tracked over multiple years
+/// How the results of the simulation of an [account](crate::accounts) impact a [YearlyTotal](YearlyTotal)
+#[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
+pub struct YearlyImpact {
+    /// Expenses get pulled out of net (dollars we already paid tax on)
+    pub expense: f64,
+    /// Cost of Living - tracks to total of the 'expense' account type
+    pub col: f64,
+    pub saving: f64,
+    /// Taxable income
+    pub income_taxable: f64,
+    /// Total income (taxable + non-taxable)
+    pub income: f64,
+}
+
+/// Set of [YearlyTotals](YearlyTotal) tracked over multiple years
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct YearlyTotals(pub BTreeMap<u32, YearlyTotal>);
 
@@ -126,10 +115,6 @@ impl YearlyTotals {
         new.set_savings(prev_savings);
         self.0.insert(year, new);
     }
-    /// Insert a new YearlyTotal at a specified year
-    // pub fn insert(&mut self, year: u32, yearly_total: YearlyTotal) {
-    //     self.0.insert(year, yearly_total);
-    // }
 
     /// Update the data for a specified year
     pub fn update(&mut self, year: u32, update: YearlyImpact) {
@@ -254,21 +239,5 @@ impl YearlyTotals {
     /// Return a sorted list of keys (years)
     pub fn get_years(&self) -> Vec<u32> {
         self.0.keys().map(|k| *k).collect()
-    }
-}
-
-/// Defines a time range with start and end values
-#[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
-pub struct YearRange {
-    /// Beginning of the time range
-    pub start: u32,
-    /// End of the time range
-    pub end: u32,
-}
-
-impl YearRange {
-    /// Determine if the specified year is within the time range (inclusive)
-    pub fn contains(self, year: u32) -> bool {
-        (year >= self.start) && (year <= self.end)
     }
 }

@@ -1,7 +1,10 @@
+//! Functions to plot data
+
 use plotters::prelude::*;
 
-use super::tables::Table;
+use crate::simulation::Table;
 
+/// Colors used to generate plots
 pub const COLORS: [RGBColor; 9] = [
     RGBColor(24, 171, 221),
     RGBColor(176, 75, 207),
@@ -14,73 +17,52 @@ pub const COLORS: [RGBColor; 9] = [
     RGBColor(239, 166, 143),
 ];
 
-pub fn range(input: Vec<&Table<u32>>) -> (u32, u32, f64, f64) {
+/// Return the overall span of dollar values for a group of tables.
+///
+/// The returned value is a tuple where return.0 is the minimum and
+/// return.1 is the maximum value.
+pub fn range(input: Vec<&Table<u32>>) -> (f64, f64) {
+    let y_min = input
+        .iter()
+        .map(|table| table.range().0)
+        .collect::<Vec<f64>>()
+        .iter()
+        .fold(0.0 / 0.0, |m, v| v.min(m));
+    let y_max = input
+        .iter()
+        .map(|table| table.range().1)
+        .collect::<Vec<f64>>()
+        .iter()
+        .fold(0.0 / 0.0, |m, v| v.max(m));
+    (y_min, y_max)
+}
+
+/// Return the overall span of year values for a group of tables.
+///
+/// The returned value is a tuple where return.0 is the minimum and
+/// return.1 is the maximum value.
+fn domain(input: Vec<&Table<u32>>) -> (u32, u32) {
     let x_min = *input
         .iter()
-        .map(|table| {
-            *table
-                .0
-                .keys()
-                .copied()
-                .collect::<Vec<u32>>()
-                .iter()
-                .min()
-                .unwrap()
-        })
+        .map(|table| table.domain().0)
         .collect::<Vec<u32>>()
         .iter()
         .min()
         .unwrap();
     let x_max = *input
         .iter()
-        .map(|table| {
-            *table
-                .0
-                .keys()
-                .copied()
-                .collect::<Vec<u32>>()
-                .iter()
-                .max()
-                .unwrap()
-        })
+        .map(|table| table.domain().1)
         .collect::<Vec<u32>>()
         .iter()
         .max()
         .unwrap();
-    let y_min = input
-        .iter()
-        .map(|table| {
-            table
-                .0
-                .values()
-                .copied()
-                .collect::<Vec<f64>>()
-                .iter()
-                .fold(0.0 / 0.0, |m, v| v.min(m))
-        })
-        .collect::<Vec<f64>>()
-        .iter()
-        .fold(0.0 / 0.0, |m, v| v.min(m));
-    let y_max = input
-        .iter()
-        .map(|table| {
-            table
-                .0
-                .values()
-                .copied()
-                .collect::<Vec<f64>>()
-                .iter()
-                .fold(0.0 / 0.0, |m, v| v.max(m))
-        })
-        .collect::<Vec<f64>>()
-        .iter()
-        .fold(0.0 / 0.0, |m, v| v.max(m));
-    (x_min, x_max, y_min, y_max)
+    (x_min, x_max)
 }
 
+/// Generate a scatter plot
 pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: String) {
-    let (x_min, x_max, y_min, y_max) =
-        range(data.iter().map(|(_table_name, table)| *table).collect());
+    let domain = domain(data.iter().map(|(_table_name, table)| *table).collect());
+    let range = range(data.iter().map(|(_table_name, table)| *table).collect());
 
     let root = BitMapBackend::new(&filepath, (1600, 1200)).into_drawing_area();
     root.fill(&WHITE).unwrap();
@@ -89,7 +71,7 @@ pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: S
         .margin(25)
         .x_label_area_size(60)
         .y_label_area_size(100)
-        .build_cartesian_2d(x_min..x_max, y_min..y_max)
+        .build_cartesian_2d(domain.0..domain.1, range.0..range.1)
         .unwrap();
 
     chart

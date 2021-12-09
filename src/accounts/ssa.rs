@@ -1,29 +1,31 @@
 //! Social Security Account
-//!
+
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SingleTable, YearRange,
-    YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{YearEvalType, YearInput};
-use crate::settings::Settings;
+use super::*;
 
 /// Social Security Account
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ssa {
+    /// String describing this account
     name: String,
+    /// Base income from social security
     base: f64,
+    /// Calendar year when money starts being earned by this account
     start_in: YearInput,
+    /// Calendar year when money stops being earned by this account
     end_in: YearInput,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: SingleTable,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
 impl Account for Ssa {
@@ -39,7 +41,7 @@ impl Account for Ssa {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
@@ -50,7 +52,7 @@ impl Account for Ssa {
             output.value.0.insert(*year, 0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -62,11 +64,7 @@ impl Account for Ssa {
     //         None => None,
     //     }
     // }
-    fn get_range_in(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_in
@@ -79,7 +77,7 @@ impl Account for Ssa {
     fn get_range_out(
         &self,
         _settings: &Settings,
-        _linked_dates: Option<AnalysisDates>,
+        _linked_dates: Option<Dates>,
     ) -> Option<YearRange> {
         None
     }
@@ -96,7 +94,7 @@ impl Account for Ssa {
         _totals: &YearlyTotals,
         _settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let mut _result = AccountResult::default();
+        let mut _result = WorkingValues::default();
 
         Ok(YearlyImpact {
             expense: 0_f64,

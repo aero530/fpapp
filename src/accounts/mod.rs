@@ -3,20 +3,36 @@
 //! Simulate accounts such as income, expense, retirement, 529, loan, mortgage, etc.
 
 use serde::{Deserialize, Serialize};
-
 use std::error::Error;
 
-use crate::analysis_types::{AccountResult, AnalysisDates, YearRange, YearlyImpact, YearlyTotals};
-use crate::settings::Settings;
+use crate::inputs::{
+    ContributionOptions, EmployerMatch, ExpenseOptions, PaymentOptions, PercentInput, Settings,
+    TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
+};
+use crate::plot::scatter_plot;
+use crate::simulation::{
+    Dates, LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact, YearlyTotals,
+};
 
-mod types;
-use types::{College, Expense, Hsa, Income, Loan, Mortgage, Retirement, Savings, Ssa};
+mod college;
+mod expense;
+mod hsa;
+mod income;
+mod loan;
+mod mortgage;
+mod retirement;
+mod savings;
+mod ssa;
 
-pub mod plotting;
-use plotting::scatter_plot;
-
-mod tables;
-use tables::{LoanTables, SavingsTables, SingleTable, Table};
+use college::College;
+use expense::Expense;
+use hsa::Hsa;
+use income::Income;
+use loan::Loan;
+use mortgage::Mortgage;
+use retirement::Retirement;
+use savings::Savings;
+use ssa::Ssa;
 
 /// Trait used to define what each account type must be able to provide
 pub trait Account: std::fmt::Debug {
@@ -35,7 +51,7 @@ pub trait Account: std::fmt::Debug {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>>;
 
@@ -49,18 +65,10 @@ pub trait Account: std::fmt::Debug {
     // fn get_expense(&self, year: u32) -> Option<f64>;
 
     /// Return start_in and end_in
-    fn get_range_in(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange>;
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange>;
 
     /// Return start_out and end_out
-    fn get_range_out(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange>;
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange>;
 
     /// Compute the value for a year (this needs to be done in time order)
     ///  year: year to compute values for
@@ -133,6 +141,24 @@ impl AccountWrapper {
             AccountType::Savings,
         ]
     }
+}
+
+/// Common result structure used in yearly account simulation
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
+pub struct WorkingValues {
+    /// earnings is money that an account gains (ie interest for a savings account or retirement account.  for an income account earnings is the yearly income)
+    pub earning: f64,
+    /// interest is money that must be payed off (ie for a loan or mortgage)
+    pub interest: f64,
+    /// contribution is money that goes from income to a savings type account (savings, college, retirement, etc)
+    pub contribution: f64,
+    /// set employerMatch to zero
+    pub employer_match: f64,
+    /// payment is money that must come out of income
+    pub payment: f64,
+    /// withdrawal is money that may be considered income (dependIng on account type)
+    pub withdrawal: f64,
+    pub expense: f64,
 }
 
 // #[cfg(test)]

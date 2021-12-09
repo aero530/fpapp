@@ -1,33 +1,39 @@
 //! Generic expense account (things you spend money on)
-//!
+
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SingleTable, Table,
-    YearRange, YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{ExpenseOptions, YearEvalType, YearInput};
-use crate::settings::Settings;
+use super::*;
 
 /// Account type to represent generic expense
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Expense<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Expense<T: std::cmp::Ord> {
+    /// String describing this account
     name: String,
+    /// Table of account expence for each year
     table: Table<T>,
+    /// Calendar year when then expense of this account started to have impact
     start_out: YearInput,
+    /// Calendar year when then expense of this account no longer has impact
     end_out: YearInput,
+    /// Determines how to interpret expense_value
     expense_type: ExpenseOptions,
+    /// Yearly cost of the expense
     expense_value: f64,
+    /// This expense account is for healthcare costs.  If so it can be linked to pull first from an HSA account.
     is_healthcare: Option<bool>,
+    /// Link this account to an income source
     hsa_link: Option<String>,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: SingleTable,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
 impl From<Expense<String>> for Expense<u32> {
@@ -61,7 +67,7 @@ impl Account for Expense<u32> {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
@@ -75,7 +81,7 @@ impl Account for Expense<u32> {
             output.value.0.insert(year, 0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -90,15 +96,11 @@ impl Account for Expense<u32> {
     fn get_range_in(
         &self,
         _settings: &Settings,
-        _linked_dates: Option<AnalysisDates>,
+        _linked_dates: Option<Dates>,
     ) -> Option<YearRange> {
         None
     }
-    fn get_range_out(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_out
@@ -124,7 +126,7 @@ impl Account for Expense<u32> {
         let start = self.dates.year_out.unwrap().start;
         let tables = &mut self.analysis;
 
-        let mut result = AccountResult::default();
+        let mut result = WorkingValues::default();
 
         // Calculate expense
         if self.dates.year_out.unwrap().contains(year) {

@@ -1,47 +1,60 @@
 //! Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
-//!
-use log::trace;
+
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use log::trace;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SavingsTables, Table,
-    YearRange, YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{
-    ContributionOptions, EmployerMatch, PercentInput, TaxStatus, WithdrawalOptions, YearEvalType,
-    YearInput,
-};
-use crate::settings::Settings;
+use super::*;
 
 /// Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Retirement<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Retirement<T: std::cmp::Ord> {
+    /// String describing this account
     name: String,
+    /// Table of account balance
     table: Table<T>,
+    /// Table of contributions to this account
     contributions: Option<Table<T>>,
+    /// Table of account earnings
     earnings: Option<Table<T>>,
+    /// Table of withdrawals from this account
     withdrawals: Option<Table<T>>,
+    /// Table of employer contributions to this account
     employer_contributions: Option<Table<T>>,
+    /// Calendar year when money starts being added to this account
     start_in: YearInput,
+    /// Calendar year when money is no longer added to this account (this value is inclusive and is often yearRetire-1)
     end_in: YearInput,
+    /// Calendar year when money starts being withdrawn from this account
     start_out: YearInput,
+    /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
+    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
     yearly_contribution: f64,
+    /// Determines how to interpret the value in yearly_contribution
     contribution_type: ContributionOptions,
+    /// Percent interest earned each year
     yearly_return: PercentInput,
+    /// Determines how to interpret the value in withdrawal_value
     withdrawal_type: WithdrawalOptions,
+    /// How much money should be take out per year (either as a percentage or a fixed dollar amount)
     withdrawal_value: f64,
+    /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,
+    /// Link to income account used with employer contributions and some contribution types
     income_link: Option<String>,
+    /// Percent of your contribution that your employer matches
     matching: Option<EmployerMatch>,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: SavingsTables,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
 impl From<Retirement<String>> for Retirement<u32> {
@@ -98,7 +111,7 @@ impl Account for Retirement<u32> {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         let mut output = SavingsTables::new(
@@ -121,7 +134,7 @@ impl Account for Retirement<u32> {
             output.withdrawals.0.entry(year).or_insert(0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -136,11 +149,7 @@ impl Account for Retirement<u32> {
     //         .get(&year)
     //         .map(|v| *v)
     // }
-    fn get_range_in(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_in
@@ -150,11 +159,7 @@ impl Account for Retirement<u32> {
                 .value(settings, linked_dates, YearEvalType::EndIn),
         })
     }
-    fn get_range_out(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_out
@@ -194,7 +199,7 @@ impl Account for Retirement<u32> {
         let start_in = self.dates.year_in.unwrap().start;
         let tables = &mut self.analysis;
 
-        let mut result = AccountResult::default();
+        let mut result = WorkingValues::default();
 
         // Init value table with previous year's value
         tables.value.pull_value_forward(year);

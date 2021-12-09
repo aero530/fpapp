@@ -1,71 +1,61 @@
-//! Generic savings account
-//!
-// use log::{debug, error};
+//! Health savings account
+
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use log::error;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SavingsTables, Table,
-    YearRange, YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{
-    ContributionOptions, PercentInput, TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
-};
-use crate::settings::Settings;
+use super::*;
 
-/// Generic savings account
+/// Health Savings Account
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Savings<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Hsa<T: std::cmp::Ord> {
+    /// String describing this account
     name: String,
+    /// Table of account balance
     table: Table<T>,
-    contributions: Option<Table<T>>,
-    earnings: Option<Table<T>>,
-    withdrawals: Option<Table<T>>,
+    /// Calendar year when money starts being added to this account
     start_in: YearInput,
+    /// Calendar year when money is no longer added to this account (this value is inclusive)
     end_in: YearInput,
+    /// Calendar year when money starts being withdrawn from this account
     start_out: YearInput,
+    /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
+    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
     yearly_contribution: f64,
+    /// Determines how to interpret yearly_contribution
     contribution_type: ContributionOptions,
+    /// Employer contributions to this account as a dollar amount
+    employer_contribution: f64,
+    /// Percent interest earned each year
     yearly_return: PercentInput,
-    withdrawal_type: WithdrawalOptions,
-    withdrawal_value: f64,
+    /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: SavingsTables,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
-impl From<Savings<String>> for Savings<u32> {
-    fn from(other: Savings<String>) -> Self {
+impl From<Hsa<String>> for Hsa<u32> {
+    fn from(other: Hsa<String>) -> Self {
         Self {
             name: other.name,
             table: other.table.into(),
-            contributions: match other.contributions {
-                Some(v) => Some(v.into()),
-                None => None,
-            },
-            earnings: match other.earnings {
-                Some(v) => Some(v.into()),
-                None => None,
-            },
-            withdrawals: match other.withdrawals {
-                Some(v) => Some(v.into()),
-                None => None,
-            },
             start_in: other.start_in,
             end_in: other.end_in,
             start_out: other.start_out,
             end_out: other.end_out,
             yearly_contribution: other.yearly_contribution,
             contribution_type: other.contribution_type,
+            employer_contribution: other.employer_contribution,
             yearly_return: other.yearly_return,
-            withdrawal_type: other.withdrawal_type,
-            withdrawal_value: other.withdrawal_value,
             tax_status: other.tax_status,
             notes: other.notes,
             analysis: other.analysis,
@@ -74,9 +64,9 @@ impl From<Savings<String>> for Savings<u32> {
     }
 }
 
-impl Account for Savings<u32> {
+impl Account for Hsa<u32> {
     fn type_id(&self) -> AccountType {
-        AccountType::Savings
+        AccountType::Hsa
     }
     fn link_id(&self) -> Option<String> {
         None
@@ -87,7 +77,7 @@ impl Account for Savings<u32> {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
@@ -95,19 +85,25 @@ impl Account for Savings<u32> {
         }
         let mut output = SavingsTables::new(
             &self.table,
-            &self.contributions,
-            &None,
-            &self.earnings,
-            &self.withdrawals,
+            &Some(Table::default()),
+            &Some(Table::default()),
+            &Some(Table::default()),
+            &Some(Table::default()),
         );
         years.iter().copied().for_each(|year| {
             output.value.0.entry(year).or_insert(0.0);
-            output.contributions.0.entry(year).or_insert(0.0);
-            output.earnings.0.entry(year).or_insert(0.0);
-            output.withdrawals.0.entry(year).or_insert(0.0);
+            output.contributions.0.insert(year, 0.0);
+            output
+                .employer_contributions
+                .as_mut()
+                .unwrap()
+                .0
+                .insert(year, 0.0);
+            output.earnings.0.insert(year, 0.0);
+            output.withdrawals.0.insert(year, 0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -122,11 +118,7 @@ impl Account for Savings<u32> {
     //         .get(&year)
     //         .map(|v| *v)
     // }
-    fn get_range_in(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_in
@@ -136,11 +128,7 @@ impl Account for Savings<u32> {
                 .value(settings, linked_dates, YearEvalType::EndIn),
         })
     }
-    fn get_range_out(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_out
@@ -153,12 +141,7 @@ impl Account for Savings<u32> {
     fn plot(&self, filepath: String) {
         scatter_plot(
             filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
+            vec![("Balance".into(), &self.analysis.value)],
             self.name(),
         );
     }
@@ -172,18 +155,17 @@ impl Account for Savings<u32> {
         //let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
         let tables = &mut self.analysis;
 
-        let mut result = AccountResult::default();
+        let mut result = WorkingValues::default();
 
         tables.value.pull_value_forward(year);
 
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
-        // Add earnings to earnings table
+        // Add earnings to earnings and value tables
         if let Some(x) = tables.earnings.0.get_mut(&year) {
             *x = result.earning;
         }
-        // Increase account value by earnings
         if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.earning;
         }
@@ -198,45 +180,40 @@ impl Account for Savings<u32> {
             );
         }
 
-        // Add contribution to contribution table
+        //
+        // add in
+        // employer_contribution
+        //
+        // if (account.contributionType === 'fixed_with_inflation') {
+        //     // if inflation needs to be accounted for in the contribution
+        //     employerMatch = account.employerContribution * ((1 + inflationBase / 100) ** (yearCurrent - yearStart)); // increase the value by inflation
+        // } else if (account.contributionType === 'fixed') {
+        //     // otherwise if the contribution is a fixed value
+        //     employerMatch = account.employerContribution; // set the contribution amount to the value input
+        // } else {
+        //     console.log('Employer Contribution type not implemented');
+        //     errors.push({ title: `${account.name} ${yearCurrent}`, message: 'employer contribution type not implemented' });
+        // }
+        // account.employerContributionTable[yearCurrent] = employerMatch;
+        //
+
+        // Add contribution to contribution and value tables
         if let Some(x) = tables.contributions.0.get_mut(&year) {
             *x = result.contribution;
         }
-        // Increase account value by contribution
         if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.contribution;
         }
 
         // Calculate withdrawal
-        if self.dates.year_out.unwrap().contains(year) {
-            result.withdrawal = self.withdrawal_type.value(
-                self.withdrawal_value,
-                settings.inflation_base,
-                self.dates,
-                year,
-                tables.value.0[&year],
-                tables.value.0[&(year - 1)],
-                totals.get(year - 1).col,
-                totals.get(year - 1).saving,
-                settings.tax_income,
-                self.tax_status,
-            );
-        }
-
-        // Add withdrawal to withdrawal table and subtract from value tables
-        if let Some(x) = tables.withdrawals.0.get_mut(&year) {
-            *x = result.withdrawal;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x -= result.withdrawal;
-        }
+        error!("Not done yet");
 
         Ok(YearlyImpact {
-            expense: result.contribution,
+            expense: 0_f64,
             col: 0_f64,
-            saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
-            income_taxable: result.earning,
-            income: result.withdrawal,
+            saving: 0_f64,
+            income_taxable: 0_f64,
+            income: 0_f64,
         })
     }
     fn write(&self, filepath: String) {

@@ -1,32 +1,35 @@
 //! Source of income
-//!
-//use log::debug;
+
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::super::{
-    scatter_plot, Account, AccountResult, AccountType, AnalysisDates, SingleTable, Table,
-    YearRange, YearlyImpact, YearlyTotals,
-};
-use crate::inputs::{PercentInput, YearEvalType, YearInput};
-use crate::settings::Settings;
+use super::*;
 
 /// Account to represent sources of income
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Income<T: std::cmp::Eq + std::hash::Hash + std::cmp::PartialEq + std::cmp::Ord> {
+pub struct Income<T: std::cmp::Ord> {
+    /// String describing this account
     name: String,
-    base: f64,
+    /// Table of account income
     table: Table<T>,
+    /// Base pay (with bonuses)
+    base: f64,
+    /// Calendar year when money starts being earned by this account
     start_in: YearInput,
+    /// Calendar year when money stops being earned by this account
     end_in: YearInput,
+    /// Yearly increase in income as a percent
     raise: PercentInput,
+    /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
+    /// Tables used to store simulation results
     #[serde(skip)]
     analysis: SingleTable,
+    /// Calculated date values as a year based on input values
     #[serde(skip)]
-    dates: AnalysisDates,
+    dates: Dates,
 }
 
 impl From<Income<String>> for Income<u32> {
@@ -58,7 +61,7 @@ impl Account for Income<u32> {
     fn init(
         &mut self,
         years: &Vec<u32>,
-        linked_dates: Option<AnalysisDates>,
+        linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
@@ -69,7 +72,7 @@ impl Account for Income<u32> {
             output.value.0.entry(year).or_insert(0.0);
         });
         self.analysis = output;
-        self.dates = AnalysisDates {
+        self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
@@ -81,11 +84,7 @@ impl Account for Income<u32> {
     //         None => None,
     //     }
     // }
-    fn get_range_in(
-        &self,
-        settings: &Settings,
-        linked_dates: Option<AnalysisDates>,
-    ) -> Option<YearRange> {
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
                 .start_in
@@ -98,7 +97,7 @@ impl Account for Income<u32> {
     fn get_range_out(
         &self,
         _settings: &Settings,
-        _linked_dates: Option<AnalysisDates>,
+        _linked_dates: Option<Dates>,
     ) -> Option<YearRange> {
         None
     }
@@ -118,7 +117,7 @@ impl Account for Income<u32> {
         let start_in = self.dates.year_in.unwrap().start;
         let tables = &mut self.analysis;
 
-        let mut result = AccountResult::default();
+        let mut result = WorkingValues::default();
 
         // Calculate earnings
         if self.dates.year_in.unwrap().contains(year) {
