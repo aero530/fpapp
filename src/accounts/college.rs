@@ -99,11 +99,13 @@ impl Account for College<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut output = SavingsTables::new(
+        
+        // Init the analysis object with values from the stored tables
+        let mut analysis = SavingsTables::new(
             &self.table,
             &self.contributions,
             &None,
@@ -111,18 +113,25 @@ impl Account for College<u32> {
             &self.withdrawals,
         );
 
+        // Populate all the years needed in simulation
         years.iter().copied().for_each(|year| {
-            output.value.0.entry(year).or_insert(0.0);
-            output.contributions.0.entry(year).or_insert(0.0);
-            output.earnings.0.entry(year).or_insert(0.0);
-            output.withdrawals.0.entry(year).or_insert(0.0);
+            analysis.value.0.entry(year).or_insert(0.0);
+            analysis.contributions.0.entry(year).or_insert(0.0);
+            analysis.earnings.0.entry(year).or_insert(0.0);
+            analysis.withdrawals.0.entry(year).or_insert(0.0);
         });
-        self.analysis = output;
+        self.analysis = analysis;
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+
+        let mut initial_values = YearlyImpact::default();
+        initial_values.saving = match self.analysis.value.get(years[0]) {
+            Some(x) => x,
+            None => 0_f64,
+        };
+        Ok(initial_values)
     }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
@@ -143,6 +152,9 @@ impl Account for College<u32> {
                 .end_out
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
+    }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
     }
     fn plot(&self, filepath: String) {
         scatter_plot(
@@ -171,6 +183,10 @@ impl Account for College<u32> {
         // Init value table with previous year's value
         tables.value.pull_value_forward(year);
 
+        if tables.value.0[&year] < 0_f64 {
+            return Err(String::from("College fund account value is negative.").into());
+        }
+
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
@@ -186,7 +202,7 @@ impl Account for College<u32> {
         if self.dates.year_in.unwrap().contains(year) {
             result.contribution = self.contribution_type.value(
                 self.yearly_contribution,
-                totals.get(year).income,
+                totals.get_income(year),
                 year - start_in,
                 settings.inflation_base,
             );
@@ -209,16 +225,12 @@ impl Account for College<u32> {
                 year,
                 tables.value.0[&year],
                 tables.value.0[&(year - 1)],
-                totals.get(year).col,
-                totals.get(year - 1).saving,
+                totals.get_col(year),
+                totals.get_saving(year - 1),
                 settings.tax_income,
                 self.tax_status,
             );
-        }
-
-        // Dont allow an account to become overdrawn
-        if result.withdrawal > tables.value.0[&year] {
-            result.withdrawal = tables.value.0[&year];
+            result.limit_withdrawal(tables.value.get(year).unwrap());
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
@@ -234,14 +246,31 @@ impl Account for College<u32> {
             // payed with taxed income, earnings are not taxed, withdrawals are not taxed
             TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => Ok(YearlyImpact {
                 expense: result.contribution,
+                healthcare_expense: 0_f64,
                 col: 0_f64,
                 saving: 0_f64,
                 income_taxable: 0_f64,
                 income: 0_f64,
+                hsa: 0_f64,
             }),
-            TaxStatus::ContributeTaxedEarningsTaxed => todo!(),
-            TaxStatus::ContributePretaxTaxedWhenUsed => todo!(),
-            TaxStatus::ContributePretaxUntaxedWhenUsed => todo!(),
+            TaxStatus::ContributeTaxedEarningsTaxed => {
+                return Err(String::from(
+                    "This tax status type is not implemented for college accounts.",
+                )
+                .into())
+            }
+            TaxStatus::ContributePretaxTaxedWhenUsed => {
+                return Err(String::from(
+                    "This tax status type is not implemented for college accounts.",
+                )
+                .into())
+            }
+            TaxStatus::ContributePretaxUntaxedWhenUsed => {
+                return Err(String::from(
+                    "This tax status type is not implemented for college accounts.",
+                )
+                .into())
+            }
         }
     }
     fn write(&self, filepath: String) {

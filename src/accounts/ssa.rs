@@ -43,7 +43,7 @@ impl Account for Ssa {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -56,14 +56,11 @@ impl Account for Ssa {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+        Ok(YearlyImpact::default())
     }
-    // fn get_value(&self, year: u32) -> Option<f64> {
-    //     match &self.analysis {
-    //         Some(result) => result.value.0.get(&year).map(|v| *v),
-    //         None => None,
-    //     }
-    // }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
+    }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
@@ -98,10 +95,12 @@ impl Account for Ssa {
 
         Ok(YearlyImpact {
             expense: 0_f64,
+            healthcare_expense: 0_f64,
             col: 0_f64,
             saving: 0_f64,
             income_taxable: 0_f64,
             income: 0_f64,
+            hsa: 0_f64,
         })
     }
     fn write(&self, filepath: String) {

@@ -99,7 +99,7 @@ impl Account for Savings<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -121,17 +121,17 @@ impl Account for Savings<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+        
+        let mut initial_values = YearlyImpact::default();
+        initial_values.saving = match self.analysis.value.get(years[0]) {
+            Some(x) => x,
+            None => 0_f64,
+        };
+        Ok(initial_values)
     }
-    // fn get_value(&self, year: u32) -> Option<f64> {
-    //     self.analysis
-    //         .as_ref()
-    //         .unwrap()
-    //         .value
-    //         .0
-    //         .get(&year)
-    //         .map(|v| *v)
-    // }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
+    }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
@@ -178,6 +178,10 @@ impl Account for Savings<u32> {
 
         tables.value.pull_value_forward(year);
 
+        if tables.value.0[&year] < 0_f64 {
+            return Err(String::from("Savings account value is negative.").into());
+        }
+
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
@@ -194,7 +198,7 @@ impl Account for Savings<u32> {
         if self.dates.year_in.unwrap().contains(year) {
             result.contribution = self.contribution_type.value(
                 self.yearly_contribution,
-                totals.get(year).income,
+                totals.get_income(year),
                 year - start_in,
                 settings.inflation_base,
             );
@@ -218,11 +222,12 @@ impl Account for Savings<u32> {
                 year,
                 tables.value.0[&year],
                 tables.value.0[&(year - 1)],
-                totals.get(year - 1).col,
-                totals.get(year - 1).saving,
+                totals.get_col(year - 1),
+                totals.get_saving(year - 1),
                 settings.tax_income,
                 self.tax_status,
             );
+            result.limit_withdrawal(tables.value.get(year).unwrap());
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
@@ -235,10 +240,12 @@ impl Account for Savings<u32> {
 
         Ok(YearlyImpact {
             expense: result.contribution,
+            healthcare_expense: 0_f64,
             col: 0_f64,
             saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
             income_taxable: result.earning,
             income: result.withdrawal,
+            hsa: 0_f64,
         })
     }
     fn write(&self, filepath: String) {

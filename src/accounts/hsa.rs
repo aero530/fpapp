@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use log::error;
 
 use super::*;
 
@@ -79,7 +78,7 @@ impl Account for Hsa<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -107,17 +106,17 @@ impl Account for Hsa<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+        
+        let mut initial_values = YearlyImpact::default();
+        initial_values.hsa = match self.analysis.value.get(years[0]) {
+            Some(x) => x,
+            None => 0_f64,
+        };
+        Ok(initial_values)
     }
-    // fn get_value(&self, year: u32) -> Option<f64> {
-    //     self.analysis
-    //         .as_ref()
-    //         .unwrap()
-    //         .value
-    //         .0
-    //         .get(&year)
-    //         .map(|v| *v)
-    // }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
+    }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
@@ -141,7 +140,16 @@ impl Account for Hsa<u32> {
     fn plot(&self, filepath: String) {
         scatter_plot(
             filepath,
-            vec![("Balance".into(), &self.analysis.value)],
+            vec![
+                ("Balance".into(), &self.analysis.value),
+                ("Contributions".into(), &self.analysis.contributions),
+                (
+                    "Employer Contributions".into(),
+                    &self.analysis.employer_contributions.as_ref().unwrap(),
+                ),
+                ("Earnings".into(), &self.analysis.earnings),
+                ("Withdrawals".into(), &self.analysis.withdrawals),
+            ],
             self.name(),
         );
     }
@@ -159,6 +167,12 @@ impl Account for Hsa<u32> {
 
         tables.value.pull_value_forward(year);
 
+        if tables.value.0[&year] < 0_f64 {
+            return Err(String::from("HSA account value is negative.").into());
+        }
+
+        // println!("bi {:.2}\t", tables.value.0[&year]);
+
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
@@ -174,46 +188,69 @@ impl Account for Hsa<u32> {
         if self.dates.year_in.unwrap().contains(year) {
             result.contribution = self.contribution_type.value(
                 self.yearly_contribution,
-                totals.get(year).income,
+                totals.get_income(year),
+                year - start_in,
+                settings.inflation_base,
+            );
+            result.employer_contribution = self.contribution_type.value(
+                self.employer_contribution,
+                totals.get_income(year),
                 year - start_in,
                 settings.inflation_base,
             );
         }
 
-        //
-        // add in
-        // employer_contribution
-        //
-        // if (account.contributionType === 'fixed_with_inflation') {
-        //     // if inflation needs to be accounted for in the contribution
-        //     employerMatch = account.employerContribution * ((1 + inflationBase / 100) ** (yearCurrent - yearStart)); // increase the value by inflation
-        // } else if (account.contributionType === 'fixed') {
-        //     // otherwise if the contribution is a fixed value
-        //     employerMatch = account.employerContribution; // set the contribution amount to the value input
-        // } else {
-        //     console.log('Employer Contribution type not implemented');
-        //     errors.push({ title: `${account.name} ${yearCurrent}`, message: 'employer contribution type not implemented' });
-        // }
-        // account.employerContributionTable[yearCurrent] = employerMatch;
-        //
-
         // Add contribution to contribution and value tables
         if let Some(x) = tables.contributions.0.get_mut(&year) {
-            *x = result.contribution;
+            *x = result.contribution + result.employer_contribution;
         }
         if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.contribution;
+            *x += result.employer_contribution;
         }
 
-        // Calculate withdrawal
-        error!("Not done yet");
+        // print!("e {:.2}\t", result.earning);
+        // print!("c {:.2}\t", result.contribution);
+        // print!("ec {:.2}\t", result.employer_contribution);
+        // print!("bf {:.2}\t", tables.value.0[&year]);
+
+        // Calculate withdrawal based on outstanding healthcare expenses
+        // This account is used to cover as much of the healthcare expenses
+        // as it can based on current account value.  Any remaining expenses
+        // must be taken from net in the main loop of the simulation.
+        // Unpaid healthcare_expenses are positive values (>0)
+        let healthcare_expense = totals.get_healthcare_expense(year);
+        if healthcare_expense < 0_f64 {
+            return Err(String::from("Negative healthcare expense.").into());
+        }
+        if self.dates.year_out.unwrap().contains(year) {
+            result.withdrawal = match healthcare_expense < tables.value.get(year).unwrap() {
+                true => healthcare_expense,
+                false => tables.value.get(year).unwrap(),
+            }
+        }
+
+        // Add withdrawal to withdrawal table and subtract from value tables
+        if let Some(x) = tables.withdrawals.0.get_mut(&year) {
+            *x = result.withdrawal;
+        }
+        if let Some(x) = tables.value.0.get_mut(&year) {
+            *x -= result.withdrawal;
+        }
+
+        // print!("h {:.2}\t", healthcare_expense);
+        // print!("w {:.2}\t", result.withdrawal);
+        // println!("d {:.2}\t", result.contribution + result.employer_contribution + result.earning - result.withdrawal);
 
         Ok(YearlyImpact {
             expense: 0_f64,
+            healthcare_expense: -result.withdrawal, // reduce this years healthcare expense by the amount paid for from this account
             col: 0_f64,
             saving: 0_f64,
             income_taxable: 0_f64,
             income: 0_f64,
+            hsa: result.contribution + result.employer_contribution + result.earning
+                - result.withdrawal,
         })
     }
     fn write(&self, filepath: String) {

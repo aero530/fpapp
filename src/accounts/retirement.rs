@@ -1,8 +1,8 @@
 //! Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
 
+use log::trace;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use log::trace;
 
 use super::*;
 
@@ -113,7 +113,7 @@ impl Account for Retirement<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut output = SavingsTables::new(
             &self.table,
             &self.contributions,
@@ -138,17 +138,17 @@ impl Account for Retirement<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+        
+        let mut initial_values = YearlyImpact::default();
+        initial_values.saving = match self.analysis.value.get(years[0]) {
+            Some(x) => x,
+            None => 0_f64,
+        };
+        Ok(initial_values)
     }
-    // fn get_value(&self, year: u32) -> Option<f64> {
-    //     self.analysis
-    //         .as_ref()
-    //         .unwrap()
-    //         .value
-    //         .0
-    //         .get(&year)
-    //         .map(|v| *v)
-    // }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
+    }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
             start: self
@@ -204,6 +204,10 @@ impl Account for Retirement<u32> {
         // Init value table with previous year's value
         tables.value.pull_value_forward(year);
 
+        if tables.value.0[&year] < 0_f64 {
+            return Err(String::from("Retirement account value is negative.").into());
+        }
+
         // Calculate earnings
         result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
@@ -219,7 +223,7 @@ impl Account for Retirement<u32> {
         if self.dates.year_in.unwrap().contains(year) {
             result.contribution = self.contribution_type.value(
                 self.yearly_contribution,
-                totals.get(year).income,
+                totals.get_income(year),
                 year - start_in,
                 settings.inflation_base,
             );
@@ -256,7 +260,7 @@ impl Account for Retirement<u32> {
                     //     }
                     // }
                     let link_income = 500_f64;
-                    result.employer_match = match result.contribution
+                    result.employer_contribution = match result.contribution
                         >= employer_match.limit.value(settings) / 100_f64 * link_income
                     {
                         true => {
@@ -277,11 +281,11 @@ impl Account for Retirement<u32> {
         // Add contribution to contribution and value tables
         if let Some(x) = tables.contributions.0.get_mut(&year) {
             *x = result.contribution;
-            *x += result.employer_match;
+            *x += result.employer_contribution;
         }
         if let Some(x) = tables.value.0.get_mut(&year) {
             *x += result.contribution;
-            *x += result.employer_match; // ADD EMPLOYER CONTRIBUTION
+            *x += result.employer_contribution; // ADD EMPLOYER CONTRIBUTION
         }
 
         // Calculate withdrawal
@@ -290,7 +294,6 @@ impl Account for Retirement<u32> {
                 true => settings.retirement_cost_of_living / 100_f64,
                 false => 1_f64,
             };
-
             result.withdrawal = self.withdrawal_type.value(
                 self.withdrawal_value,
                 settings.inflation_base,
@@ -298,11 +301,13 @@ impl Account for Retirement<u32> {
                 year,
                 tables.value.0[&year],
                 tables.value.0[&(year - 1)],
-                totals.get(year).col * col_scale,
-                totals.get(year - 1).saving,
+                totals.get_col(year) * col_scale,
+                totals.get_saving(year - 1),
                 settings.tax_income,
                 self.tax_status,
             );
+            result.limit_withdrawal(tables.value.get(year).unwrap());
+            
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
@@ -325,10 +330,12 @@ impl Account for Retirement<u32> {
             // Withdrawals count as income but do not to taxable income
             TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => Ok(YearlyImpact {
                 expense: result.contribution,
+                healthcare_expense: 0_f64,
                 col: 0_f64,
                 saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: 0_f64,
                 income: result.withdrawal,
+                hsa: 0_f64,
             }),
             // Paid with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)
             //
@@ -337,11 +344,13 @@ impl Account for Retirement<u32> {
             // Withdrawals count as income but do not to taxable income
             TaxStatus::ContributeTaxedEarningsTaxed => Ok(YearlyImpact {
                 expense: result.contribution,
+                healthcare_expense: 0_f64,
                 col: 0_f64,
                 saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: result.earning,
                 // todo ! something different to account for earnings as cap gains
                 income: result.withdrawal,
+                hsa: 0_f64,
             }),
             // Paid with pretax income and taxed in year of use as income
             //
@@ -350,10 +359,12 @@ impl Account for Retirement<u32> {
             // Withdrawals count as income and add to taxable income
             TaxStatus::ContributePretaxTaxedWhenUsed => Ok(YearlyImpact {
                 expense: result.contribution,
+                healthcare_expense: 0_f64,
                 col: 0_f64,
                 saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: result.withdrawal - result.contribution,
                 income: result.withdrawal,
+                hsa: 0_f64,
             }),
             // Paid with pretax income and not taxed as income (use with HSA)
             //
@@ -362,10 +373,12 @@ impl Account for Retirement<u32> {
             // Withdrawals count as income but do not add to taxable income
             TaxStatus::ContributePretaxUntaxedWhenUsed => Ok(YearlyImpact {
                 expense: result.contribution,
+                healthcare_expense: 0_f64,
                 col: 0_f64,
                 saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: 0_f64 - result.contribution,
                 income: result.withdrawal,
+                hsa: 0_f64,
             }),
         }
     }

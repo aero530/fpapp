@@ -66,7 +66,7 @@ impl Account for Loan<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -89,17 +89,11 @@ impl Account for Loan<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+        Ok(YearlyImpact::default())
     }
-    // fn get_value(&self, year: u32) -> Option<f64> {
-    //     self.analysis
-    //         .as_ref()
-    //         .unwrap()
-    //         .value
-    //         .0
-    //         .get(&year)
-    //         .map(|v| *v)
-    // }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
+    }
     fn get_range_in(
         &self,
         _settings: &Settings,
@@ -141,6 +135,10 @@ impl Account for Loan<u32> {
 
         tables.value.pull_value_forward(year);
 
+        if tables.value.0[&year] < 0_f64 {
+            return Err(String::from("Loan account value is negative.").into());
+        }
+
         // Calculate interest
         result.interest = tables.value.0[&year] * self.rate.value(settings) / 100_f64;
 
@@ -176,10 +174,12 @@ impl Account for Loan<u32> {
 
         Ok(YearlyImpact {
             expense: result.payment,
+            healthcare_expense: 0_f64,
             col: 0_f64,
             saving: 0_f64,
             income_taxable: 0_f64,
             income: 0_f64,
+            hsa: 0_f64,
         })
     }
     fn write(&self, filepath: String) {

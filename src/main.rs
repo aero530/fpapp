@@ -2,7 +2,7 @@
 //!
 //! Application to simulate financial standing over time.
 //!
-use log::{info, trace, LevelFilter};
+use log::{info, debug, trace, LevelFilter};
 use std::error::Error;
 use std::fs::read_to_string;
 
@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let filename = "archive/fp_data.json";
     let json_file_str = read_to_string(std::path::Path::new(&filename))?;
 
-    let _a = serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str)?;
+    // let _a = serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str)?;
 
     let mut data: UserData<Box<dyn Account>> =
         serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str)?.into();
@@ -46,16 +46,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // print out account order
-    // account_order.iter().for_each(|uuid| {
-    //     debug!("{:?}",data.accounts.get(uuid).unwrap().name());
-    // });
-
     let years: Vec<u32> =
         (data.settings.year_start()..data.settings.year_end()).collect::<Vec<u32>>();
 
-    //let mut yearly_totals: HashMap<String, YearlyTotal> = HashMap::new();
     let mut yearly_totals = YearlyTotals::new();
+    yearly_totals.add_year(years[0]);
 
     // Initialize analysis tables
     account_order.iter().for_each(|uuid| {
@@ -79,11 +74,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             None => None,
         };
 
-        data.accounts
+        let impact = data.accounts
             .get_mut(uuid)
             .unwrap()
             .init(&years, linked_dates, &data.settings)
             .unwrap();
+        
+        yearly_totals.update(years[0], impact);
 
         trace!(
             "{:?} {:?} {:?}",
@@ -97,29 +94,39 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Main loop to loop through each year
     years.iter().copied().for_each(|year| {
-        trace!("{:?}", year);
+        debug!("year {:?}", year);
 
-        // Initialize this year
-        yearly_totals.init(year);
+        // Initialize this year.  Year[0] already initialized during account initialization
+        if year > years[0] {
+            yearly_totals.add_year(year);
+        }
+        
+
+        // if this is the first year, init yearly_totals with value from table (amount already saved before analysis starts)
+        // if year == data.settings.year_start() {
+        //     println!("First year");
+        //     let result = YearlyImpact::default();
+        // }
 
         // Loop through accounts to make contributions and withdrawals
         account_order.iter().for_each(|uuid| {
             let account = data.accounts.get_mut(uuid).unwrap();
-            let result = account
+            let impact = account
                 .simulate(year, &yearly_totals, &data.settings)
                 .unwrap();
-            yearly_totals.update(year, result);
+            yearly_totals.update(year, impact);
             //this_year.update(result);
         });
 
-        yearly_totals.deposit_income_in_net(year).unwrap();
+        yearly_totals.deposit_income_in_net(year);
         yearly_totals
-            .pay_income_tax_from_net(year, data.settings.tax_income)
-            .unwrap();
-        yearly_totals.pay_expenses_from_net(year).unwrap();
+            .pay_income_tax_from_net(year, data.settings.tax_income);
+        yearly_totals.pay_expenses_from_net(year);
+        yearly_totals
+            .pay_healthcare_expenses_from_net(year);
     });
 
-    //data.write_tables(&account_order, years.clone(), "target/tables.csv".into());
+    data.write_tables(&account_order, years.clone(), "target/tables.csv".into());
     yearly_totals.write_summary("target/summary.csv".into());
     yearly_totals.plot("target/totals.png".into());
 

@@ -1,90 +1,25 @@
 //! Types used during the analysis / simulation
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::error::Error;
 use std::io::Write;
+// use log::trace;
 
-// use log::error;
 use crate::plot::scatter_plot;
-
-/// Running totals within a single year
-///
-/// Each year the values from all the accounts are summed and thier impact is
-/// applied to the yearly totals.  If an account type effectily costs money or
-/// makes money then that value is applied to 'net'.  As such we can think of net
-/// as an overall cash checking account that all money flows in and out of.
-/// If the total income for a year is not consumed by all the expenses, payments, and withdrawals
-/// then the leftover will sit in net and be carried over to the next year.
-///
-/// net: overall cash account that all money flows in and out of (the value of this account rolls over from year to year)
-/// expense: total expenses for a year
-/// col: cost of living
-/// saving: total value of all savings accounts (the value of this account rolls over from year to year)
-/// income_taxable: total taxable income for a year
-/// income: total income for a year
-/// tax_burden: amount of income tax paid for a year
-/// income_during_retirement: currently unused
-#[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
-pub struct YearlyTotal {
-    pub net: f64,
-    pub expense: f64,
-    pub col: f64,
-    pub saving: f64,
-    pub income_taxable: f64,
-    pub income: f64,
-    pub tax_burden: f64,
-    pub income_during_retirement: f64,
-}
-
-impl YearlyTotal {
-    /// Increment (add to) the yearly total values with the yearly impact results
-    ///
-    /// This function does not update self.net, self.saving, self.tax_burden, or self.income_during_retirement.
-    /// Self.net is set with set_net and modified by pay_income_tax_from_net, deposit_income_in_net, and pay_expenses_from_net
-    /// Self.saving is set with set_savings
-    /// Self.tax_burden is set with pay_income_tax_from_net
-    pub fn update(&mut self, update: YearlyImpact) {
-        self.expense += update.expense;
-        self.col += update.col;
-        self.saving += update.saving;
-        self.income_taxable += update.income_taxable;
-        self.income += update.income;
-    }
-    /// Set (define) the net value
-    pub fn set_net(&mut self, update: f64) {
-        self.net = update;
-    }
-    /// Set (define) the savings value
-    pub fn set_savings(&mut self, update: f64) {
-        self.saving = update;
-    }
-    /// Calculate tax burden and remove from self.net (pay taxes)
-    pub fn pay_income_tax_from_net(&mut self, tax_rate: f64) {
-        // log what income was after paying taxes
-        // println!("{}", tax_rate);
-        self.tax_burden = self.income_taxable * (tax_rate / 100_f64);
-        // take income tax payment out of net
-        self.net -= self.tax_burden;
-    }
-    /// Add self.income to self.net
-    pub fn deposit_income_in_net(&mut self) {
-        self.net += self.income;
-    }
-    /// Remove self.expenses from self.net
-    pub fn pay_expenses_from_net(&mut self) {
-        self.net -= self.expense;
-    }
-}
+use super::Table;
 
 /// How the results of the simulation of an [account](crate::accounts) impact a [YearlyTotal](YearlyTotal)
 #[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub struct YearlyImpact {
     /// Expenses get pulled out of net (dollars we already paid tax on)
     pub expense: f64,
-    /// Cost of Living - tracks to total of the 'expense' account type
+    /// Healthcare costs that can be paid for with hsa dollars
+    pub healthcare_expense: f64,
+    /// Impact to cost of living (tracks to total of the 'expense' account type)
     pub col: f64,
+    /// Change in total savings accounts dollars
     pub saving: f64,
+    /// Change in total hsa dollars
+    pub hsa: f64,
     /// Taxable income
     pub income_taxable: f64,
     /// Total income (taxable + non-taxable)
@@ -92,108 +27,119 @@ pub struct YearlyImpact {
 }
 
 /// Set of [YearlyTotals](YearlyTotal) tracked over multiple years
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct YearlyTotals(pub BTreeMap<u32, YearlyTotal>);
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct YearlyTotals {
+    /// Overall cash account that all money flows in and out of (the value of this account rolls over from year to year)
+    pub net: Table<u32>,
+    /// total expenses for a year
+    pub expense: Table<u32>,
+    /// total healthcare costs that have not been paid (these are paid for with HSA dollars first)
+    pub healthcare_expense: Table<u32>,
+    /// cost of living
+    pub col: Table<u32>,
+    /// total value of all savings accounts (the value of this account rolls over from year to year)
+    pub saving: Table<u32>,
+    /// total value of all hsa accounts (the value of this account rolls over from year to year)
+    pub hsa: Table<u32>,
+    /// total taxable income for a year
+    pub income_taxable: Table<u32>,
+    /// total income for a year
+    pub income: Table<u32>,
+    /// amount of income tax paid for a year
+    pub tax_burden: Table<u32>,
+    /// currently unused
+    pub income_during_retirement: Table<u32>,
+}
 
 impl YearlyTotals {
     /// Initiate a new object with an empty hashmap
     pub fn new() -> YearlyTotals {
-        YearlyTotals(BTreeMap::new())
+        YearlyTotals::default()
     }
     /// Initialize a new year, pulling forward net & savings if they exist in the previous year
-    pub fn init(&mut self, year: u32) {
-        let prev_net = match self.0.get(&(year - 1)) {
-            Some(v) => v.net,
-            None => 0_f64,
-        };
-        let prev_savings = match self.0.get(&(year - 1)) {
-            Some(v) => v.saving,
-            None => 0_f64,
-        };
-        let mut new = YearlyTotal::default();
-        new.set_net(prev_net);
-        new.set_savings(prev_savings);
-        self.0.insert(year, new);
+    pub fn add_year(&mut self, year: u32) {
+
+        // need to only update if there is not a value in this year yet.  in year 1 i init somewhere else
+    
+        self.net.insert(year, 0_f64);
+        self.expense.insert(year, 0_f64);
+        self.healthcare_expense.insert(year, 0_f64);
+        self.col.insert(year, 0_f64);
+        self.saving.insert(year, 0_f64);
+        self.hsa.insert(year, 0_f64);
+        self.income_taxable.insert(year, 0_f64);
+        self.income.insert(year, 0_f64);
+        self.tax_burden.insert(year, 0_f64);
+        self.income_during_retirement.insert(year, 0_f64);
+
+        
+        // If there is a prev year then pull forward that value
+        if self.net.get(year-1).is_some() {
+            self.net.insert(year, self.net.get(year-1).unwrap());
+        }
+        if self.saving.get(year-1).is_some() {
+            self.saving.insert(year, self.saving.get(year-1).unwrap());
+        }
+        if self.hsa.get(year-1).is_some() {
+            self.hsa.insert(year, self.hsa.get(year-1).unwrap());
+        }
     }
 
     /// Update the data for a specified year
     pub fn update(&mut self, year: u32, update: YearlyImpact) {
-        match self.0.get_mut(&year) {
-            Some(v) => {
-                v.update(update);
-            }
-            None => {
-                let mut new = YearlyTotal::default();
-                new.update(update);
-                self.0.insert(year, new);
-            }
-        }
+        self.expense.update(year, update.expense);
+        self.healthcare_expense.update(year, update.healthcare_expense);
+        self.col.update(year, update.col);
+        self.saving.update(year, update.saving);
+        self.hsa.update(year, update.hsa);
+        self.income_taxable.update(year, update.income_taxable);
+        self.income.update(year, update.income);
+
     }
-    /// Insert a new YearlyTotal at a specified year
-    pub fn deposit_income_in_net(&mut self, year: u32) -> Result<(), Box<dyn Error>> {
-        match self.0.get_mut(&year) {
-            Some(v) => {
-                v.deposit_income_in_net();
-                Ok(())
-            }
-            None => {
-                return Err(
-                    String::from("Unable to deposit income in net.  Year does not exist.").into(),
-                );
-            }
-        }
+    /// Add income to net
+    pub fn deposit_income_in_net(&mut self, year: u32) {
+        //self.net += self.income;
+        self.net.update(year, self.income.get(year).unwrap());
     }
-    /// Insert a new YearlyTotal at a specified year
-    pub fn pay_income_tax_from_net(
-        &mut self,
-        year: u32,
-        tax_rate: f64,
-    ) -> Result<(), Box<dyn Error>> {
-        match self.0.get_mut(&year) {
-            Some(v) => {
-                v.pay_income_tax_from_net(tax_rate);
-                Ok(())
-            }
-            None => {
-                return Err(String::from(
-                    "Unable to pay income tax from net.  Year does not exist.",
-                )
-                .into());
-            }
-        }
+    /// Pay income tax for the year
+    pub fn pay_income_tax_from_net( &mut self, year: u32, tax_rate: f64) {
+        let tax_burden = self.income_taxable.get(year).unwrap() * (tax_rate / 100_f64);
+        // log what income was after paying taxes
+        self.tax_burden.insert(year,tax_burden);
+
+        // take income tax payment out of net
+        self.net.update(year,-1_f64 * tax_burden);
     }
-    /// Insert a new YearlyTotal at a specified year
-    pub fn pay_expenses_from_net(&mut self, year: u32) -> Result<(), Box<dyn Error>> {
-        match self.0.get_mut(&year) {
-            Some(v) => {
-                v.pay_expenses_from_net();
-                Ok(())
-            }
-            None => {
-                return Err(
-                    String::from("Unable to pay expenses from net.  Year does not exist.").into(),
-                );
-            }
+    /// Pay for expenses for the year
+    pub fn pay_expenses_from_net(&mut self, year: u32) {
+        self.net.update(year,-1_f64 * self.expense.get(year).unwrap());
+    }
+    /// Remove healthcare expenses from net (these could also be covered by HSA accounts)
+    pub fn pay_healthcare_expenses_from_net(&mut self, year: u32) {
+        if self.healthcare_expense.get(year).unwrap() > 0_f64 {
+            self.net.update(year, -1_f64*self.healthcare_expense.get(year).unwrap());
+            self.healthcare_expense.insert(year, 0_f64);
         }
     }
     /// Write yearly total data to a csv file
     pub fn write_summary(&self, filename: String) {
         let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, totals.net, totals.saving, totals.expense, totals.col, totals.income, totals.income_taxable, totals.tax_burden\n".as_bytes()).unwrap();
+        file.write_all("year, totals.net, totals.saving, totals.hsa, totals.healthcare_expense, totals.expense, totals.col, totals.income, totals.income_taxable, totals.tax_burden\n".as_bytes()).unwrap();
 
         self.get_years().iter().for_each(|year| {
-            let total = self.0[year];
             file.write_all(
                 format!(
-                    "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
+                    "{},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2}\n",
                     year,
-                    total.net,
-                    total.saving,
-                    total.expense,
-                    total.col,
-                    total.income,
-                    total.income_taxable,
-                    total.tax_burden
+                    self.net.get(*year).unwrap_or_default(),
+                    self.saving.get(*year).unwrap_or_default(),
+                    self.hsa.get(*year).unwrap_or_default(),
+                    self.healthcare_expense.get(*year).unwrap_or_default(),
+                    self.expense.get(*year).unwrap_or_default(),
+                    self.col.get(*year).unwrap_or_default(),
+                    self.income.get(*year).unwrap_or_default(),
+                    self.income_taxable.get(*year).unwrap_or_default(),
+                    self.tax_burden.get(*year).unwrap_or_default()
                 )
                 .as_bytes(),
             )
@@ -202,19 +148,26 @@ impl YearlyTotals {
     }
     /// Generate plot
     pub fn plot(&self, filepath: String) {
-        let net: Vec<f64> = self.0.values().map(|v| v.net).collect();
-        let saving: Vec<f64> = self.0.values().map(|v| v.saving).collect();
-        let expense: Vec<f64> = self.0.values().map(|v| v.expense).collect();
-        let col: Vec<f64> = self.0.values().map(|v| v.col).collect();
-        let income: Vec<f64> = self.0.values().map(|v| v.income).collect();
-        let income_taxable: Vec<f64> = self.0.values().map(|v| v.income_taxable).collect();
-        let tax_burden: Vec<f64> = self.0.values().map(|v| v.tax_burden).collect();
+        let net: Vec<f64> = self.net.values();
+        let saving: Vec<f64> = self.saving.values();
+        let hsa: Vec<f64> = self.hsa.values();
+        let healthcare_expense: Vec<f64> = self.healthcare_expense.values();
+        let expense: Vec<f64> = self.expense.values();
+        let col: Vec<f64> = self.col.values();
+        let income: Vec<f64> = self.income.values();
+        let income_taxable: Vec<f64> = self.income_taxable.values();
+        let tax_burden: Vec<f64> = self.tax_burden.values();
 
         scatter_plot(
             filepath,
             vec![
                 ("Net".into(), &(self.get_years(), net).into()),
                 ("Saving".into(), &(self.get_years(), saving).into()),
+                ("HSA".into(), &(self.get_years(), hsa).into()),
+                (
+                    "Healthcare Expense".into(),
+                    &(self.get_years(), healthcare_expense).into(),
+                ),
                 ("Expense".into(), &(self.get_years(), expense).into()),
                 ("COL".into(), &(self.get_years(), col).into()),
                 ("Income".into(), &(self.get_years(), income).into()),
@@ -228,16 +181,40 @@ impl YearlyTotals {
         );
     }
 
-    /// Get the YearlyTotal for the specified year
-    /// If the year is not found then a default object is returned (containing zeros)
-    pub fn get(&self, year: u32) -> YearlyTotal {
-        match self.0.get(&year) {
-            Some(v) => *v,
-            None => YearlyTotal::default(),
+    /// Get the cost of living for the specified year
+    /// If the year is not found then zero is returned
+    pub fn get_col(&self, year: u32) -> f64 {
+        match self.col.get(year) {
+            Some(v) => v,
+            None => 0_f64,
+        }
+    }
+    /// Get the income for the specified year
+    /// If the year is not found then zero is returned
+    pub fn get_income(&self, year: u32) -> f64 {
+        match self.income.get(year) {
+            Some(v) => v,
+            None => 0_f64,
+        }
+    }
+    /// Get the savings total for the specified year
+    /// If the year is not found then zero is returned
+    pub fn get_saving(&self, year: u32) -> f64 {
+        match self.saving.get(year) {
+            Some(v) => v,
+            None => 0_f64,
+        }
+    }
+    /// Get the healthcare_expense for the specified year
+    /// If the year is not found then zero is returned
+    pub fn get_healthcare_expense(&self, year: u32) -> f64 {
+        match self.healthcare_expense.get(year) {
+            Some(v) => v,
+            None => 0_f64,
         }
     }
     /// Return a sorted list of keys (years)
     pub fn get_years(&self) -> Vec<u32> {
-        self.0.keys().map(|k| *k).collect()
+        self.net.0.keys().map(|k| *k).collect()
     }
 }

@@ -53,10 +53,10 @@ pub trait Account: std::fmt::Debug {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>>;
+    ) -> Result<YearlyImpact, Box<dyn Error>>;
 
     // /// Return the value for the specified year
-    // fn get_value(&self, year: u32) -> Option<f64>;
+    fn get_value(&self, year: u32) -> Option<f64>;
 
     // /// Return the income value for the specified year
     // fn get_income(&self, year: u32) -> Option<f64>;
@@ -132,8 +132,8 @@ impl AccountWrapper {
         vec![
             AccountType::Income,
             AccountType::Ssa,
-            AccountType::Hsa,
             AccountType::Expense,
+            AccountType::Hsa, // Expenses must be run before HSA to be able to compute HSA withdrawal amount
             AccountType::Mortgage,
             AccountType::Loan,
             AccountType::College,
@@ -152,13 +152,22 @@ pub struct WorkingValues {
     pub interest: f64,
     /// contribution is money that goes from income to a savings type account (savings, college, retirement, etc)
     pub contribution: f64,
-    /// set employerMatch to zero
-    pub employer_match: f64,
+    /// amount contributed by employer
+    pub employer_contribution: f64,
     /// payment is money that must come out of income
     pub payment: f64,
     /// withdrawal is money that may be considered income (dependIng on account type)
     pub withdrawal: f64,
     pub expense: f64,
+}
+
+impl WorkingValues {
+    /// Limit the withdrawal amount to some value (generally the account value)
+    pub fn limit_withdrawal(&mut self, limit: f64) {
+        if self.withdrawal > limit {
+            self.withdrawal = limit;
+        }
+    }
 }
 
 // #[cfg(test)]

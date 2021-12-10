@@ -21,8 +21,8 @@ pub struct Expense<T: std::cmp::Ord> {
     expense_type: ExpenseOptions,
     /// Yearly cost of the expense
     expense_value: f64,
-    /// This expense account is for healthcare costs.  If so it can be linked to pull first from an HSA account.
-    is_healthcare: Option<bool>,
+    /// This expense account is for healthcare costs.  If so it will pull first from HSA accounts.
+    is_healthcare: bool,
     /// Link this account to an income source
     hsa_link: Option<String>,
     /// General information to store with this account
@@ -69,7 +69,7 @@ impl Account for Expense<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -85,14 +85,11 @@ impl Account for Expense<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(())
+        Ok(YearlyImpact::default())
     }
-    // fn get_value(&self, year: u32) -> Option<f64> {
-    //     match &self.analysis {
-    //         Some(result) => result.value.0.get(&year).map(|v| *v),
-    //         None => None,
-    //     }
-    // }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        self.analysis.value.get(year)
+    }
     fn get_range_in(
         &self,
         _settings: &Settings,
@@ -150,13 +147,26 @@ impl Account for Expense<u32> {
             *x = result.expense;
         }
 
-        Ok(YearlyImpact {
-            expense: result.expense,
-            col: result.expense,
-            saving: 0_f64,
-            income_taxable: 0_f64,
-            income: 0_f64,
-        })
+        match self.is_healthcare {
+            true => Ok(YearlyImpact {
+                expense: 0_f64,
+                healthcare_expense: result.expense, // positive is outstanding (unpaid) expenses
+                col: result.expense,
+                saving: 0_f64,
+                income_taxable: 0_f64,
+                income: 0_f64,
+                hsa: 0_f64,
+            }),
+            false => Ok(YearlyImpact {
+                expense: result.expense,
+                healthcare_expense: 0_f64,
+                col: result.expense,
+                saving: 0_f64,
+                income_taxable: 0_f64,
+                income: 0_f64,
+                hsa: 0_f64,
+            }),
+        }
     }
     fn write(&self, filepath: String) {
         self.analysis.write(filepath);

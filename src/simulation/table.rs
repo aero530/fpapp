@@ -14,6 +14,24 @@ pub struct Table<T: std::cmp::Ord>(
 );
 
 impl Table<u32> {
+    /// Insert year with value
+    /// 
+    /// If the map did not have this key present, None is returned.
+    /// If the map did have this key present, the value is updated, and the old value is returned. 
+    pub fn insert(&mut self, year: u32, value: f64) -> Option<f64>{
+        self.0.insert(year, value)
+    }
+
+    /// Add the delta value to the current value
+    pub fn update(&mut self, year: u32, delta: f64) {
+        //self.expense.insert(year, self.expense.get(year).unwrap()+update.expense);
+        let previous_value = match self.0.get(&year) {
+            Some(x) => *x,
+            None => 0_f64
+        };
+        self.insert(year, previous_value+delta);
+    }
+    
     /// Return the value for a given year
     pub fn get(&self, year: u32) -> Option<f64> {
         match self.0.get(&year) {
@@ -21,6 +39,7 @@ impl Table<u32> {
             None => None,
         }
     }
+
     /// Find the most recent year that has a non-zero value
     fn most_recent_populated_year(&self) -> Option<u32> {
         self.0
@@ -90,6 +109,10 @@ impl Table<u32> {
     /// Return the min and max value (dollar amount)
     pub fn range(&self) -> (f64, f64) {
         (self.min_value(), self.max_value())
+    }
+    /// Return values
+    pub fn values(&self) -> Vec<f64> {
+        self.0.values().cloned().collect()
     }
 }
 

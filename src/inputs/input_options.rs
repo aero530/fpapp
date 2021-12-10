@@ -227,7 +227,7 @@ impl WithdrawalOptions {
                 //     "pv{} ps{} ti{} col{} ts{:?}",
                 //     prev_account_value, prev_savings, tax_income, col, tax_status
                 // );
-                if prev_account_value > 0_f64 {
+                if prev_account_value > 0_f64 && prev_savings > 0_f64{
                     // if there is money left in the account
                     // withdrawal from this account = total expenses this year  * fraction of total savings this account represents
                     // total expenses this year is reduced by the income during retirement for the year.
