@@ -51,16 +51,39 @@ impl Table<u32> {
             .copied()
             .max()
     }
-    /// Move the previous year's table value to the specified year
+    /// Move the most recent previous value forward if
+    /// the most previous year is prior to the current year
     pub fn pull_value_forward(&mut self, year: u32) {
         match self.most_recent_populated_year() {
             Some(recent_year) => {
-                if recent_year == year - 1 {
-                    *self.0.get_mut(&year).unwrap() = self.0[&(year - 1)];
+                if recent_year < year {
+                    *self.0.get_mut(&year).unwrap() = self.0[&recent_year];
                 }
             }
             None => {}
         }
+
+        //
+        //
+        //
+        //
+        //
+        //
+        // 
+        // Need to update how tables work to not prepopulate all the years.  That way an account can
+        // go to zero and not be pulled forward anymore. That will cause issues in plotting in that there
+        // will not be data to plot (same with writing tables).  Will have to populate with 0 or none.
+        //
+        //
+        //
+        //
+        // 
+        //
+
+
+        // if self.get(year-1).is_some() {
+        //     self.insert(year, self.get(year-1).unwrap());
+        // }
     }
     /// Return the minimum table value (dollar amount)
     fn min_value(&self) -> f64 {
@@ -114,6 +137,10 @@ impl Table<u32> {
     pub fn values(&self) -> Vec<f64> {
         self.0.values().cloned().collect()
     }
+    // /// Return values
+    // pub fn years(&self) -> Vec<u32> {
+    //     self.0.keys().cloned().collect()
+    // }
 }
 
 impl IntoIterator for Table<u32> {

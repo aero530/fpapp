@@ -99,7 +99,7 @@ impl Account for College<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -126,12 +126,19 @@ impl Account for College<u32> {
             year_out: self.get_range_out(settings, linked_dates),
         };
 
-        let mut initial_values = YearlyImpact::default();
-        initial_values.saving = match self.analysis.value.get(years[0]) {
-            Some(x) => x,
-            None => 0_f64,
-        };
-        Ok(initial_values)
+        // let mut initial_values = YearlyImpact::default();
+        // initial_values.saving = match self.analysis.value.get(years[0]) {
+        //     Some(x) => x,
+        //     None => 0_f64,
+        // };
+        // Ok(initial_values)
+        let mut output = Vec::new();
+        self.table.0.iter().for_each(|(year, value)| {
+            let mut impact = YearlyImpact::default();
+            impact.saving = *value;
+            output.push((*year, impact));
+        });
+        Ok(output)
     }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {

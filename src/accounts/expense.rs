@@ -69,23 +69,21 @@ impl Account for Expense<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        // let mut output: SingleTable = SingleTable {
-        //     value: HashMap::new(),
-        // };
-        let mut output = SingleTable::default();
+        let mut analysis = SingleTable::default();
         years.iter().copied().for_each(|year| {
-            output.value.0.insert(year, 0.0);
+            analysis.value.0.insert(year, 0.0);
         });
-        self.analysis = output;
+        self.analysis = analysis;
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(YearlyImpact::default())
+        //Ok(YearlyImpact::default())
+        Ok(Vec::new())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)

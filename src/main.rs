@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (data.settings.year_start()..data.settings.year_end()).collect::<Vec<u32>>();
 
     let mut yearly_totals = YearlyTotals::new();
-    yearly_totals.add_year(years[0]);
+    //yearly_totals.add_year(years[0]);
 
     // Initialize analysis tables
     account_order.iter().for_each(|uuid| {
@@ -74,13 +74,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             None => None,
         };
 
-        let impact = data.accounts
+        let impacts = data.accounts
             .get_mut(uuid)
             .unwrap()
             .init(&years, linked_dates, &data.settings)
             .unwrap();
         
-        yearly_totals.update(years[0], impact);
+        impacts.iter().for_each(|(year, impact)| {
+            //yearly_totals.update(years[0], impact);
+            yearly_totals.update(*year, *impact);
+        });
+        
 
         trace!(
             "{:?} {:?} {:?}",
@@ -94,36 +98,39 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Main loop to loop through each year
     years.iter().copied().for_each(|year| {
-        debug!("year {:?}", year);
+        // debug!("year {:?}", year);
 
         // Initialize this year.  Year[0] already initialized during account initialization
-        if year > years[0] {
-            yearly_totals.add_year(year);
-        }
-        
-
-        // if this is the first year, init yearly_totals with value from table (amount already saved before analysis starts)
-        // if year == data.settings.year_start() {
-        //     println!("First year");
-        //     let result = YearlyImpact::default();
+        // if year > years[0] {
+        //     yearly_totals.add_year(year);
         // }
 
-        // Loop through accounts to make contributions and withdrawals
-        account_order.iter().for_each(|uuid| {
-            let account = data.accounts.get_mut(uuid).unwrap();
-            let impact = account
-                .simulate(year, &yearly_totals, &data.settings)
-                .unwrap();
-            yearly_totals.update(year, impact);
-            //this_year.update(result);
-        });
+        // Only pull values forward if this is a newly created year
+        if yearly_totals.add_year(year).is_ok() {
+            yearly_totals.pull_value_forward(year);
 
-        yearly_totals.deposit_income_in_net(year);
-        yearly_totals
-            .pay_income_tax_from_net(year, data.settings.tax_income);
-        yearly_totals.pay_expenses_from_net(year);
-        yearly_totals
-            .pay_healthcare_expenses_from_net(year);
+            // Loop through accounts to make contributions and withdrawals
+            account_order.iter().for_each(|uuid| {
+                let account = data.accounts.get_mut(uuid).unwrap();
+                let impact = account
+                    .simulate(year, &yearly_totals, &data.settings)
+                    .unwrap();
+                yearly_totals.update(year, impact);
+                //this_year.update(result);
+            });
+
+            yearly_totals.deposit_income_in_net(year);
+            yearly_totals
+                .pay_income_tax_from_net(year, data.settings.tax_income);
+            yearly_totals.pay_expenses_from_net(year);
+            yearly_totals
+                .pay_healthcare_expenses_from_net(year);
+        }
+        
+        
+        
+
+
     });
 
     data.write_tables(&account_order, years.clone(), "target/tables.csv".into());

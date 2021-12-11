@@ -43,7 +43,7 @@ impl Account for Ssa {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -56,7 +56,8 @@ impl Account for Ssa {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(YearlyImpact::default())
+        // Ok(YearlyImpact::default())
+        Ok(Vec::new())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)

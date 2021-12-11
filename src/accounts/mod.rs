@@ -53,7 +53,7 @@ pub trait Account: std::fmt::Debug {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<YearlyImpact, Box<dyn Error>>;
+    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>>;
 
     // /// Return the value for the specified year
     fn get_value(&self, year: u32) -> Option<f64>;

@@ -113,8 +113,8 @@ impl Account for Retirement<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let mut output = SavingsTables::new(
+    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
+        let mut analysis = SavingsTables::new(
             &self.table,
             &self.contributions,
             &self.employer_contributions,
@@ -122,29 +122,36 @@ impl Account for Retirement<u32> {
             &self.withdrawals,
         );
         years.iter().copied().for_each(|year| {
-            output.value.0.entry(year).or_insert(0.0);
-            output.contributions.0.entry(year).or_insert(0.0);
-            match output.employer_contributions.as_mut() {
+            analysis.value.0.entry(year).or_insert(0.0);
+            analysis.contributions.0.entry(year).or_insert(0.0);
+            match analysis.employer_contributions.as_mut() {
                 Some(v) => {
                     v.0.entry(year).or_insert(0.0);
                 }
                 None => {}
             };
-            output.earnings.0.entry(year).or_insert(0.0);
-            output.withdrawals.0.entry(year).or_insert(0.0);
+            analysis.earnings.0.entry(year).or_insert(0.0);
+            analysis.withdrawals.0.entry(year).or_insert(0.0);
         });
-        self.analysis = output;
+        self.analysis = analysis;
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
         
-        let mut initial_values = YearlyImpact::default();
-        initial_values.saving = match self.analysis.value.get(years[0]) {
-            Some(x) => x,
-            None => 0_f64,
-        };
-        Ok(initial_values)
+        // let mut initial_values = YearlyImpact::default();
+        // initial_values.saving = match self.analysis.value.get(years[0]) {
+        //     Some(x) => x,
+        //     None => 0_f64,
+        // };
+        // Ok(initial_values)
+        let mut output = Vec::new();
+        self.table.0.iter().for_each(|(year, value)| {
+            let mut impact = YearlyImpact::default();
+            impact.saving = *value;
+            output.push((*year, impact));
+        });
+        Ok(output)
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)

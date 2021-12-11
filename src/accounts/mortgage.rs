@@ -81,11 +81,11 @@ impl Account for Mortgage<u32> {
         years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut output = LoanTables::new(
+        let mut analysis = LoanTables::new(
             &self.table,
             &Table::default(),
             &Table::default(),
@@ -94,18 +94,18 @@ impl Account for Mortgage<u32> {
         );
 
         years.iter().copied().for_each(|year| {
-            output.value.0.entry(year).or_insert(0.0);
-            output.interest.0.insert(year, 0.0);
-            output.payments.0.insert(year, 0.0);
-            output.escrow.as_mut().unwrap().0.insert(year, 0.0);
-            output.insurance.as_mut().unwrap().0.insert(year, 0.0);
+            analysis.value.0.entry(year).or_insert(0.0);
+            analysis.interest.0.insert(year, 0.0);
+            analysis.payments.0.insert(year, 0.0);
+            analysis.escrow.as_mut().unwrap().0.insert(year, 0.0);
+            analysis.insurance.as_mut().unwrap().0.insert(year, 0.0);
         });
-        self.analysis = output;
+        self.analysis = analysis;
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(YearlyImpact::default())
+        Ok(Vec::new())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)

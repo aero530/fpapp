@@ -2,7 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::io::Write;
-// use log::trace;
+use std::error::Error;
+use log::error;
 
 use crate::plot::scatter_plot;
 use super::Table;
@@ -56,44 +57,74 @@ impl YearlyTotals {
     pub fn new() -> YearlyTotals {
         YearlyTotals::default()
     }
-    /// Initialize a new year, pulling forward net & savings if they exist in the previous year
-    pub fn add_year(&mut self, year: u32) {
-
+    /// Initialize a new year
+    pub fn add_year(&mut self, year: u32) -> Result<(),Box<dyn Error>> {
+        print!("add {}? ",year);
         // need to only update if there is not a value in this year yet.  in year 1 i init somewhere else
     
-        self.net.insert(year, 0_f64);
-        self.expense.insert(year, 0_f64);
-        self.healthcare_expense.insert(year, 0_f64);
-        self.col.insert(year, 0_f64);
-        self.saving.insert(year, 0_f64);
-        self.hsa.insert(year, 0_f64);
-        self.income_taxable.insert(year, 0_f64);
-        self.income.insert(year, 0_f64);
-        self.tax_burden.insert(year, 0_f64);
-        self.income_during_retirement.insert(year, 0_f64);
+        match self.net.0.contains_key(&year) {
+            true => {
+                println!("no");
+                return Err(String::from("Year already exists.").into());
+            },
+            false => {
 
-        
-        // If there is a prev year then pull forward that value
-        if self.net.get(year-1).is_some() {
-            self.net.insert(year, self.net.get(year-1).unwrap());
+                println!("yes");
+                
+                self.net.insert(year, 0_f64);
+                self.expense.insert(year, 0_f64);
+                self.healthcare_expense.insert(year, 0_f64);
+                self.col.insert(year, 0_f64);
+                self.saving.insert(year, 0_f64);
+                self.hsa.insert(year, 0_f64);
+                self.income_taxable.insert(year, 0_f64);
+                self.income.insert(year, 0_f64);
+                self.tax_burden.insert(year, 0_f64);
+                self.income_during_retirement.insert(year, 0_f64);
+                return Ok(())
+            }
         }
-        if self.saving.get(year-1).is_some() {
-            self.saving.insert(year, self.saving.get(year-1).unwrap());
-        }
-        if self.hsa.get(year-1).is_some() {
-            self.hsa.insert(year, self.hsa.get(year-1).unwrap());
+
+    }
+    /// If there is a prev year then pull forward that value
+    pub fn pull_value_forward(&mut self, year: u32) {
+        if self.net.0.contains_key(&year) {
+            self.net.pull_value_forward(year);
+            self.saving.pull_value_forward(year);
+            self.hsa.pull_value_forward(year);
+
+            // if self.net.get(year-1).is_some() {
+            //     self.net.insert(year, self.net.get(year-1).unwrap());
+            // }
+            // if self.saving.get(year-1).is_some() {
+            //     self.saving.insert(year, self.saving.get(year-1).unwrap());
+            // }
+            // if self.hsa.get(year-1).is_some() {
+            //     self.hsa.insert(year, self.hsa.get(year-1).unwrap());
+            // }
+        } else {
+            error!("Year must be added to YearlyTotals before pulling previous values forward.");
         }
     }
-
     /// Update the data for a specified year
+    ///
+    /// Check if self get_years contains year.  If so then update that year.  If not create it then update it.
     pub fn update(&mut self, year: u32, update: YearlyImpact) {
-        self.expense.update(year, update.expense);
-        self.healthcare_expense.update(year, update.healthcare_expense);
-        self.col.update(year, update.col);
-        self.saving.update(year, update.saving);
-        self.hsa.update(year, update.hsa);
-        self.income_taxable.update(year, update.income_taxable);
-        self.income.update(year, update.income);
+        match self.net.0.contains_key(&year) {
+            true => {
+                self.expense.update(year, update.expense);
+                self.healthcare_expense.update(year, update.healthcare_expense);
+                self.col.update(year, update.col);
+                self.saving.update(year, update.saving);
+                self.hsa.update(year, update.hsa);
+                self.income_taxable.update(year, update.income_taxable);
+                self.income.update(year, update.income);
+            },
+            false => {
+                self.add_year(year);
+                self.update(year, update);
+            }
+        }
 
     }
     /// Add income to net
@@ -126,7 +157,7 @@ impl YearlyTotals {
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all("year, totals.net, totals.saving, totals.hsa, totals.healthcare_expense, totals.expense, totals.col, totals.income, totals.income_taxable, totals.tax_burden\n".as_bytes()).unwrap();
 
-        self.get_years().iter().for_each(|year| {
+        self.years().iter().for_each(|year| {
             file.write_all(
                 format!(
                     "{},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2}\n",
@@ -161,27 +192,27 @@ impl YearlyTotals {
         scatter_plot(
             filepath,
             vec![
-                ("Net".into(), &(self.get_years(), net).into()),
-                ("Saving".into(), &(self.get_years(), saving).into()),
-                ("HSA".into(), &(self.get_years(), hsa).into()),
+                ("Net".into(), &(self.years(), net).into()),
+                ("Saving".into(), &(self.years(), saving).into()),
+                ("HSA".into(), &(self.years(), hsa).into()),
                 (
                     "Healthcare Expense".into(),
-                    &(self.get_years(), healthcare_expense).into(),
+                    &(self.years(), healthcare_expense).into(),
                 ),
-                ("Expense".into(), &(self.get_years(), expense).into()),
-                ("COL".into(), &(self.get_years(), col).into()),
-                ("Income".into(), &(self.get_years(), income).into()),
+                ("Expense".into(), &(self.years(), expense).into()),
+                ("COL".into(), &(self.years(), col).into()),
+                ("Income".into(), &(self.years(), income).into()),
                 (
                     "Taxable Income".into(),
-                    &(self.get_years(), income_taxable).into(),
+                    &(self.years(), income_taxable).into(),
                 ),
-                ("Tax Burden".into(), &(self.get_years(), tax_burden).into()),
+                ("Tax Burden".into(), &(self.years(), tax_burden).into()),
             ],
             "Summary".into(),
         );
     }
-
     /// Get the cost of living for the specified year
+    /// 
     /// If the year is not found then zero is returned
     pub fn get_col(&self, year: u32) -> f64 {
         match self.col.get(year) {
@@ -190,6 +221,7 @@ impl YearlyTotals {
         }
     }
     /// Get the income for the specified year
+    /// 
     /// If the year is not found then zero is returned
     pub fn get_income(&self, year: u32) -> f64 {
         match self.income.get(year) {
@@ -198,6 +230,7 @@ impl YearlyTotals {
         }
     }
     /// Get the savings total for the specified year
+    /// 
     /// If the year is not found then zero is returned
     pub fn get_saving(&self, year: u32) -> f64 {
         match self.saving.get(year) {
@@ -206,6 +239,7 @@ impl YearlyTotals {
         }
     }
     /// Get the healthcare_expense for the specified year
+    /// 
     /// If the year is not found then zero is returned
     pub fn get_healthcare_expense(&self, year: u32) -> f64 {
         match self.healthcare_expense.get(year) {
@@ -214,7 +248,10 @@ impl YearlyTotals {
         }
     }
     /// Return a sorted list of keys (years)
-    pub fn get_years(&self) -> Vec<u32> {
-        self.net.0.keys().map(|k| *k).collect()
+    /// 
+    /// There should not be a way for the elements of self to contain 
+    /// different key sets so we just pull the keys from net.
+    pub fn years(&self) -> Vec<u32> {
+        self.net.0.keys().map(|v| *v).collect()
     }
 }
