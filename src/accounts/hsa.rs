@@ -75,53 +75,31 @@ impl Account for Hsa<u32> {
     }
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut analysis = SavingsTables::new(
-            &self.table,
-            &Some(Table::default()),
-            &Some(Table::default()),
-            &Some(Table::default()),
-            &Some(Table::default()),
-        );
-        years.iter().copied().for_each(|year| {
-            analysis.value.0.entry(year).or_insert(0.0);
-            analysis.contributions.0.insert(year, 0.0);
-            analysis
-                .employer_contributions
-                .as_mut()
-                .unwrap()
-                .0
-                .insert(year, 0.0);
-            analysis.earnings.0.insert(year, 0.0);
-            analysis.withdrawals.0.insert(year, 0.0);
-        });
-        self.analysis = analysis;
+        self.analysis = SavingsTables::new(&self.table, &None, &None, &None, &None);
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        
-        // let mut initial_values = YearlyImpact::default();
-        // initial_values.hsa = match self.analysis.value.get(years[0]) {
-        //     Some(x) => x,
-        //     None => 0_f64,
-        // };
-        // Ok(initial_values)
-        println!("table {:?}",self.table.0);
-        let mut output = Vec::new();
-        self.table.0.iter().for_each(|(year, value)| {
-            let mut impact = YearlyImpact::default();
-            impact.hsa = *value;
-            output.push((*year, impact));
-        });
-        println!("impact {:?}",output);
-        Ok(output)
+        Ok(self
+            .table
+            .0
+            .iter()
+            .map(|(year, value)| {
+                (
+                    *year,
+                    YearlyImpact {
+                        hsa: *value,
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
@@ -154,7 +132,7 @@ impl Account for Hsa<u32> {
                 ("Contributions".into(), &self.analysis.contributions),
                 (
                     "Employer Contributions".into(),
-                    &self.analysis.employer_contributions.as_ref().unwrap(),
+                    &self.analysis.employer_contributions,
                 ),
                 ("Earnings".into(), &self.analysis.earnings),
                 ("Withdrawals".into(), &self.analysis.withdrawals),
@@ -169,29 +147,20 @@ impl Account for Hsa<u32> {
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.year_in.unwrap().start;
-        //let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
-        let tables = &mut self.analysis;
-
         let mut result = WorkingValues::default();
+        self.analysis.add_year(year, true)?;
 
-        tables.value.pull_value_forward(year);
-
-        if tables.value.0[&year] < 0_f64 {
+        if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("HSA account value is negative.").into());
         }
 
-        // println!("bi {:.2}\t", tables.value.0[&year]);
-
         // Calculate earnings
-        result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
+        result.earning =
+            self.analysis.value.get(year).unwrap() * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
         // Add earnings to earnings and value tables
-        if let Some(x) = tables.earnings.0.get_mut(&year) {
-            *x = result.earning;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x += result.earning;
-        }
+        self.analysis.earnings.update(year, result.earning);
+        self.analysis.value.update(year, result.earning);
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
@@ -210,18 +179,12 @@ impl Account for Hsa<u32> {
         }
 
         // Add contribution to contribution and value tables
-        if let Some(x) = tables.contributions.0.get_mut(&year) {
-            *x = result.contribution + result.employer_contribution;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x += result.contribution;
-            *x += result.employer_contribution;
-        }
-
-        // print!("e {:.2}\t", result.earning);
-        // print!("c {:.2}\t", result.contribution);
-        // print!("ec {:.2}\t", result.employer_contribution);
-        // print!("bf {:.2}\t", tables.value.0[&year]);
+        self.analysis
+            .contributions
+            .update(year, result.contribution + result.employer_contribution);
+        self.analysis
+            .value
+            .update(year, result.contribution + result.employer_contribution);
 
         // Calculate withdrawal based on outstanding healthcare expenses
         // This account is used to cover as much of the healthcare expenses
@@ -233,23 +196,15 @@ impl Account for Hsa<u32> {
             return Err(String::from("Negative healthcare expense.").into());
         }
         if self.dates.year_out.unwrap().contains(year) {
-            result.withdrawal = match healthcare_expense < tables.value.get(year).unwrap() {
+            result.withdrawal = match healthcare_expense < self.analysis.value.get(year).unwrap() {
                 true => healthcare_expense,
-                false => tables.value.get(year).unwrap(),
+                false => self.analysis.value.get(year).unwrap(),
             }
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
-        if let Some(x) = tables.withdrawals.0.get_mut(&year) {
-            *x = result.withdrawal;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x -= result.withdrawal;
-        }
-
-        // print!("h {:.2}\t", healthcare_expense);
-        // print!("w {:.2}\t", result.withdrawal);
-        // println!("d {:.2}\t", result.contribution + result.employer_contribution + result.earning - result.withdrawal);
+        self.analysis.withdrawals.update(year, result.withdrawal);
+        self.analysis.value.update(year, -result.withdrawal);
 
         Ok(YearlyImpact {
             expense: 0_f64,

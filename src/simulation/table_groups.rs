@@ -1,6 +1,7 @@
 //! Groups of [tables](Table) to provide standard format for simulating different [account](crate::accounts) types
 
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::io::Write;
 
 use super::Table;
@@ -32,6 +33,19 @@ impl SingleTable {
             .unwrap();
         });
     }
+    /// Initialize a new year
+    pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+        match self.value.0.contains_key(&year) {
+            true => Err(String::from("Year already exists.").into()),
+            false => {
+                let prev_value = match pull_value_forward {
+                    true => self.value.most_recent_value().unwrap_or_default(),
+                    false => 0_f64,
+                };
+                self.value.add(year, prev_value)
+            }
+        }
+    }
 }
 
 /// A set of [tables](Table) for use with loan and mortgage [accounts](crate::accounts)
@@ -44,9 +58,9 @@ pub struct LoanTables {
     /// Payments made against the loan in each year
     pub payments: Table<u32>,
     /// Escrow amount used for mortgage type loans in each year
-    pub escrow: Option<Table<u32>>,
+    pub escrow: Table<u32>,
     /// PMI used for mortgage type loans in each year
-    pub insurance: Option<Table<u32>>,
+    pub insurance: Table<u32>,
 }
 
 impl LoanTables {
@@ -54,8 +68,8 @@ impl LoanTables {
         value: &Table<u32>,
         interest: &Table<u32>,
         payments: &Table<u32>,
-        escrow: &Option<Table<u32>>,
-        insurance: &Option<Table<u32>>,
+        escrow: &Table<u32>,
+        insurance: &Table<u32>,
     ) -> LoanTables {
         LoanTables {
             // These keys must always have tables
@@ -82,21 +96,31 @@ impl LoanTables {
                     self.value.get(*year).unwrap_or(0_f64),
                     self.interest.get(*year).unwrap_or(0_f64),
                     self.payments.get(*year).unwrap_or(0_f64),
-                    self.escrow
-                        .as_ref()
-                        .unwrap_or(&Table::default())
-                        .get(*year)
-                        .unwrap_or(0_f64),
-                    self.insurance
-                        .as_ref()
-                        .unwrap_or(&Table::default())
-                        .get(*year)
-                        .unwrap_or(0_f64),
+                    self.escrow.get(*year).unwrap_or(0_f64),
+                    self.insurance.get(*year).unwrap_or(0_f64),
                 )
                 .as_bytes(),
             )
             .unwrap();
         });
+    }
+    /// Initialize a new year
+    pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+        match self.value.0.contains_key(&year) {
+            true => Err(String::from("Year already exists.").into()),
+            false => {
+                let prev_value = match pull_value_forward {
+                    true => self.value.most_recent_value().unwrap_or_default(),
+                    false => 0_f64,
+                };
+                self.value.add(year, prev_value)?;
+                self.interest.add(year, 0_f64)?;
+                self.payments.add(year, 0_f64)?;
+                self.escrow.add(year, 0_f64)?;
+                self.insurance.add(year, 0_f64)?;
+                Ok(())
+            }
+        }
     }
 }
 
@@ -108,7 +132,7 @@ pub struct SavingsTables {
     /// Amount of money put into the account in each year
     pub contributions: Table<u32>,
     /// Amount of money put into the account by an employer in each year
-    pub employer_contributions: Option<Table<u32>>,
+    pub employer_contributions: Table<u32>,
     /// Amount of interest earned by the account in each year
     pub earnings: Table<u32>,
     /// Amount of money withdrawn from the account in each year
@@ -129,7 +153,10 @@ impl SavingsTables {
                 Some(table) => table.clone(),
                 None => Table::default(),
             },
-            employer_contributions: employer_contributions.clone(),
+            employer_contributions: match employer_contributions {
+                Some(table) => table.clone(),
+                None => Table::default(),
+            },
             earnings: match earnings {
                 Some(table) => table.clone(),
                 None => Table::default(),
@@ -142,8 +169,8 @@ impl SavingsTables {
     }
     /// Write account values out to csv file
     pub fn write(&self, filename: String) {
-        let mut years: Vec<u32> = self.value.0.keys().map(|k| *k).collect();
-        years.sort();
+        let mut years: Vec<u32> = self.value.years();
+        years.sort_unstable();
 
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all(
@@ -159,11 +186,7 @@ impl SavingsTables {
                     year,
                     self.value.get(*year).unwrap_or(0_f64),
                     self.contributions.get(*year).unwrap_or(0_f64),
-                    self.employer_contributions
-                        .as_ref()
-                        .unwrap_or(&Table::default())
-                        .get(*year)
-                        .unwrap_or(0_f64),
+                    self.employer_contributions.get(*year).unwrap_or(0_f64),
                     self.earnings.get(*year).unwrap_or(0_f64),
                     self.withdrawals.get(*year).unwrap_or(0_f64),
                 )
@@ -171,5 +194,23 @@ impl SavingsTables {
             )
             .unwrap();
         });
+    }
+    /// Initialize a new year
+    pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+        match self.value.0.contains_key(&year) {
+            true => Err(String::from("Year already exists.").into()),
+            false => {
+                let prev_value = match pull_value_forward {
+                    true => self.value.most_recent_value().unwrap_or_default(),
+                    false => 0_f64,
+                };
+                self.value.add(year, prev_value)?;
+                self.contributions.add(year, 0_f64)?;
+                self.employer_contributions.add(year, 0_f64)?;
+                self.earnings.add(year, 0_f64)?;
+                self.withdrawals.add(year, 0_f64)?;
+                Ok(())
+            }
+        }
     }
 }

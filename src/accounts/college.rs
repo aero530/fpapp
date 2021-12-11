@@ -55,18 +55,9 @@ impl From<College<String>> for College<u32> {
         Self {
             name: other.name,
             table: other.table.into(),
-            contributions: match other.contributions {
-                Some(v) => Some(v.into()),
-                None => None,
-            },
-            earnings: match other.earnings {
-                Some(v) => Some(v.into()),
-                None => None,
-            },
-            withdrawals: match other.withdrawals {
-                Some(v) => Some(v.into()),
-                None => None,
-            },
+            contributions: other.contributions.map(|v| v.into()),
+            earnings: other.earnings.map(|v| v.into()),
+            withdrawals: other.withdrawals.map(|v| v.into()),
             start_in: other.start_in,
             end_in: other.end_in,
             start_out: other.start_out,
@@ -96,49 +87,39 @@ impl Account for College<u32> {
     }
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        
+
         // Init the analysis object with values from the stored tables
-        let mut analysis = SavingsTables::new(
+        self.analysis = SavingsTables::new(
             &self.table,
             &self.contributions,
             &None,
             &self.earnings,
             &self.withdrawals,
         );
-
-        // Populate all the years needed in simulation
-        years.iter().copied().for_each(|year| {
-            analysis.value.0.entry(year).or_insert(0.0);
-            analysis.contributions.0.entry(year).or_insert(0.0);
-            analysis.earnings.0.entry(year).or_insert(0.0);
-            analysis.withdrawals.0.entry(year).or_insert(0.0);
-        });
-        self.analysis = analysis;
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-
-        // let mut initial_values = YearlyImpact::default();
-        // initial_values.saving = match self.analysis.value.get(years[0]) {
-        //     Some(x) => x,
-        //     None => 0_f64,
-        // };
-        // Ok(initial_values)
-        let mut output = Vec::new();
-        self.table.0.iter().for_each(|(year, value)| {
-            let mut impact = YearlyImpact::default();
-            impact.saving = *value;
-            output.push((*year, impact));
-        });
-        Ok(output)
+        Ok(self
+            .table
+            .0
+            .iter()
+            .map(|(year, value)| {
+                (
+                    *year,
+                    YearlyImpact {
+                        saving: *value,
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect())
     }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
@@ -182,28 +163,22 @@ impl Account for College<u32> {
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.year_in.unwrap().start;
-        //let end_out = self.dates.as_ref().unwrap().year_out.unwrap().end;
-        let tables = &mut self.analysis;
-
-        let mut result = WorkingValues::default();
 
         // Init value table with previous year's value
-        tables.value.pull_value_forward(year);
+        self.analysis.add_year(year, true)?;
+        let mut result = WorkingValues::default();
 
-        if tables.value.0[&year] < 0_f64 {
+        if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("College fund account value is negative.").into());
         }
 
         // Calculate earnings
-        result.earning = tables.value.0[&year] * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
+        result.earning =
+            self.analysis.value.get(year).unwrap() * (self.yearly_return.value(settings) / 100.0); // calculate earnings from interest
 
         // Add earnings to earnings and value tables
-        if let Some(x) = tables.earnings.0.get_mut(&year) {
-            *x = result.earning;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x += result.earning;
-        }
+        self.analysis.earnings.update(year, result.earning);
+        self.analysis.value.update(year, result.earning);
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
@@ -216,12 +191,8 @@ impl Account for College<u32> {
         }
 
         // Add contribution to contribution and value tables
-        if let Some(x) = tables.contributions.0.get_mut(&year) {
-            *x = result.contribution;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x += result.contribution;
-        }
+        self.analysis.contributions.update(year, result.earning);
+        self.analysis.value.update(year, result.earning);
 
         // Calculate withdrawal
         if self.dates.year_out.unwrap().contains(year) {
@@ -230,23 +201,19 @@ impl Account for College<u32> {
                 settings.inflation_base,
                 self.dates,
                 year,
-                tables.value.0[&year],
-                tables.value.0[&(year - 1)],
+                self.analysis.value.get(year).unwrap(),
+                self.analysis.value.get(year - 1).unwrap_or_default(),
                 totals.get_col(year),
                 totals.get_saving(year - 1),
                 settings.tax_income,
                 self.tax_status,
             );
-            result.limit_withdrawal(tables.value.get(year).unwrap());
+            result.limit_withdrawal(self.analysis.value.get(year).unwrap());
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
-        if let Some(x) = tables.withdrawals.0.get_mut(&year) {
-            *x = result.withdrawal;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x -= result.withdrawal;
-        }
+        self.analysis.withdrawals.update(year, result.withdrawal);
+        self.analysis.value.update(year, -result.withdrawal);
 
         match self.tax_status {
             // contribute taxed income
@@ -260,24 +227,18 @@ impl Account for College<u32> {
                 income: 0_f64,
                 hsa: 0_f64,
             }),
-            TaxStatus::ContributeTaxedEarningsTaxed => {
-                return Err(String::from(
-                    "This tax status type is not implemented for college accounts.",
-                )
-                .into())
-            }
-            TaxStatus::ContributePretaxTaxedWhenUsed => {
-                return Err(String::from(
-                    "This tax status type is not implemented for college accounts.",
-                )
-                .into())
-            }
-            TaxStatus::ContributePretaxUntaxedWhenUsed => {
-                return Err(String::from(
-                    "This tax status type is not implemented for college accounts.",
-                )
-                .into())
-            }
+            TaxStatus::ContributeTaxedEarningsTaxed => Err(String::from(
+                "This tax status type is not implemented for college accounts.",
+            )
+            .into()),
+            TaxStatus::ContributePretaxTaxedWhenUsed => Err(String::from(
+                "This tax status type is not implemented for college accounts.",
+            )
+            .into()),
+            TaxStatus::ContributePretaxUntaxedWhenUsed => Err(String::from(
+                "This tax status type is not implemented for college accounts.",
+            )
+            .into()),
         }
     }
     fn write(&self, filepath: String) {

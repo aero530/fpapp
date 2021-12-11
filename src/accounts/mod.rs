@@ -50,7 +50,6 @@ pub trait Account: std::fmt::Debug {
     /// have a value in user data.  Also initializes the dates used for analysis.
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>>;
@@ -146,6 +145,8 @@ impl AccountWrapper {
 /// Common result structure used in yearly account simulation
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
 pub struct WorkingValues {
+    /// overall account value
+    pub value: f64,
     /// earnings is money that an account gains (ie interest for a savings account or retirement account.  for an income account earnings is the yearly income)
     pub earning: f64,
     /// interest is money that must be payed off (ie for a loan or mortgage)

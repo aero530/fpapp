@@ -60,18 +60,13 @@ impl Account for Income<u32> {
     }
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut analysis = SingleTable::new(&self.table);
-        years.iter().copied().for_each(|year| {
-            analysis.value.0.entry(year).or_insert(0.0);
-        });
-        self.analysis = analysis;
+        self.analysis = SingleTable::new(&self.table);
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
@@ -112,9 +107,8 @@ impl Account for Income<u32> {
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.year_in.unwrap().start;
-        let tables = &mut self.analysis;
-
         let mut result = WorkingValues::default();
+        self.analysis.add_year(year, false)?;
 
         // Calculate earnings
         if self.dates.year_in.unwrap().contains(year) {
@@ -123,9 +117,7 @@ impl Account for Income<u32> {
         }
 
         // Add earnings to value tables
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x = result.earning;
-        }
+        self.analysis.value.update(year, result.earning);
 
         Ok(YearlyImpact {
             expense: 0_f64,

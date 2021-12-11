@@ -78,29 +78,19 @@ impl Account for Mortgage<u32> {
     }
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut analysis = LoanTables::new(
+        self.analysis = LoanTables::new(
             &self.table,
             &Table::default(),
             &Table::default(),
-            &Some(Table::default()),
-            &Some(Table::default()),
+            &Table::default(),
+            &Table::default(),
         );
-
-        years.iter().copied().for_each(|year| {
-            analysis.value.0.entry(year).or_insert(0.0);
-            analysis.interest.0.insert(year, 0.0);
-            analysis.payments.0.insert(year, 0.0);
-            analysis.escrow.as_mut().unwrap().0.insert(year, 0.0);
-            analysis.insurance.as_mut().unwrap().0.insert(year, 0.0);
-        });
-        self.analysis = analysis;
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
@@ -134,11 +124,8 @@ impl Account for Mortgage<u32> {
                 ("Balance".into(), &self.analysis.value),
                 ("Interest".into(), &self.analysis.interest),
                 ("Payments".into(), &self.analysis.payments),
-                ("Escrow".into(), &self.analysis.escrow.clone().unwrap()),
-                (
-                    "Insurance".into(),
-                    &self.analysis.insurance.clone().unwrap(),
-                ),
+                ("Escrow".into(), &self.analysis.escrow),
+                ("Insurance".into(), &self.analysis.insurance),
             ],
             self.name(),
         );
@@ -150,32 +137,25 @@ impl Account for Mortgage<u32> {
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_out = self.dates.year_out.unwrap().start;
-        let tables = &mut self.analysis;
-
         let mut result = WorkingValues::default();
+        self.analysis.add_year(year, true)?;
 
-        tables.value.pull_value_forward(year);
-
-        if tables.value.0[&year] < 0_f64 {
+        if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("Mortgage account value is negative.").into());
         }
 
         // Calculate insurance
-        let loan_to_value = tables.value.0[&year] / self.home_value * 100_f64;
+        let loan_to_value = self.analysis.value.get(year).unwrap() / self.home_value * 100_f64;
         let insurance_payment = match loan_to_value > self.ltv_limit {
             true => self.mortgage_insurance,
             false => 0.0,
         };
         // Add insurance to table and pull out of payment
-        if let Some(x) = tables.insurance.as_mut().unwrap().0.get_mut(&year) {
-            *x = insurance_payment;
-        }
+        self.analysis.insurance.update(year, insurance_payment);
 
         // Calculate escrow
         // Pull escrow out of payment and add to escrow table
-        if let Some(x) = tables.escrow.as_mut().unwrap().0.get_mut(&year) {
-            *x = self.escrow_value;
-        }
+        self.analysis.escrow.update(year, self.escrow_value);
 
         // Calculate interest
         // The formula for compound interest is P (1 + r/n)^(nt)
@@ -183,31 +163,26 @@ impl Account for Mortgage<u32> {
         //  r is the interest rate
         //  n is the number of times interest is compounded per time period
         //  t is the number of time periods
-        result.interest = tables.value.0[&year]
+        result.interest = self.analysis.value.get(year).unwrap()
             * f64::powf(
                 1_f64 + (self.rate.value(settings) / 100_f64) / self.compound_time,
                 self.compound_time,
             )
-            - tables.value.0[&year];
-        if let Some(x) = tables.interest.0.get_mut(&year) {
-            *x = result.interest;
-        }
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x += result.interest;
-        }
+            - self.analysis.value.get(year).unwrap();
+
+        self.analysis.interest.update(year, result.interest);
+        self.analysis.value.update(year, result.interest);
 
         // Calculate payment available
         result.payment = self.payment_type.value(
             self.payment_value,
             settings.inflation_base,
             year - start_out,
-            *tables.value.0.get(&year).unwrap() + insurance_payment + self.escrow_value,
+            self.analysis.value.get(year).unwrap() + insurance_payment + self.escrow_value,
         );
 
         // Add payment to payment and value tables
-        if let Some(x) = tables.payments.0.get_mut(&year) {
-            *x = result.payment;
-        }
+        self.analysis.payments.update(year, result.payment);
 
         // Calculate how much of the payment will actually go toward the loan (principal & interest)
         let mut remaining_payment = result.payment; // initial amount that is set to be paid to this loan
@@ -215,12 +190,10 @@ impl Account for Mortgage<u32> {
         remaining_payment -= self.escrow_value; // reduced by escrow / property taxes for the year
 
         // Apply remaining payment to loan balance
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x -= remaining_payment;
-            // Limit min value of the loan balance to account for floating point math rounding
-            if *x < 0.0001 {
-                *x = 0_f64;
-            }
+        self.analysis.value.update(year, -remaining_payment);
+        // Limit min value of the loan balance to account for floating point math rounding
+        if self.analysis.value.get(year).unwrap() < 0.0001 {
+            self.analysis.value.insert(year, 0_f64);
         }
 
         Ok(YearlyImpact {

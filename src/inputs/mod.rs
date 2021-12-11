@@ -36,22 +36,29 @@ impl From<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
 
 impl UserData<Box<dyn Account>> {
     /// Write all account values to a single csv
-    pub fn write_tables(&self, order: &Vec<String>, years: Vec<u32>, filepath: String) {
+    pub fn write_tables(&self, order: &[String], years: Vec<u32>, filepath: String) {
         let mut file = std::fs::File::create(filepath).unwrap();
         file.write_all("year".as_bytes()).unwrap();
         order.iter().for_each(|uuid| {
-            file.write_all(format!(",\t{}",self.accounts[uuid].name()).as_bytes()).unwrap();
+            file.write_all(format!(",\t{}", self.accounts[uuid].name()).as_bytes())
+                .unwrap();
         });
         file.write_all("\n".as_bytes()).unwrap();
 
         years.iter().for_each(|year| {
-            file.write_all(format!("{}",year).as_bytes()).unwrap();
+            file.write_all(format!("{}", year).as_bytes()).unwrap();
             order.iter().for_each(|uuid| {
                 self.accounts[uuid].get_value(*year);
-                file.write_all(format!(",\t{:.2}",self.accounts[uuid].get_value(*year).unwrap_or_default()).as_bytes()).unwrap();
+                file.write_all(
+                    format!(
+                        ",\t{:.2}",
+                        self.accounts[uuid].get_value(*year).unwrap_or_default()
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
             });
             file.write_all("\n".as_bytes()).unwrap();
         });
-
     }
 }

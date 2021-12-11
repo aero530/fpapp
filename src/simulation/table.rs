@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::error::Error;
 
 /// Table is a map keyed by year that holds account values/amounts.
 ///
@@ -14,32 +15,37 @@ pub struct Table<T: std::cmp::Ord>(
 );
 
 impl Table<u32> {
-    /// Insert year with value
-    /// 
+    /// Add year with value. Return Error if it already exists.
+    pub fn add(&mut self, year: u32, value: f64) -> Result<(), Box<dyn Error>> {
+        match self.get(year) {
+            Some(_x) => return Err(format!("The year {} already exists in table", year).into()),
+            None => {
+                self.0.insert(year, value);
+                Ok(())
+            }
+        }
+    }
+    /// Insert / replace value for given year
+    ///
     /// If the map did not have this key present, None is returned.
-    /// If the map did have this key present, the value is updated, and the old value is returned. 
-    pub fn insert(&mut self, year: u32, value: f64) -> Option<f64>{
+    /// If the map did have this key present, the value is updated, and the old value is returned.
+    pub fn insert(&mut self, year: u32, value: f64) -> Option<f64> {
         self.0.insert(year, value)
     }
-
     /// Add the delta value to the current value
     pub fn update(&mut self, year: u32, delta: f64) {
         //self.expense.insert(year, self.expense.get(year).unwrap()+update.expense);
         let previous_value = match self.0.get(&year) {
             Some(x) => *x,
-            None => 0_f64
+            None => 0_f64,
         };
-        self.insert(year, previous_value+delta);
-    }
-    
-    /// Return the value for a given year
-    pub fn get(&self, year: u32) -> Option<f64> {
-        match self.0.get(&year) {
-            Some(v) => Some(*v),
-            None => None,
-        }
+        self.insert(year, previous_value + delta);
     }
 
+    /// Return the value for a given year
+    pub fn get(&self, year: u32) -> Option<f64> {
+        self.0.get(&year).copied()
+    }
     /// Find the most recent year that has a non-zero value
     fn most_recent_populated_year(&self) -> Option<u32> {
         self.0
@@ -51,39 +57,18 @@ impl Table<u32> {
             .copied()
             .max()
     }
+    /// Find the most recent year that has a non-zero value
+    pub fn most_recent_value(&self) -> Option<f64> {
+        self.0.iter().last().map(|(_k, v)| *v)
+    }
     /// Move the most recent previous value forward if
     /// the most previous year is prior to the current year
     pub fn pull_value_forward(&mut self, year: u32) {
-        match self.most_recent_populated_year() {
-            Some(recent_year) => {
-                if recent_year < year {
-                    *self.0.get_mut(&year).unwrap() = self.0[&recent_year];
-                }
+        if let Some(recent_year) = self.most_recent_populated_year() {
+            if recent_year < year {
+                *self.0.get_mut(&year).unwrap() = self.0[&recent_year];
             }
-            None => {}
         }
-
-        //
-        //
-        //
-        //
-        //
-        //
-        // 
-        // Need to update how tables work to not prepopulate all the years.  That way an account can
-        // go to zero and not be pulled forward anymore. That will cause issues in plotting in that there
-        // will not be data to plot (same with writing tables).  Will have to populate with 0 or none.
-        //
-        //
-        //
-        //
-        // 
-        //
-
-
-        // if self.get(year-1).is_some() {
-        //     self.insert(year, self.get(year-1).unwrap());
-        // }
     }
     /// Return the minimum table value (dollar amount)
     fn min_value(&self) -> f64 {
@@ -92,7 +77,7 @@ impl Table<u32> {
             .copied()
             .collect::<Vec<f64>>()
             .iter()
-            .fold(0.0 / 0.0, |m, v| v.min(m))
+            .fold(f64::NAN, |m, v| v.min(m))
     }
     /// Return the maximum table value (dollar amount)
     pub fn max_value(&self) -> f64 {
@@ -101,14 +86,14 @@ impl Table<u32> {
             .copied()
             .collect::<Vec<f64>>()
             .iter()
-            .fold(0.0 / 0.0, |m, v| v.max(m))
+            .fold(f64::NAN, |m, v| v.max(m))
     }
     /// Return the minimum table year
     fn min_key(&self) -> u32 {
         *self
             .0
             .keys()
-            .copied()
+            .cloned()
             .collect::<Vec<u32>>()
             .iter()
             .min()
@@ -119,7 +104,7 @@ impl Table<u32> {
         *self
             .0
             .keys()
-            .copied()
+            .cloned()
             .collect::<Vec<u32>>()
             .iter()
             .max()
@@ -137,10 +122,12 @@ impl Table<u32> {
     pub fn values(&self) -> Vec<f64> {
         self.0.values().cloned().collect()
     }
-    // /// Return values
-    // pub fn years(&self) -> Vec<u32> {
-    //     self.0.keys().cloned().collect()
-    // }
+    /// Return values
+    pub fn years(&self) -> Vec<u32> {
+        let mut years = self.0.keys().cloned().collect::<Vec<u32>>();
+        years.sort_unstable();
+        years
+    }
 }
 
 impl IntoIterator for Table<u32> {
@@ -182,107 +169,3 @@ impl From<(Vec<u32>, Vec<f64>)> for Table<u32> {
         Self(map)
     }
 }
-
-// #[derive(Debug, Clone, Deserialize, Serialize)]
-// pub enum AnalysisTable {
-//     Single(SingleTable),
-//     Savings(SavingsTables),
-//     Loan(LoanTables),
-// }
-
-// impl AnalysisTable {
-//     // pub fn most_recent_populated_year(&self) -> Option<u32> {
-//     //     match self {
-//     //         AnalysisTable::Single(tables) => tables.value.most_recent_populated_year(),
-//     //         AnalysisTable::Savings(tables) => tables.value.most_recent_populated_year(),
-//     //         AnalysisTable::Loan(tables) => tables.value.most_recent_populated_year(),
-//     //     }
-//     // }
-//     pub fn pull_value_forward(&mut self, year: u32) {
-//         match self {
-//             AnalysisTable::Single(tables) => {tables.value.pull_value_forward(year);},
-//             AnalysisTable::Savings(tables) => {tables.value.pull_value_forward(year);},
-//             AnalysisTable::Loan(tables) => {tables.value.pull_value_forward(year);},
-//         }
-//     }
-//     pub fn value_table(&self) -> &Table<u32> {
-//         match self {
-//             AnalysisTable::Single(tables) => &tables.value,
-//             AnalysisTable::Savings(tables) => &tables.value,
-//             AnalysisTable::Loan(tables) => &tables.value,
-//         }
-//     }
-//     // pub fn value_table_as_mut(&self) -> &mut Table<u32> {
-//     //     match self {
-//     //         AnalysisTable::Single(tables) => {
-
-//     //             &mut tables.as_mut().value
-//     //         },
-//     //         AnalysisTable::Savings(tables) => &mut tables.value,
-//     //         AnalysisTable::Loan(tables) => &mut tables.value,
-//     //     }
-//     // }
-//     pub fn contributions_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Savings(tables) => Some(&tables.contributions),
-//             _ => None,
-//         }
-//     }
-//     pub fn employer_contributions_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Savings(tables) => tables.employer_contributions.as_ref(),
-//             _ => None,
-//         }
-//     }
-//     pub fn earnings_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Savings(tables) => Some(&tables.earnings),
-//             _ => None,
-//         }
-//     }
-//     pub fn withdrawals_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Savings(tables) => Some(&tables.withdrawals),
-//             _ => None,
-//         }
-//     }
-//     pub fn interest_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Loan(tables) => Some(&tables.interest),
-//             _ => None,
-//         }
-//     }
-//     pub fn payments_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Loan(tables) => Some(&tables.payments),
-//             _ => None,
-//         }
-//     }
-//     pub fn escrow_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Loan(tables) => tables.escrow.as_ref(),
-//             _ => None,
-//         }
-//     }
-//     pub fn insurance_table(&self) -> Option<&Table<u32>> {
-//         match self {
-//             AnalysisTable::Loan(tables) => tables.insurance.as_ref(),
-//             _ => None,
-//         }
-//     }
-//     pub fn value(&self, year: u32) -> f64 {
-//         self.value_table().get(year).unwrap_or_default()
-//         // self.analysis
-//         //     .as_ref()
-//         //     .unwrap()
-//         //     .value
-//         //     .0
-//         //     .get(&year)
-//         //     .map(|v| *v)
-//     }
-//     pub fn write(&self, filepath: String) {
-//         println!("{}", filepath);
-
-//     }
-
-// }

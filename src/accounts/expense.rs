@@ -66,23 +66,17 @@ impl Account for Expense<u32> {
     }
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut analysis = SingleTable::default();
-        years.iter().copied().for_each(|year| {
-            analysis.value.0.insert(year, 0.0);
-        });
-        self.analysis = analysis;
+        self.analysis = SingleTable::default();
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        //Ok(YearlyImpact::default())
         Ok(Vec::new())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
@@ -119,9 +113,8 @@ impl Account for Expense<u32> {
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start = self.dates.year_out.unwrap().start;
-        let tables = &mut self.analysis;
-
         let mut result = WorkingValues::default();
+        self.analysis.add_year(year, false)?;
 
         // Calculate expense
         if self.dates.year_out.unwrap().contains(year) {
@@ -141,9 +134,7 @@ impl Account for Expense<u32> {
         }
 
         // Update value table with expense value
-        if let Some(x) = tables.value.0.get_mut(&year) {
-            *x = result.expense;
-        }
+        self.analysis.value.update(year, result.expense);
 
         match self.is_healthcare {
             true => Ok(YearlyImpact {

@@ -1,12 +1,12 @@
 //! Types used during the analysis / simulation
 
-use serde::{Deserialize, Serialize};
-use std::io::Write;
-use std::error::Error;
 use log::error;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
+use std::io::Write;
 
-use crate::plot::scatter_plot;
 use super::Table;
+use crate::plot::scatter_plot;
 
 /// How the results of the simulation of an [account](crate::accounts) impact a [YearlyTotal](YearlyTotal)
 #[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -57,20 +57,13 @@ impl YearlyTotals {
     pub fn new() -> YearlyTotals {
         YearlyTotals::default()
     }
-    /// Initialize a new year
-    pub fn add_year(&mut self, year: u32) -> Result<(),Box<dyn Error>> {
-        print!("add {}? ",year);
+    /// Initialize a new year and pull forward net, savings, and hsa when told to
+    pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
         // need to only update if there is not a value in this year yet.  in year 1 i init somewhere else
-    
-        match self.net.0.contains_key(&year) {
-            true => {
-                println!("no");
-                return Err(String::from("Year already exists.").into());
-            },
-            false => {
 
-                println!("yes");
-                
+        match self.net.0.contains_key(&year) {
+            true => Err(String::from("Year already exists.").into()),
+            false => {
                 self.net.insert(year, 0_f64);
                 self.expense.insert(year, 0_f64);
                 self.healthcare_expense.insert(year, 0_f64);
@@ -81,27 +74,19 @@ impl YearlyTotals {
                 self.income.insert(year, 0_f64);
                 self.tax_burden.insert(year, 0_f64);
                 self.income_during_retirement.insert(year, 0_f64);
-                return Ok(())
+                if pull_value_forward {
+                    self.pull_value_forward(year);
+                }
+                Ok(())
             }
         }
-
     }
     /// If there is a prev year then pull forward that value
-    pub fn pull_value_forward(&mut self, year: u32) {
+    fn pull_value_forward(&mut self, year: u32) {
         if self.net.0.contains_key(&year) {
             self.net.pull_value_forward(year);
             self.saving.pull_value_forward(year);
             self.hsa.pull_value_forward(year);
-
-            // if self.net.get(year-1).is_some() {
-            //     self.net.insert(year, self.net.get(year-1).unwrap());
-            // }
-            // if self.saving.get(year-1).is_some() {
-            //     self.saving.insert(year, self.saving.get(year-1).unwrap());
-            // }
-            // if self.hsa.get(year-1).is_some() {
-            //     self.hsa.insert(year, self.hsa.get(year-1).unwrap());
-            // }
         } else {
             error!("Year must be added to YearlyTotals before pulling previous values forward.");
         }
@@ -113,19 +98,20 @@ impl YearlyTotals {
         match self.net.0.contains_key(&year) {
             true => {
                 self.expense.update(year, update.expense);
-                self.healthcare_expense.update(year, update.healthcare_expense);
+                self.healthcare_expense
+                    .update(year, update.healthcare_expense);
                 self.col.update(year, update.col);
                 self.saving.update(year, update.saving);
                 self.hsa.update(year, update.hsa);
                 self.income_taxable.update(year, update.income_taxable);
                 self.income.update(year, update.income);
-            },
+            }
             false => {
-                self.add_year(year);
+                error!("Updating a year that does not exist.  Previous values not pulled forward");
+                self.add_year(year, false).unwrap();
                 self.update(year, update);
             }
         }
-
     }
     /// Add income to net
     pub fn deposit_income_in_net(&mut self, year: u32) {
@@ -133,22 +119,24 @@ impl YearlyTotals {
         self.net.update(year, self.income.get(year).unwrap());
     }
     /// Pay income tax for the year
-    pub fn pay_income_tax_from_net( &mut self, year: u32, tax_rate: f64) {
+    pub fn pay_income_tax_from_net(&mut self, year: u32, tax_rate: f64) {
         let tax_burden = self.income_taxable.get(year).unwrap() * (tax_rate / 100_f64);
         // log what income was after paying taxes
-        self.tax_burden.insert(year,tax_burden);
+        self.tax_burden.insert(year, tax_burden);
 
         // take income tax payment out of net
-        self.net.update(year,-1_f64 * tax_burden);
+        self.net.update(year, -1_f64 * tax_burden);
     }
     /// Pay for expenses for the year
     pub fn pay_expenses_from_net(&mut self, year: u32) {
-        self.net.update(year,-1_f64 * self.expense.get(year).unwrap());
+        self.net
+            .update(year, -1_f64 * self.expense.get(year).unwrap());
     }
     /// Remove healthcare expenses from net (these could also be covered by HSA accounts)
     pub fn pay_healthcare_expenses_from_net(&mut self, year: u32) {
         if self.healthcare_expense.get(year).unwrap() > 0_f64 {
-            self.net.update(year, -1_f64*self.healthcare_expense.get(year).unwrap());
+            self.net
+                .update(year, -1_f64 * self.healthcare_expense.get(year).unwrap());
             self.healthcare_expense.insert(year, 0_f64);
         }
     }
@@ -212,46 +200,38 @@ impl YearlyTotals {
         );
     }
     /// Get the cost of living for the specified year
-    /// 
+    ///
     /// If the year is not found then zero is returned
     pub fn get_col(&self, year: u32) -> f64 {
-        match self.col.get(year) {
-            Some(v) => v,
-            None => 0_f64,
-        }
+        self.col.get(year).unwrap_or_default()
     }
     /// Get the income for the specified year
-    /// 
+    ///
     /// If the year is not found then zero is returned
     pub fn get_income(&self, year: u32) -> f64 {
-        match self.income.get(year) {
-            Some(v) => v,
-            None => 0_f64,
-        }
+        self.income.get(year).unwrap_or_default()
     }
     /// Get the savings total for the specified year
-    /// 
+    ///
     /// If the year is not found then zero is returned
     pub fn get_saving(&self, year: u32) -> f64 {
-        match self.saving.get(year) {
-            Some(v) => v,
-            None => 0_f64,
-        }
+        self.saving.get(year).unwrap_or_default()
     }
     /// Get the healthcare_expense for the specified year
-    /// 
+    ///
     /// If the year is not found then zero is returned
     pub fn get_healthcare_expense(&self, year: u32) -> f64 {
-        match self.healthcare_expense.get(year) {
-            Some(v) => v,
-            None => 0_f64,
-        }
+        self.healthcare_expense.get(year).unwrap_or_default()
     }
     /// Return a sorted list of keys (years)
-    /// 
-    /// There should not be a way for the elements of self to contain 
+    ///
+    /// There should not be a way for the elements of self to contain
     /// different key sets so we just pull the keys from net.
     pub fn years(&self) -> Vec<u32> {
-        self.net.0.keys().map(|v| *v).collect()
+        self.net.years()
+    }
+    /// Check if this year already exists
+    pub fn contains_year(&self, year: u32) -> bool {
+        self.net.0.contains_key(&year)
     }
 }

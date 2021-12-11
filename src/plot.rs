@@ -1,5 +1,6 @@
 //! Functions to plot data
 
+use log::error;
 use plotters::prelude::*;
 
 use crate::simulation::Table;
@@ -27,13 +28,13 @@ pub fn range(input: Vec<&Table<u32>>) -> (f64, f64) {
         .map(|table| table.range().0)
         .collect::<Vec<f64>>()
         .iter()
-        .fold(0.0 / 0.0, |m, v| v.min(m));
+        .fold(f64::NAN, |m, v| v.min(m));
     let y_max = input
         .iter()
         .map(|table| table.range().1)
         .collect::<Vec<f64>>()
         .iter()
-        .fold(0.0 / 0.0, |m, v| v.max(m));
+        .fold(f64::NAN, |m, v| v.max(m));
     (y_min, y_max)
 }
 
@@ -63,6 +64,10 @@ fn domain(input: Vec<&Table<u32>>) -> (u32, u32) {
 pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: String) {
     let domain = domain(data.iter().map(|(_table_name, table)| *table).collect());
     let range = range(data.iter().map(|(_table_name, table)| *table).collect());
+
+    if range.0.is_nan() || range.1.is_nan() {
+        error!("Perhaps there isn't any data. {}", title);
+    }
 
     let root = BitMapBackend::new(&filepath, (1600, 1200)).into_drawing_area();
     root.fill(&WHITE).unwrap();

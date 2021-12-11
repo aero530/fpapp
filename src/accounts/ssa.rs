@@ -40,23 +40,17 @@ impl Account for Ssa {
     }
     fn init(
         &mut self,
-        years: &Vec<u32>,
         linked_dates: Option<Dates>,
         settings: &Settings,
     ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        let mut output = SingleTable::default();
-        years.iter().for_each(|year| {
-            output.value.0.insert(*year, 0.0);
-        });
-        self.analysis = output;
+        self.analysis = SingleTable::default();
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        // Ok(YearlyImpact::default())
         Ok(Vec::new())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
@@ -88,11 +82,13 @@ impl Account for Ssa {
     }
     fn simulate(
         &mut self,
-        _year: u32,
+        year: u32,
         _totals: &YearlyTotals,
         _settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut _result = WorkingValues::default();
+
+        self.analysis.add_year(year, false)?;
 
         Ok(YearlyImpact {
             expense: 0_f64,
