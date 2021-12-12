@@ -161,3 +161,37 @@ impl Account for Expense<u32> {
         self.analysis.write(filepath);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inputs::Settings;
+
+    #[test]
+    fn expense_simulation() {
+        let mut account = Expense {
+            name: "Expense Account".into(),
+            table: Table::default(),
+            start_out: YearInput::ConstantInt(2000),
+            end_out: YearInput::ConstantInt(2020),
+            expense_type: ExpenseOptions::Fixed,
+            expense_value: 500_f64,
+            is_healthcare: false,
+            hsa_link: None,
+            notes: None,
+            analysis: SingleTable::default(),
+            dates: Dates::default(),
+        };
+        let yearly_totals = YearlyTotals::new();
+        let settings = Settings::test_values();
+        account.init(None, &settings).unwrap();
+        let year = 2010_u32;
+        let update = account.simulate(year, &yearly_totals, &settings).unwrap();
+        
+        println!("{:?}",account.analysis.value.get(year));
+        println!("{:?}",update);
+
+        assert_eq!(account.analysis.value.get(year).unwrap(), account.expense_value);
+    }
+
+}

@@ -21,6 +21,12 @@ pub struct SsaSettings {
     pub taxable_income_percentage: Span<f64>,
 }
 
+impl SsaSettings {
+    pub fn test_values() -> Self {
+        Self { breakpoints: Span { low: 30000_f64, high: 40000_f64 }, taxable_income_percentage: Span { low: 50_f64, high: 80_f64 }, }
+    }
+}
+
 /// Analysis user settings
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -61,4 +67,41 @@ impl Settings {
     pub fn is_retired(&self, year: u32) -> bool {
         year >= self.year_retire()
     }
+    pub fn test_values() -> Self {
+        Self {
+            age_retire: 50,
+            age_die: 100,
+            year_born: 1980,
+            year_start: 2000,
+            inflation_base: 5.0,
+            tax_income: 20.0,
+            tax_capital_gains: 10.0,
+            retirement_cost_of_living: 80.0,
+            ssa: SsaSettings::test_values(),
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn years() {
+        let settings = Settings::test_values();
+        assert_eq!(settings.year_start(), 2000);
+        assert_eq!(settings.year_retire(), 2030);
+        assert_eq!(settings.year_die(), 2080);
+        assert_eq!(settings.year_end(), 2080);
+    }
+
+    #[test]
+    fn retirement() {
+        let settings = Settings::test_values();
+        assert_eq!(settings.is_retired(2010), false);
+        assert_eq!(settings.is_retired(2090), true);
+        assert_eq!(settings.is_retired(2040), true);
+    }
+
 }

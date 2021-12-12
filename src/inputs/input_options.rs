@@ -239,8 +239,8 @@ impl WithdrawalOptions {
                     match tax_status {
                         TaxStatus::ContributePretaxTaxedWhenUsed => {
                             // add extra to amount withdrawal value to account for taxes.
-                            col * (prev_account_value / prev_savings)
-                                * (tax_income / 100_f64 + 1_f64)
+                            // col * (prev_account_value / prev_savings) * (tax_income / 100_f64 + 1_f64)
+                            col * (prev_account_value / prev_savings) / (1_f64 - tax_income / 100_f64)
                         }
                         _ => col * (prev_account_value / prev_savings),
                     }
@@ -343,3 +343,91 @@ impl YearSuggestion {
         }
     }
 }
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use float_cmp::assert_approx_eq;
+    use crate::inputs::Settings;
+    use crate::simulation::YearRange;
+
+    #[test]
+    fn contribution_options() {
+        let cont1 = ContributionOptions::Fixed;
+        let cont2 = ContributionOptions::PercentOfIncome;
+        let cont3 = ContributionOptions::FixedWithInflation;
+        assert_approx_eq!(f64, cont1.value(500_f64, 10000_f64, 10_u32, 10_f64), 500_f64);
+        assert_approx_eq!(f64, cont2.value(10_f64, 10000_f64, 1_u32, 10_f64), 1000_f64);
+        assert_approx_eq!(f64, cont3.value(500_f64, 10000_f64, 1_u32, 10_f64), 550_f64, epsilon = 0.001);
+        assert_approx_eq!(f64, cont3.value(500_f64, 10000_f64, 10_u32, 10_f64), 1296.8712, epsilon = 0.001);
+    }
+
+    #[test]
+    fn payment_options() {
+        let payment1 = PaymentOptions::Fixed;
+        let payment2 = PaymentOptions::FixedWithInflation;
+        assert_approx_eq!(f64, payment1.value(500_f64, 10_f64, 10_u32, 1000_f64), 500_f64);
+        assert_approx_eq!(f64, payment1.value(500_f64, 10_f64, 10_u32, 100_f64), 100_f64);
+        assert_approx_eq!(f64, payment2.value(500_f64, 10_f64, 10_u32, 5000_f64), 1296.8712, epsilon = 0.001);
+        assert_approx_eq!(f64, payment2.value(500_f64, 10_f64, 10_u32, 500_f64), 500_f64);
+    }
+
+    #[test]
+    fn percent_input() {
+        let p1 = PercentInput::Calculate(PercentSuggestions::InflationBase);
+        let p2 = PercentInput::ConstantFloat(75_f64);
+        let p3 = PercentInput::ConstantString("40".into());
+
+        assert_approx_eq!(f64, p1.value(&Settings::test_values()), 5_f64);
+        assert_approx_eq!(f64, p2.value(&Settings::test_values()), 75_f64);
+        assert_approx_eq!(f64, p3.value(&Settings::test_values()), 40_f64);
+    }
+
+    #[test]
+    fn withdrawal_options() {
+        let w1 = WithdrawalOptions::Fixed;
+        let w2 = WithdrawalOptions::FixedWithInflation;
+        let w3 = WithdrawalOptions::ColFracOfSavings;
+        let w4 = WithdrawalOptions::EndAtZero;
+
+        let withdrawal = 100_f64;
+        let inflation = 10_f64;
+        let dates = Dates {
+            year_in: Some(YearRange{start: 2020, end: 2080}),
+            year_out: Some(YearRange{start: 2020, end: 2080}),
+        };
+        let year = 2030;
+        let account_value = 5000_f64;
+        let prev_account_value = 6000_f64;
+        let col = 10000_f64;
+        let prev_savings = 20000_f64;
+        let tax_income = 20_f64;
+        let tax_status = TaxStatus::ContributePretaxTaxedWhenUsed;
+
+        assert_approx_eq!(f64, w1.value(withdrawal, inflation, dates, year, account_value, prev_account_value, col, prev_savings, tax_income, tax_status), withdrawal);
+
+        // Don't allow more to be taken out than there is in the account
+        assert_approx_eq!(f64, w1.value(100000_f64, inflation, dates, year, account_value, prev_account_value, col, prev_savings, tax_income, tax_status), account_value);
+        
+        assert_approx_eq!(f64, w2.value(withdrawal, inflation, dates, year, account_value, prev_account_value, col, prev_savings, tax_income, tax_status), 259.374, epsilon = 0.001);
+        assert_approx_eq!(f64, w2.value(withdrawal, inflation, dates, dates.year_out.unwrap().start+1, account_value, prev_account_value, col, prev_savings, tax_income, tax_status), 110_f64);
+
+        assert_approx_eq!(f64, w3.value(withdrawal, inflation, dates, year, account_value, 0_f64, col, prev_savings, tax_income, tax_status), 0_f64);
+        assert_approx_eq!(f64, w3.value(withdrawal, inflation, dates, year, account_value, prev_account_value, 0_f64, prev_savings, tax_income, tax_status), 0_f64);
+        assert_approx_eq!(f64, w3.value(withdrawal, inflation, dates, year, account_value, 0_f64, 0_f64, prev_savings, tax_income, tax_status), 0_f64);
+        assert_approx_eq!(f64, w3.value(withdrawal, inflation, dates, year, account_value, prev_account_value, col, prev_savings, tax_income, TaxStatus::ContributePretaxUntaxedWhenUsed), 3000_f64);
+        assert_approx_eq!(f64, w3.value(withdrawal, inflation, dates, year, account_value, prev_account_value, col, prev_savings, tax_income, TaxStatus::ContributePretaxTaxedWhenUsed), 3750_f64);
+        
+        assert_approx_eq!(f64, w4.value(withdrawal, inflation, dates, dates.year_out.unwrap().start, account_value, prev_account_value, col, prev_savings, tax_income, tax_status), 81.967, epsilon = 0.001);
+    }
+
+    #[test]
+    fn year_input() {
+        todo!()
+    }
+}
+
+
