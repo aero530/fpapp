@@ -6,11 +6,21 @@ use std::io::Write;
 
 use crate::accounts::{Account, AccountWrapper};
 
-mod input_options;
+mod contribution;
+mod expense;
+mod payment;
+mod percent;
 mod settings;
+mod withdrawal;
+mod year;
 
-pub use input_options::*;
+pub use contribution::*;
+pub use expense::*;
+pub use payment::*;
+pub use percent::*;
 pub use settings::*;
+pub use withdrawal::*;
+pub use year::*;
 
 /// Represents the user data file
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
@@ -61,4 +71,9 @@ impl UserData<Box<dyn Account>> {
             file.write_all("\n".as_bytes()).unwrap();
         });
     }
+}
+
+
+pub fn fixed_with_inflation(initial_value: f64, perc_inflation: f64, duration: u32) -> f64 {
+    initial_value * f64::powf(1_f64 + perc_inflation / 100_f64, duration as f64)
 }

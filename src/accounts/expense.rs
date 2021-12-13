@@ -119,18 +119,19 @@ impl Account for Expense<u32> {
         // Calculate expense
         if self.dates.year_out.unwrap().contains(year) {
             // Calculate expense amount for fixed, fixed_with_inflation
-            match self.expense_type {
-                ExpenseOptions::Fixed => {
-                    // if type is a fixed value set expense to the value
-                    result.expense = self.expense_value;
-                }
-                ExpenseOptions::FixedWithInflation => {
-                    // if type is a fixed number but should be compensated for with inflation
-                    let raise = settings.inflation_base / 100.0 + 1.0;
-                    let value = self.expense_value * f64::powf(raise, (year - start) as f64); // set expense to the value multiplied by an increase due to inflation
-                    result.expense = value;
-                }
-            }
+            result.expense = self.expense_type.value(self.expense_value, settings.inflation_base, year-start);
+            // match self.expense_type {
+            //     ExpenseOptions::Fixed => {
+            //         // if type is a fixed value set expense to the value
+            //         result.expense = self.expense_value;
+            //     }
+            //     ExpenseOptions::FixedWithInflation => {
+            //         // if type is a fixed number but should be compensated for with inflation
+            //         let raise = settings.inflation_base / 100.0 + 1.0;
+            //         let value = self.expense_value * f64::powf(raise, (year - start) as f64); // set expense to the value multiplied by an increase due to inflation
+            //         result.expense = value;
+            //     }
+            // }
         }
 
         // Update value table with expense value
@@ -165,7 +166,30 @@ impl Account for Expense<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::inputs::Settings;
+    use crate::inputs::{Settings, Span, SsaSettings};
+
+    fn test_settings_values() -> Settings {
+        Settings {
+            age_retire: 50,
+            age_die: 100,
+            year_born: 1980,
+            year_start: 2000,
+            inflation_base: 5.0,
+            tax_income: 20.0,
+            tax_capital_gains: 10.0,
+            retirement_cost_of_living: 80.0,
+            ssa: SsaSettings {
+                breakpoints: Span {
+                    low: 30000_f64,
+                    high: 40000_f64,
+                },
+                taxable_income_percentage: Span {
+                    low: 50_f64,
+                    high: 80_f64,
+                },
+            },
+        }
+    }
 
     #[test]
     fn expense_simulation() {
@@ -183,15 +207,17 @@ mod tests {
             dates: Dates::default(),
         };
         let yearly_totals = YearlyTotals::new();
-        let settings = Settings::test_values();
+        let settings = test_settings_values();
         account.init(None, &settings).unwrap();
         let year = 2010_u32;
         let update = account.simulate(year, &yearly_totals, &settings).unwrap();
-        
-        println!("{:?}",account.analysis.value.get(year));
-        println!("{:?}",update);
 
-        assert_eq!(account.analysis.value.get(year).unwrap(), account.expense_value);
+        println!("{:?}", account.analysis.value.get(year));
+        println!("{:?}", update);
+
+        assert_eq!(
+            account.analysis.value.get(year).unwrap(),
+            account.expense_value
+        );
     }
-
 }
