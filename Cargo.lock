@@ -292,6 +292,8 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+ "withdrawal",
+ "withdrawal_derive",
 ]
 
 [[package]]
@@ -888,4 +890,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "withdrawal"
+version = "0.1.0"
+
+[[package]]
+name = "withdrawal_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]

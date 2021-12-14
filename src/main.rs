@@ -16,6 +16,7 @@ use accounts::{Account, AccountWrapper};
 use inputs::UserData;
 use simulation::{Dates, YearlyTotals};
 
+
 /// Main loop
 fn main() -> Result<(), Box<dyn Error>> {
     // Initialize and gather config
