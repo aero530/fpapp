@@ -14,6 +14,8 @@ use crate::simulation::{
     Dates, LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact, YearlyTotals,
 };
 
+use withdrawal::AccountWithWithdrawal;
+
 mod college;
 mod expense;
 mod hsa;
@@ -33,6 +35,17 @@ use mortgage::Mortgage;
 use retirement::Retirement;
 use savings::Savings;
 use ssa::Ssa;
+
+
+
+
+
+
+// default impl in account type for withdrawal
+// derive macro for AccountWithWithdrawal
+
+
+
 
 /// Trait used to define what each account type must be able to provide
 pub trait Account: std::fmt::Debug {
