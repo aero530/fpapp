@@ -26,34 +26,3 @@ pub struct EmployerMatch {
     /// Limit of employer's match (such as up to the first 6% that the employee saves)
     pub limit: PercentInput,
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use float_cmp::assert_approx_eq;
-
-//     #[test]
-//     fn contribution_options() {
-//         let cont1 = ContributionOptions::Fixed;
-//         let cont2 = ContributionOptions::PercentOfIncome;
-//         let cont3 = ContributionOptions::FixedWithInflation;
-//         assert_approx_eq!(
-//             f64,
-//             cont1.value(500_f64, 10000_f64, 10_u32, 10_f64),
-//             500_f64
-//         );
-//         assert_approx_eq!(f64, cont2.value(10_f64, 10000_f64, 1_u32, 10_f64), 1000_f64);
-//         assert_approx_eq!(
-//             f64,
-//             cont3.value(500_f64, 10000_f64, 1_u32, 10_f64),
-//             550_f64,
-//             epsilon = 0.001
-//         );
-//         assert_approx_eq!(
-//             f64,
-//             cont3.value(500_f64, 10000_f64, 10_u32, 10_f64),
-//             1296.8712,
-//             epsilon = 0.001
-//         );
-//     }
-// }

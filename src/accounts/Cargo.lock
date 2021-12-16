@@ -3,6 +3,22 @@
 version = 3
 
 [[package]]
+name = "account_expense_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "account_payment_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "account_savings_derive"
 version = "0.1.0"
 dependencies = [
@@ -14,6 +30,8 @@ dependencies = [
 name = "accounts"
 version = "0.1.0"
 dependencies = [
+ "account_expense_derive",
+ "account_payment_derive",
  "account_savings_derive",
  "env_logger",
  "float-cmp",

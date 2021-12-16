@@ -3,10 +3,13 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
+use crate::inputs::fixed_with_inflation;
+use account_payment_derive::AccountPayment;
+
 use super::*;
 
 /// Loan type specifically tailored for mortgages
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, AccountPayment)]
 #[serde(rename_all = "camelCase")]
 pub struct Mortgage<T: std::cmp::Ord> {
     /// String describing this account
@@ -19,19 +22,19 @@ pub struct Mortgage<T: std::cmp::Ord> {
     end_out: YearInput,
     /// Determines how to interpret payment_value
     payment_type: PaymentOptions,
-    /// How much money should be payed each year (either as a percentage or a fixed dollar amount)
+    /// How much money should be payed each year (either as a percentage or a fixed dollar amount) [in today's dollars]
     payment_value: f64,
     /// Interest rate on borrowed money. This is an APR this is then compounded based on the compound time setting.  Used for LOAN and MORTGAGE account types.
     rate: PercentInput,
     /// Number of times per year that interest is compounded. (1=yearly, 12=monthly)
     compound_time: f64,
-    /// Mortgage insurance payment expressed as a yearly fixed number in todays dollars
+    /// Mortgage insurance payment expressed as a yearly fixed number [in today's dollars]
     mortgage_insurance: f64,
     /// Loan to Value amount when mortgage insurance is no longer pulled from payment.  Since monthly payment does not change over time, after the insurance is done there is more money going to the principal each payment
     ltv_limit: f64,
-    /// Amount of money going into escrow every year to pay for property tax.  This number is currently assumed to be constant (ie property taxes do not increase)
+    /// Amount of money going into escrow every year to pay for property tax.  This number is currently assumed to be constant (ie property taxes do not increase) [in today's dollars]
     escrow_value: f64,
-    /// Current value of the home.  This is used to compute loan to value
+    /// Current value of the home.  This is used to compute loan to value [in today's dollars]
     home_value: f64,
     /// General information to store with this account
     notes: Option<String>,
@@ -136,7 +139,6 @@ impl Account for Mortgage<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_out = self.dates.year_out.unwrap().start;
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, true)?;
 
@@ -174,12 +176,13 @@ impl Account for Mortgage<u32> {
         self.analysis.value.update(year, result.interest);
 
         // Calculate payment available
-        result.payment = self.payment_type.value(
-            self.payment_value,
-            settings.inflation_base,
-            year - start_out,
-            self.analysis.value.get(year).unwrap() + insurance_payment + self.escrow_value,
-        );
+        // result.payment = self.payment_type.value(
+        //     self.payment_value,
+        //     settings.inflation_base,
+        //     year - start_out,
+        //     self.analysis.value.get(year).unwrap() + insurance_payment + self.escrow_value,
+        // );
+        result.payment = self.get_payment(year, settings);
 
         // Add payment to payment and value tables
         self.analysis.payments.update(year, result.payment);

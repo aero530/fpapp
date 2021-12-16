@@ -15,6 +15,8 @@ toml = "0.5.8"
 float-cmp = "0.9.0"
 
 account_savings_derive = { path = "./src/account_savings_derive" }
+account_expense_derive = { path = "./src/account_expense_derive" }
+account_payment_derive = { path = "./src/account_payment_derive" }
 
 [dev-dependencies]
 float-cmp = "0.9.0"

@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::fixed_with_inflation;
+// use super::fixed_with_inflation;
 
 /// used to populate account dropdown for expense type selection
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -14,18 +14,18 @@ pub enum ExpenseOptions {
     FixedWithInflation,
 }
 
-impl ExpenseOptions {
-    pub fn value(
-        self,
-        expense: f64,
-        inflation: f64,
-        duration: u32,
-    ) -> f64 {
-        match self {
-            ExpenseOptions::Fixed => expense,
-            ExpenseOptions::FixedWithInflation => {
-                fixed_with_inflation(expense, inflation, duration)
-            }
-        }
-    }
-}
+// impl ExpenseOptions {
+//     pub fn value(
+//         self,
+//         expense: f64,
+//         inflation: f64,
+//         duration: u32,
+//     ) -> f64 {
+//         match self {
+//             ExpenseOptions::Fixed => expense,
+//             ExpenseOptions::FixedWithInflation => {
+//                 fixed_with_inflation(expense, inflation, duration)
+//             }
+//         }
+//     }
+// }

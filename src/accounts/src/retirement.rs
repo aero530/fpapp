@@ -23,7 +23,7 @@ pub struct Retirement<T: std::cmp::Ord> {
     earnings: Option<Table<T>>,
     /// Table of withdrawals from this account
     withdrawals: Option<Table<T>>,
-    /// Table of employer contributions to this account
+    /// Table of employer contributions to this account [in today's dollars]
     employer_contributions: Option<Table<T>>,
     /// Calendar year when money starts being added to this account
     start_in: YearInput,
@@ -33,7 +33,7 @@ pub struct Retirement<T: std::cmp::Ord> {
     start_out: YearInput,
     /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
-    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
+    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]
     contribution_value: f64,
     /// Determines how to interpret the value in yearly_contribution
     contribution_type: ContributionOptions,
@@ -41,7 +41,7 @@ pub struct Retirement<T: std::cmp::Ord> {
     yearly_return: PercentInput,
     /// Determines how to interpret the value in withdrawal_value
     withdrawal_type: WithdrawalOptions,
-    /// How much money should be take out per year (either as a percentage or a fixed dollar amount)
+    /// How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]
     withdrawal_value: f64,
     /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,

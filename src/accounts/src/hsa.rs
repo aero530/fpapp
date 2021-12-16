@@ -24,17 +24,17 @@ pub struct Hsa<T: std::cmp::Ord> {
     start_out: YearInput,
     /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
-    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
+    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]
     contribution_value: f64,
     /// Determines how to interpret yearly_contribution
     contribution_type: ContributionOptions,
-    /// Employer contributions to this account as a dollar amount
+    /// Employer contributions to this account as a dollar amount [in today's dollars]
     employer_contribution: f64,
     /// Percent interest earned each year
     yearly_return: PercentInput,
     /// Determines how to interpret withdrawal_value
     withdrawal_type: WithdrawalOptions,
-    /// How much money should be take out per year (either as a percentage or a fixed dollar amount)
+    /// How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]
     withdrawal_value: f64,
     /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,
@@ -155,7 +155,6 @@ impl Account for Hsa<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_in = self.dates.year_in.unwrap().start;
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, true)?;
 
@@ -174,7 +173,7 @@ impl Account for Hsa<u32> {
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
             result.contribution = self.get_contribution(year, totals, settings);
-            result.employer_contribution = fixed_with_inflation(self.employer_contribution, settings.inflation_base, year-start_in);
+            result.employer_contribution = fixed_with_inflation(self.employer_contribution, year, settings);
         }
 
         // Add contribution to contribution and value tables

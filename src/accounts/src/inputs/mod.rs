@@ -74,6 +74,6 @@ impl UserData<Box<dyn Account>> {
 }
 
 
-pub fn fixed_with_inflation(initial_value: f64, perc_inflation: f64, duration: u32) -> f64 {
-    initial_value * f64::powf(1_f64 + perc_inflation / 100_f64, duration as f64)
+pub fn fixed_with_inflation(initial_value: f64, year: u32, settings: &Settings) -> f64 {
+    initial_value * f64::powf(1_f64 + settings.inflation_base / 100_f64, (year - settings.year_start) as f64)
 }

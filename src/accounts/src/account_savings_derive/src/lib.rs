@@ -29,7 +29,7 @@ fn impl_savings_type(ast: &syn::DeriveInput) -> TokenStream {
                     }
                     ContributionOptions::FixedWithInflation => {
                         // increase the value by inflation
-                        fixed_with_inflation(self.contribution_value, settings.inflation_base, year - settings.year_start)
+                        fixed_with_inflation(self.contribution_value, year, settings)
                     }
                 }
             }
@@ -43,8 +43,7 @@ fn impl_savings_type(ast: &syn::DeriveInput) -> TokenStream {
                     }
                     WithdrawalOptions::FixedWithInflation => {
                         //let start = self.dates.year_in.unwrap().start;
-                        let start = settings.year_start;
-                        fixed_with_inflation(self.withdrawal_value, settings.inflation_base, year-start)
+                        fixed_with_inflation(self.withdrawal_value, year, settings)
                     }
                     WithdrawalOptions::EndAtZero => {
                         let end_out = self.dates.year_out.unwrap().end;
@@ -89,7 +88,8 @@ fn impl_savings_type(ast: &syn::DeriveInput) -> TokenStream {
                     }
                 };
 
-                let account_value = self.analysis.value.get(year).unwrap();
+                // if there is not a value logged for this year, set to zero so that we can't remove any money
+                let account_value = self.analysis.value.get(year).unwrap_or_default();
                 match output > account_value {
                     true => account_value,
                     false => output,

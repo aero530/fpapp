@@ -3,10 +3,13 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
+use crate::inputs::fixed_with_inflation;
+use account_expense_derive::AccountExpense;
+
 use super::*;
 
 /// Account type to represent generic expense
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, AccountExpense)]
 #[serde(rename_all = "camelCase")]
 pub struct Expense<T: std::cmp::Ord> {
     /// String describing this account
@@ -19,7 +22,7 @@ pub struct Expense<T: std::cmp::Ord> {
     end_out: YearInput,
     /// Determines how to interpret expense_value
     expense_type: ExpenseOptions,
-    /// Yearly cost of the expense
+    /// Yearly cost of the expense [in today's dollars]
     expense_value: f64,
     /// This expense account is for healthcare costs.  If so it will pull first from HSA accounts.
     is_healthcare: bool,
@@ -112,14 +115,13 @@ impl Account for Expense<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start = self.dates.year_out.unwrap().start;
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, false)?;
 
         // Calculate expense
         if self.dates.year_out.unwrap().contains(year) {
             // Calculate expense amount for fixed, fixed_with_inflation
-            result.expense = self.expense_type.value(self.expense_value, settings.inflation_base, year-start);
+            result.expense = self.get_expense(year, &settings);
         }
 
         // Update value table with expense value

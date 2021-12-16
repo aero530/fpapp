@@ -97,13 +97,25 @@ pub trait Account: std::fmt::Debug {
     fn plot(&self, filepath: String);
 }
 
-/// Trait for savings accounts (of various types) that have contributions & withdrawals
+/// Trait for savings accounts of various types that have contributions & withdrawals
 pub trait AccountSavings: Account {
     /// Calculate the contribution amount for the specified year
     fn get_contribution(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64;
     /// Calculate the withdrawal amount for the specified year.  This value is limited by the 
     /// account value for that year (so the account can not become overdrawn).
     fn get_withdrawal(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64;
+}
+
+/// Trait for accounts of various types that have payments (loans)
+pub trait AccountPayment: Account {
+    /// Calculate the contribution amount for the specified year
+    fn get_payment(&self, year:u32, settings: &Settings ) -> f64;
+}
+
+/// Trait for accounts of various types that are considered expenses
+pub trait AccountExpense: Account {
+    /// Calculate the contribution amount for the specified year
+    fn get_expense(&self, year:u32, settings: &Settings ) -> f64;
 }
 
 /// List of the types of accounts that are available

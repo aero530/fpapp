@@ -3,10 +3,13 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
+use crate::inputs::fixed_with_inflation;
+use account_payment_derive::AccountPayment;
+
 use super::*;
 
 /// Generic loan
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, AccountPayment)]
 #[serde(rename_all = "camelCase")]
 pub struct Loan<T: std::cmp::Ord> {
     /// String describing this account
@@ -19,7 +22,7 @@ pub struct Loan<T: std::cmp::Ord> {
     end_out: YearInput,
     /// Determines how to interpret payment_value
     payment_type: PaymentOptions,
-    /// How much money should be payed each year (either as a percentage or a fixed dollar amount)
+    /// How much money should be payed each year (either as a percentage or a fixed dollar amount) [in today's dollars]
     payment_value: f64,
     /// Interest rate on borrowed money. This is an APR this is then compounded based on the compound time setting.  Used for LOAN and MORTGAGE account types.
     rate: PercentInput,
@@ -120,7 +123,6 @@ impl Account for Loan<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_out = self.dates.year_out.unwrap().start;
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, true)?;
 
@@ -138,12 +140,13 @@ impl Account for Loan<u32> {
 
         // Calculate payment amount
         if self.dates.year_out.unwrap().contains(year) {
-            result.payment = self.payment_type.value(
-                self.payment_value,
-                settings.inflation_base,
-                year - start_out,
-                self.analysis.value.get(year).unwrap(),
-            );
+            // result.payment = self.payment_type.value(
+            //     self.payment_value,
+            //     settings.inflation_base,
+            //     year - start_out,
+            //     self.analysis.value.get(year).unwrap(),
+            // );
+            result.payment = self.get_payment(year, settings);
         }
 
         // Add payment to payment and value tables

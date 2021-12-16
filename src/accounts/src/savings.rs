@@ -30,7 +30,7 @@ pub struct Savings<T: std::cmp::Ord> {
     start_out: YearInput,
     /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
-    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
+    /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]
     contribution_value: f64,
     /// Determines how to interpret the value in yearly_contribution
     contribution_type: ContributionOptions,
@@ -38,7 +38,7 @@ pub struct Savings<T: std::cmp::Ord> {
     yearly_return: PercentInput,
     /// Determines how to interpret the value in withdrawal_value
     withdrawal_type: WithdrawalOptions,
-    /// How much money should be take out per year (either as a percentage or a fixed dollar amount)
+    /// How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]
     withdrawal_value: f64,
     /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,
@@ -223,6 +223,7 @@ mod tests {
     use crate::inputs::{Settings, Span, SsaSettings};
     use super::*;
 
+    /// Generate settings object for testing
     fn test_settings_values() -> Settings {
         Settings {
             age_retire: 50,
@@ -246,9 +247,9 @@ mod tests {
         }
     }
 
-    #[test]
-    fn contribution_options() {
-        let mut account = Savings {
+    /// Generate account for testing
+    fn test_account() -> Savings<u32> {
+        Savings {
             name: "Savings Account".into(),
             table: Table::default(),
             start_out: YearInput::ConstantInt(2000),
@@ -267,51 +268,178 @@ mod tests {
             withdrawal_type: WithdrawalOptions::Fixed,
             withdrawal_value: 100_f64,
             tax_status: TaxStatus::ContributePretaxTaxedWhenUsed,
-        };
-        let yearly_totals = YearlyTotals::new();
+        }
+    }
+
+    /// Tests get_contribution when type is ContributionOptions::Fixed
+    #[test]
+    fn contribution_fixed() {
         let settings = test_settings_values();
-        account.init(None, &settings).unwrap();
-        
         let year = 2010_u32;
 
-        let c1 = account.get_contribution(year, &yearly_totals, &settings);
-
-
-        assert_approx_eq!(
-                f64,
-                c1,
-                500_f64
-            );
-
-        // let update = account.simulate(year, &yearly_totals, &settings).unwrap();
-        // println!("{:?}", account.analysis.value.get(year));
-        // println!("{:?}", update);
-
-        // assert_eq!(
-        //     account.analysis.value.get(year).unwrap(),
-        //     account.expense_value
-        // );
-
-        // let cont1 = ContributionOptions::Fixed;
-        // let cont2 = ContributionOptions::PercentOfIncome;
-        // let cont3 = ContributionOptions::FixedWithInflation;
-        // assert_approx_eq!(
-        //     f64,
-        //     cont1.value(500_f64, 10000_f64, 10_u32, 10_f64),
-        //     500_f64
-        // );
-        // assert_approx_eq!(f64, cont2.value(10_f64, 10000_f64, 1_u32, 10_f64), 1000_f64);
-        // assert_approx_eq!(
-        //     f64,
-        //     cont3.value(500_f64, 10000_f64, 1_u32, 10_f64),
-        //     550_f64,
-        //     epsilon = 0.001
-        // );
-        // assert_approx_eq!(
-        //     f64,
-        //     cont3.value(500_f64, 10000_f64, 10_u32, 10_f64),
-        //     1296.8712,
-        //     epsilon = 0.001
-        // );
+        let yearly_totals = YearlyTotals::new();
+        
+        let mut account = test_account();
+        account.contribution_type = ContributionOptions::Fixed;
+        account.contribution_value = 500_f64;
+        account.init(None, &settings).unwrap();
+        
+        let contribution = account.get_contribution(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, contribution, 500_f64);
     }
+
+    /// Tests get_contribution when type is ContributionOptions::PercentOfIncome
+    #[test]
+    fn contribution_percent_of_income() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        
+        let mut yearly_totals = YearlyTotals::new();
+        yearly_totals.add_year(year, false).unwrap();
+        let mut update = YearlyImpact::default();
+        update.income = 10_000_f64;
+        yearly_totals.update(year, update);
+
+        let mut account = test_account();
+        account.contribution_type = ContributionOptions::PercentOfIncome;
+        account.contribution_value = 25_f64;
+        account.init(None, &settings).unwrap();
+        
+        let contribution = account.get_contribution(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, contribution, 2500_f64);
+    }
+
+    /// Tests get_contribution when type is ContributionOptions::FixedWithInflation
+    #[test]
+    fn contribution_fixed_with_inflation() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        let yearly_totals = YearlyTotals::new();
+
+        let mut account = test_account();
+        account.contribution_type = ContributionOptions::FixedWithInflation;
+        account.contribution_value = 500_f64;
+        account.init(None, &settings).unwrap();
+        
+        let contribution = account.get_contribution(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, contribution, 814.447, epsilon=0.001);
+    }
+
+    /// Tests get_withdrawal when type is WithdrawalOptions::Fixed
+    #[test]
+    fn withdrawal_fixed() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        let yearly_totals = YearlyTotals::new();
+
+        let mut account = test_account();
+        account.withdrawal_type = WithdrawalOptions::Fixed;
+        account.withdrawal_value = 500_f64;
+        account.init(None, &settings).unwrap();
+        account.analysis.add_year(year, false).unwrap();
+
+        // before adding money to the account we should get zero back if we try to calculate
+        // a withdrawal (as the account does not have a positive balance)
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 0_f64, epsilon=0.001);
+
+        // add money to the account so we can withdraw it
+        account.analysis.value.update(year, 880_f64); 
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 500_f64, epsilon=0.001);
+    }
+
+    /// Tests get_withdrawal when type is WithdrawalOptions::FixedWithInflation
+    #[test]
+    fn withdrawal_fixed_with_inflation() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        let yearly_totals = YearlyTotals::new();
+
+        let mut account = test_account();
+        account.withdrawal_type = WithdrawalOptions::FixedWithInflation;
+        account.withdrawal_value = 500_f64;
+        account.init(None, &settings).unwrap();
+        account.analysis.add_year(year, false).unwrap();
+
+        // add money to the account so we can withdraw it
+        account.analysis.value.update(year, 20_000_f64); 
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 814.447, epsilon=0.001);
+    }
+
+    /// Tests get_withdrawal when type is WithdrawalOptions::EndAtZero
+    #[test]
+    fn withdrawal_end_at_zero() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        let yearly_totals = YearlyTotals::new();
+
+        let mut account = test_account();
+        account.withdrawal_type = WithdrawalOptions::EndAtZero;
+        account.init(None, &settings).unwrap();
+        account.analysis.add_year(year, false).unwrap();
+
+        // add money to the account so we can withdraw it
+        account.analysis.value.update(year, 880_f64); 
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 80_f64, epsilon=0.001);
+    }
+
+    /// Tests get_withdrawal when type is WithdrawalOptions::ColFracOfSavings
+    #[test]
+    fn withdrawal_cost_of_living() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        
+        let mut yearly_totals = YearlyTotals::new();
+        yearly_totals.add_year(year-1, false).unwrap();
+        yearly_totals.add_year(year, false).unwrap();
+        let mut update = YearlyImpact::default();
+        update.saving = 40_000_f64;
+        update.col = 1_000_f64;
+        yearly_totals.update(year-1, update);
+        yearly_totals.update(year, update);
+        
+
+        let mut account = test_account();
+        account.withdrawal_type = WithdrawalOptions::ColFracOfSavings;
+        account.init(None, &settings).unwrap();
+        account.analysis.add_year(year-1, false).unwrap();
+        account.analysis.add_year(year, false).unwrap();
+        account.analysis.value.update(year-1, 20_000_f64); 
+        account.analysis.value.update(year, 18_000_f64); 
+
+        account.tax_status = TaxStatus::ContributePretaxUntaxedWhenUsed;
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 500_f64, epsilon=0.001);
+
+        // When withdrawals are going to be taxed we take out extra money to cover those taxes
+        account.tax_status = TaxStatus::ContributePretaxTaxedWhenUsed;
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 625_f64, epsilon=0.001);
+
+    }
+
+    /// Tests get_withdrawal when type is WithdrawalOptions::Other
+    #[test]
+    fn withdrawal_other() {
+        let settings = test_settings_values();
+        let year = 2010_u32;
+        let yearly_totals = YearlyTotals::new();
+
+        let mut account = test_account();
+        account.withdrawal_type = WithdrawalOptions::Other;
+        account.withdrawal_value = 500_f64;
+        account.init(None, &settings).unwrap();
+        account.analysis.add_year(year, false).unwrap();
+
+        // add money to the account so we can withdraw it
+        account.analysis.value.update(year, 20_000_f64); 
+        let withdrawal = account.get_withdrawal(year, &yearly_totals, &settings);
+        assert_approx_eq!(f64, withdrawal, 0_f64, epsilon=0.001);
+    }
+
+
+
 }

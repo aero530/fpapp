@@ -13,7 +13,7 @@ pub struct Income<T: std::cmp::Ord> {
     name: String,
     /// Table of account income
     table: Table<T>,
-    /// Base pay (with bonuses)
+    /// Base pay (with bonuses) [in today's dollars]
     base: f64,
     /// Calendar year when money starts being earned by this account
     start_in: YearInput,
