@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::Write;
 
-use crate::accounts::{Account, AccountWrapper};
+use super::{Account, AccountWrapper};
 
 mod contribution;
 mod expense;

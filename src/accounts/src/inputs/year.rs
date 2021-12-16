@@ -95,8 +95,8 @@ impl YearSuggestion {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::simulation::YearRange;
+    use super::*;
 
     fn test_settings_values() -> settings::Settings {
         settings::Settings {

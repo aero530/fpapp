@@ -5,46 +5,50 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use crate::inputs::{
+mod inputs;
+use inputs::{
     ContributionOptions, EmployerMatch, ExpenseOptions, PaymentOptions, PercentInput, Settings,
-    TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
+    TaxStatus, WithdrawalOptions, YearEvalType, YearInput
 };
-use crate::plot::scatter_plot;
-use crate::simulation::{
-    Dates, LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact, YearlyTotals,
-};
+// re-exported for use outside this lib
+pub use inputs::UserData;
 
-use withdrawal::AccountWithWithdrawal;
+mod simulation;
+use simulation::{
+    LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact,
+};
+// re-exported for use outside this lib
+pub use simulation::{Dates, YearlyTotals};
+
+mod plot;
+use plot::scatter_plot;
 
 mod college;
-mod expense;
-mod hsa;
-mod income;
-mod loan;
-mod mortgage;
-mod retirement;
-mod savings;
-mod ssa;
-
 use college::College;
+
+mod expense;
 use expense::Expense;
+
+mod hsa;
 use hsa::Hsa;
+
+mod income;
 use income::Income;
+
+mod loan;
 use loan::Loan;
+
+mod mortgage;
 use mortgage::Mortgage;
+
+mod retirement;
 use retirement::Retirement;
+
+mod savings;
 use savings::Savings;
+
+mod ssa;
 use ssa::Ssa;
-
-
-
-
-
-
-// default impl in account type for withdrawal
-// derive macro for AccountWithWithdrawal
-
-
 
 
 /// Trait used to define what each account type must be able to provide
@@ -70,12 +74,6 @@ pub trait Account: std::fmt::Debug {
     // /// Return the value for the specified year
     fn get_value(&self, year: u32) -> Option<f64>;
 
-    // /// Return the income value for the specified year
-    // fn get_income(&self, year: u32) -> Option<f64>;
-
-    // /// Return the expense value for the specified year
-    // fn get_expense(&self, year: u32) -> Option<f64>;
-
     /// Return start_in and end_in
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange>;
 
@@ -92,9 +90,20 @@ pub trait Account: std::fmt::Debug {
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>>;
 
+    /// Save the account simulation results to a csv file
     fn write(&self, filepath: String);
 
+    /// Plot the account simulation results & save to a files
     fn plot(&self, filepath: String);
+}
+
+/// Trait for savings accounts (of various types) that have contributions & withdrawals
+pub trait AccountSavings: Account {
+    /// Calculate the contribution amount for the specified year
+    fn get_contribution(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64;
+    /// Calculate the withdrawal amount for the specified year.  This value is limited by the 
+    /// account value for that year (so the account can not become overdrawn).
+    fn get_withdrawal(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64;
 }
 
 /// List of the types of accounts that are available
@@ -174,36 +183,3 @@ pub struct WorkingValues {
     pub withdrawal: f64,
     pub expense: f64,
 }
-
-impl WorkingValues {
-    /// Limit the withdrawal amount to some value (generally the account value)
-    pub fn limit_withdrawal(&mut self, limit: f64) {
-        if self.withdrawal > limit {
-            self.withdrawal = limit;
-        }
-    }
-}
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn income_value() {
-//         let data = TabularData {
-//             metrics: vec!["metric1".into(), "metric2".into(), "metric3".into()],
-//             times: vec![1.0, 2.0, 3.0],
-//             data: vec![
-//                 vec![Some(1.0), Some(3.5), Some(2.3)],
-//                 vec![Some(-5.6), Some(2.5), Some(7.9)],
-//                 vec![Some(0.5), Some(8.0), Some(2.1)],
-//             ],
-//         };
-//         let metadata = TelemetryInfo {
-//             metrics: vec!["metric1".into(), "metric2".into(), "metric3".into()],
-//             time_range: Limit { min: 1.0, max: 3.0 },
-//         };
-//         assert_eq!(TelemetryInfo::from(data), metadata);
-//     }
-
-// }

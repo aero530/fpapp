@@ -8,7 +8,7 @@ use std::io::Write;
 use super::Table;
 use crate::plot::scatter_plot;
 
-/// How the results of the simulation of an [account](crate::accounts) impact a [YearlyTotal](YearlyTotal)
+/// How the results of the simulation of an account impact a YearlyTotal
 #[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub struct YearlyImpact {
     /// Expenses get pulled out of net (dollars we already paid tax on)
@@ -27,7 +27,7 @@ pub struct YearlyImpact {
     pub income: f64,
 }
 
-/// Set of [YearlyTotals](YearlyTotal) tracked over multiple years
+/// Set of YearlyTotal tracked over multiple years
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct YearlyTotals {
     /// Overall cash account that all money flows in and out of (the value of this account rolls over from year to year)

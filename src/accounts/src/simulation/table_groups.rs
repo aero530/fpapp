@@ -1,4 +1,4 @@
-//! Groups of [tables](Table) to provide standard format for simulating different [account](crate::accounts) types
+//! Groups of [tables](Table) to provide standard format for simulating different account types
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -6,7 +6,7 @@ use std::io::Write;
 
 use super::Table;
 
-/// A single [table](Table) of values for simple [account](crate::accounts) types
+/// A single [table](Table) of values for simple account types
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct SingleTable {
     /// Account value (meaning depends on account type)
@@ -48,7 +48,7 @@ impl SingleTable {
     }
 }
 
-/// A set of [tables](Table) for use with loan and mortgage [accounts](crate::accounts)
+/// A set of [tables](Table) for use with loan and mortgage accounts
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct LoanTables {
     /// Outstanding loan amount
@@ -124,7 +124,7 @@ impl LoanTables {
     }
 }
 
-/// A set of [tables](Table) for use with savings types of [accounts](crate::accounts)
+/// A set of [tables](Table) for use with savings types of accounts
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct SavingsTables {
     /// Account balance

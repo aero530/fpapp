@@ -4,10 +4,13 @@ use log::trace;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
+use crate::inputs::fixed_with_inflation;
+use account_savings_derive::AccountSavings;
+
 use super::*;
 
 /// Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, AccountSavings)]
 #[serde(rename_all = "camelCase")]
 pub struct Retirement<T: std::cmp::Ord> {
     /// String describing this account
@@ -31,7 +34,7 @@ pub struct Retirement<T: std::cmp::Ord> {
     /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
     /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
-    yearly_contribution: f64,
+    contribution_value: f64,
     /// Determines how to interpret the value in yearly_contribution
     contribution_type: ContributionOptions,
     /// Percent interest earned each year
@@ -70,7 +73,7 @@ impl From<Retirement<String>> for Retirement<u32> {
             end_in: other.end_in,
             start_out: other.start_out,
             end_out: other.end_out,
-            yearly_contribution: other.yearly_contribution,
+            contribution_value: other.contribution_value,
             contribution_type: other.contribution_type,
             yearly_return: other.yearly_return,
             withdrawal_type: other.withdrawal_type,
@@ -170,7 +173,6 @@ impl Account for Retirement<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_in = self.dates.year_in.unwrap().start;
         let mut result = WorkingValues::default();
 
         // Init value table with previous year's value
@@ -190,12 +192,7 @@ impl Account for Retirement<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.contribution_type.value(
-                self.yearly_contribution,
-                totals.get_income(year),
-                year - start_in,
-                settings.inflation_base,
-            );
+            result.contribution = self.get_contribution(year, totals, settings);
 
             match &self.matching {
                 Some(employer_match) => {
@@ -256,23 +253,8 @@ impl Account for Retirement<u32> {
 
         // Calculate withdrawal
         if self.dates.year_out.unwrap().contains(year) {
-            let col_scale = match settings.is_retired(year) {
-                true => settings.retirement_cost_of_living / 100_f64,
-                false => 1_f64,
-            };
-            result.withdrawal = self.withdrawal_type.value(
-                self.withdrawal_value,
-                settings.inflation_base,
-                self.dates,
-                year,
-                self.analysis.value.get(year).unwrap(),
-                self.analysis.value.get(year - 1).unwrap_or_default(),
-                totals.get_col(year) * col_scale,
-                totals.get_saving(year - 1),
-                settings.tax_income,
-                self.tax_status,
-            );
-            result.limit_withdrawal(self.analysis.value.get(year).unwrap());
+            result.withdrawal = self.get_withdrawal(year, &totals, &settings);
+            // result.limit_withdrawal(self.analysis.value.get(year).unwrap());
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables

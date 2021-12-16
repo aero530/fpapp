@@ -38,8 +38,8 @@ impl PaymentOptions {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use float_cmp::assert_approx_eq;
+    use super::*;
 
     #[test]
     fn payment_options() {

@@ -53,9 +53,9 @@ impl PercentSuggestions {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use float_cmp::assert_approx_eq;
-
+    use super::*;
+    
     fn test_settings_values() -> settings::Settings {
         settings::Settings {
             age_retire: 50,

@@ -3,10 +3,13 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
+use crate::inputs::fixed_with_inflation;
+use account_savings_derive::AccountSavings;
+
 use super::*;
 
 /// Health Savings Account
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, AccountSavings)]
 #[serde(rename_all = "camelCase")]
 pub struct Hsa<T: std::cmp::Ord> {
     /// String describing this account
@@ -22,13 +25,17 @@ pub struct Hsa<T: std::cmp::Ord> {
     /// Calendar year when money stops being withdrawn from this account
     end_out: YearInput,
     /// Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage.
-    yearly_contribution: f64,
+    contribution_value: f64,
     /// Determines how to interpret yearly_contribution
     contribution_type: ContributionOptions,
     /// Employer contributions to this account as a dollar amount
     employer_contribution: f64,
     /// Percent interest earned each year
     yearly_return: PercentInput,
+    /// Determines how to interpret withdrawal_value
+    withdrawal_type: WithdrawalOptions,
+    /// How much money should be take out per year (either as a percentage or a fixed dollar amount)
+    withdrawal_value: f64,
     /// How cashflow in this account is treated for tax purposes
     tax_status: TaxStatus,
     /// General information to store with this account
@@ -51,7 +58,7 @@ impl From<Hsa<String>> for Hsa<u32> {
             end_in: other.end_in,
             start_out: other.start_out,
             end_out: other.end_out,
-            yearly_contribution: other.yearly_contribution,
+            contribution_value: other.contribution_value,
             contribution_type: other.contribution_type,
             employer_contribution: other.employer_contribution,
             yearly_return: other.yearly_return,
@@ -59,6 +66,8 @@ impl From<Hsa<String>> for Hsa<u32> {
             notes: other.notes,
             analysis: other.analysis,
             dates: other.dates,
+            withdrawal_type: WithdrawalOptions::Other,
+            withdrawal_value: 0_f64,
         }
     }
 }
@@ -164,18 +173,8 @@ impl Account for Hsa<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.contribution_type.value(
-                self.yearly_contribution,
-                totals.get_income(year),
-                year - start_in,
-                settings.inflation_base,
-            );
-            result.employer_contribution = self.contribution_type.value(
-                self.employer_contribution,
-                totals.get_income(year),
-                year - start_in,
-                settings.inflation_base,
-            );
+            result.contribution = self.get_contribution(year, totals, settings);
+            result.employer_contribution = fixed_with_inflation(self.employer_contribution, settings.inflation_base, year-start_in);
         }
 
         // Add contribution to contribution and value tables

@@ -1,5 +1,5 @@
 [package]
-name = "withdrawal_derive"
+name = "account_savings_derive"
 version = "0.1.0"
 edition = "2021"
 

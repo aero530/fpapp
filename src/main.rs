@@ -1,21 +1,14 @@
 //! Financial Planning Application
 //!
 //! Application to simulate financial standing over time.
-//!
+//! The calculations and subsiquent types are all defined in the [Accounts](accounts) crate
 use log::{info, trace, LevelFilter};
 use std::error::Error;
 use std::fs::read_to_string;
 
-mod accounts;
 mod config;
-mod inputs;
-mod plot;
-mod simulation;
 
-use accounts::{Account, AccountWrapper};
-use inputs::UserData;
-use simulation::{Dates, YearlyTotals};
-
+use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals};
 
 /// Main loop
 fn main() -> Result<(), Box<dyn Error>> {
