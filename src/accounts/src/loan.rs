@@ -140,12 +140,6 @@ impl Account for Loan<u32> {
 
         // Calculate payment amount
         if self.dates.year_out.unwrap().contains(year) {
-            // result.payment = self.payment_type.value(
-            //     self.payment_value,
-            //     settings.inflation_base,
-            //     year - start_out,
-            //     self.analysis.value.get(year).unwrap(),
-            // );
             result.payment = self.get_payment(year, settings);
         }
 

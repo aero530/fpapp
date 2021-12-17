@@ -193,7 +193,6 @@ impl Account for College<u32> {
         // Calculate withdrawal
         if self.dates.year_out.unwrap().contains(year) {
             result.withdrawal = self.get_withdrawal(year, &totals, &settings);
-            // result.limit_withdrawal(self.analysis.value.get(year).unwrap());
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables

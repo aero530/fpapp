@@ -176,12 +176,6 @@ impl Account for Mortgage<u32> {
         self.analysis.value.update(year, result.interest);
 
         // Calculate payment available
-        // result.payment = self.payment_type.value(
-        //     self.payment_value,
-        //     settings.inflation_base,
-        //     year - start_out,
-        //     self.analysis.value.get(year).unwrap() + insurance_payment + self.escrow_value,
-        // );
         result.payment = self.get_payment(year, settings);
 
         // Add payment to payment and value tables
