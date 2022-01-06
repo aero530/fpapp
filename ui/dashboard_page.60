@@ -1,0 +1,18 @@
+import { ScrollView } from "sixtyfps_widgets.60";
+import { Palette, Page, SpinBox, ComboBox, CheckBox, Label } from "common.60";
+
+export DashboardPage := Page {
+    header: "Dashboard";
+
+    ScrollView {
+        min-width: 500px;
+        height: root.height;
+        viewport-width: 500px;
+        viewport-height: 1500px;
+        Rectangle { width: 30px; height: 30px; x: 275px; y: 50px; background: blue; }
+        Rectangle { width: 30px; height: 30px; x: 175px; y: 130px; background: red; }
+        Rectangle { width: 30px; height: 30px; x: 25px; y: 210px; background: yellow; }
+        Rectangle { width: 30px; height: 30px; x: 98px; y: 55px; background: orange; }
+    }
+
+}

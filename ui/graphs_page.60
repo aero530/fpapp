@@ -1,0 +1,24 @@
+import { ScrollView } from "sixtyfps_widgets.60";
+
+import { Palette, Page, GraphImage } from "common.60";
+
+export GraphsPage := Page {
+    property<[GraphImage]> graph-images;
+    property<float> scale : 0.5;
+
+    header: "Graphs";
+
+    ScrollView {
+        min-width: 500px;
+        height: root.height;
+        viewport-width: 500px;
+        viewport-height : 1200 * scale * graph-images.length * 1px;
+        for graph[i] in graph-images: Image {
+            x: 10px;
+            y: graph.image.height * scale * i * 1px;
+            width: graph.image.width * scale * 1px;
+            height: graph.image.height * scale * 1px;
+            source: graph.image;
+        }
+    }
+}

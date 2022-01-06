@@ -1,0 +1,23 @@
+import { Palette, Page, SpinBox, ComboBox, CheckBox, Label } from "common.60";
+
+export MortgagePage := Page {
+    header: "Mortgage";
+
+    GridLayout {
+        padding-top: 46px /* header line height in design */
+                     + /* extra top-padding in design */ 27px;
+        spacing: 24px;
+
+
+        Row {
+            Text {
+                text: "Defaults";
+                color: Palette.secondary-foreground-color;
+                font-size: Palette.base-font-size * 1.125;
+                font-weight: 800;
+            }
+        }
+        Row { Rectangle {} }
+    }
+
+}
