@@ -103,14 +103,16 @@ impl Account for Expense<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    fn plot(&self, filepath: String) {
-        scatter_plot(
+    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
+        scatter_plot_file(
             filepath,
             vec![("Amount".into(), &self.analysis.value)],
             self.name(),
+            width,
+            height,
         );
     }
-    fn plot_into_rgba8(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         scatter_plot_buf(
             vec![("Amount".into(), &self.analysis.value)],
             self.name(),

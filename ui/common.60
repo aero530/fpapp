@@ -5,8 +5,9 @@ struct ButtonColors := {
     hovered: color,
 }
 
-export struct GraphImage := {
-    image: image,
+export struct AccountData := {
+    graph: image,
+    input: string,
 }
 
 export global Palette := {

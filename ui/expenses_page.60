@@ -1,23 +1,24 @@
-import { Palette, Page, SpinBox, ComboBox, CheckBox, Label } from "common.60";
+import { ScrollView } from "sixtyfps_widgets.60";
+import { Palette, Page, SpinBox, ComboBox, CheckBox, Label, AccountData } from "common.60";
 
 export ExpensesPage := Page {
+    property<[AccountData]> accounts;
+    property<float> scale : 0.5;
+    
     header: "Expenses";
 
-    GridLayout {
-        padding-top: 46px /* header line height in design */
-                     + /* extra top-padding in design */ 27px;
-        spacing: 24px;
-
-
-        Row {
-            Text {
-                text: "Defaults";
-                color: Palette.secondary-foreground-color;
-                font-size: Palette.base-font-size * 1.125;
-                font-weight: 800;
-            }
+    ScrollView {
+        min-width: 500px;
+        height: root.height;
+        viewport-width: 500px;
+        viewport-height : 1200 * scale * accounts.length * 1px;
+        for account[i] in accounts: Image {
+            x: 10px;
+            y: account.graph.height * scale * i * 1px;
+            width: account.graph.width * scale * 1px;
+            height: account.graph.height * scale * 1px;
+            source: account.graph;
         }
-        Row { Rectangle {} }
     }
 
 }

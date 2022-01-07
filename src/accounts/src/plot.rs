@@ -62,7 +62,7 @@ fn domain(input: Vec<&Table<u32>>) -> (u32, u32) {
 }
 
 /// Generate a scatter plot
-pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: String) {
+pub fn scatter_plot_file(filepath: String, data: Vec<(String, &Table<u32>)>, title: String, width: u32, height: u32) {
     let domain = domain(data.iter().map(|(_table_name, table)| *table).collect());
     let range = range(data.iter().map(|(_table_name, table)| *table).collect());
 
@@ -70,7 +70,7 @@ pub fn scatter_plot(filepath: String, data: Vec<(String, &Table<u32>)>, title: S
         error!("Perhaps there isn't any data. {}", title);
     }
 
-    let root = BitMapBackend::new(&filepath, (1600, 1200)).into_drawing_area();
+    let root = BitMapBackend::new(&filepath, (width, height)).into_drawing_area();
     root.fill(&WHITE).unwrap();
     let mut chart = ChartBuilder::on(&root)
         .caption(title, ("sans-serif", 60).into_font())

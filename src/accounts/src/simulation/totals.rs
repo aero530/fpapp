@@ -4,9 +4,10 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io::Write;
+use image::{ImageBuffer, Rgba};
 
 use super::Table;
-use crate::plot::scatter_plot;
+use crate::plot::{scatter_plot_file, scatter_plot_buf};
 
 /// How the results of the simulation of an account impact a YearlyTotal
 #[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -166,7 +167,7 @@ impl YearlyTotals {
         });
     }
     /// Generate plot
-    pub fn plot(&self, filepath: String) {
+    pub fn plot_to_file(&self, filepath: String) {
         let net: Vec<f64> = self.net.values();
         let saving: Vec<f64> = self.saving.values();
         let hsa: Vec<f64> = self.hsa.values();
@@ -177,7 +178,7 @@ impl YearlyTotals {
         let income_taxable: Vec<f64> = self.income_taxable.values();
         let tax_burden: Vec<f64> = self.tax_burden.values();
 
-        scatter_plot(
+        scatter_plot_file(
             filepath,
             vec![
                 ("Net".into(), &(self.years(), net).into()),
@@ -197,8 +198,46 @@ impl YearlyTotals {
                 ("Tax Burden".into(), &(self.years(), tax_burden).into()),
             ],
             "Summary".into(),
+            1600,
+            1200,
         );
     }
+    /// Plot the account and return it as a vec
+    pub fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+        let net: Vec<f64> = self.net.values();
+        let saving: Vec<f64> = self.saving.values();
+        let hsa: Vec<f64> = self.hsa.values();
+        let healthcare_expense: Vec<f64> = self.healthcare_expense.values();
+        let expense: Vec<f64> = self.expense.values();
+        let col: Vec<f64> = self.col.values();
+        let income: Vec<f64> = self.income.values();
+        let income_taxable: Vec<f64> = self.income_taxable.values();
+        let tax_burden: Vec<f64> = self.tax_burden.values();
+        scatter_plot_buf(
+            vec![
+                ("Net".into(), &(self.years(), net).into()),
+                ("Saving".into(), &(self.years(), saving).into()),
+                ("HSA".into(), &(self.years(), hsa).into()),
+                (
+                    "Healthcare Expense".into(),
+                    &(self.years(), healthcare_expense).into(),
+                ),
+                ("Expense".into(), &(self.years(), expense).into()),
+                ("COL".into(), &(self.years(), col).into()),
+                ("Income".into(), &(self.years(), income).into()),
+                (
+                    "Taxable Income".into(),
+                    &(self.years(), income_taxable).into(),
+                ),
+                ("Tax Burden".into(), &(self.years(), tax_burden).into()),
+            ],
+            "Summary".into(),
+            width,
+            height,
+        )
+    }
+    
+
     /// Get the cost of living for the specified year
     ///
     /// If the year is not found then zero is returned

@@ -22,8 +22,7 @@ use simulation::{
 pub use simulation::{Dates, YearlyTotals};
 
 mod plot;
-use plot::scatter_plot;
-use plot::scatter_plot_buf;
+use plot::{scatter_plot_buf, scatter_plot_file};
 
 mod college;
 use college::College;
@@ -96,10 +95,10 @@ pub trait Account: std::fmt::Debug {
     fn write(&self, filepath: String);
 
     /// Plot the account simulation results & save to a files
-    fn plot(&self, filepath: String);
+    fn plot_to_file(&self, filepath: String, width: u32, height: u32);
 
     /// Plot the account and return it as a vec
-    fn plot_into_rgba8(&self, widht: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>;
+    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>;
 }
 
 /// Trait for savings accounts of various types that have contributions & withdrawals
@@ -135,6 +134,23 @@ pub enum AccountType {
     Loan,
     Mortgage,
     Savings,
+}
+
+/// String representation of the enum value
+impl AccountType {
+    pub fn to_string(&self) -> String {
+        match self {
+            AccountType::Income => "income".to_string(),
+            AccountType::Ssa => "ssa".to_string(),
+            AccountType::Retirement => "retirement".to_string(),
+            AccountType::Hsa => "hsa".to_string(),
+            AccountType::College => "college".to_string(),
+            AccountType::Expense => "expense".to_string(),
+            AccountType::Loan => "loan".to_string(),
+            AccountType::Mortgage => "mortgage".to_string(),
+            AccountType::Savings => "savings".to_string(),
+        }
+    }
 }
 
 /// Account Wrapper for json data storage
