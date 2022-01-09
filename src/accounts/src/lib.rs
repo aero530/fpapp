@@ -99,6 +99,9 @@ pub trait Account: std::fmt::Debug {
 
     /// Plot the account and return it as a vec
     fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>;
+
+    /// Return string json of the inputs for the account
+    fn get_inputs(&self) -> String;
 }
 
 /// Trait for savings accounts of various types that have contributions & withdrawals

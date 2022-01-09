@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use image::{ImageBuffer, Rgba};
+use serde_json::json;
 
 use super::*;
 
@@ -31,6 +32,25 @@ pub struct Income<T: std::cmp::Ord> {
     /// Calculated date values as a year based on input values
     #[serde(skip)]
     dates: Dates,
+}
+
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct IncomeInput {
+    /// String describing this account
+    name: String,
+    /// Table of account income
+    //table: [TableRow],
+    /// Base pay (with bonuses) [in today's dollars]
+    base: f64,
+    /// Calendar year when money starts being earned by this account
+    start_in: String,
+    /// Calendar year when money stops being earned by this account
+    end_in: String,
+    /// Yearly increase in income as a percent
+    raise: String,
+    /// General information to store with this account
+    notes: String,
 }
 
 impl From<Income<String>> for Income<u32> {
@@ -93,6 +113,16 @@ impl Account for Income<u32> {
         _linked_dates: Option<Dates>,
     ) -> Option<YearRange> {
         None
+    }
+    fn get_inputs(&self) -> String {
+        json!(IncomeInput { 
+            name: self.name.clone(), 
+            base: self.base, 
+            start_in: json!(self.start_in).to_string(),
+            end_in: json!(self.end_in).to_string(),
+            raise: json!(self.raise).to_string(),
+            notes: json!(self.notes).to_string(),
+        }).to_string()
     }
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
         scatter_plot_file(

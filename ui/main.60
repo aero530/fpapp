@@ -1,6 +1,6 @@
 import { Button, VerticalBox, ScrollView } from "sixtyfps_widgets.60";
 
-import { Page, AccountData } from "common.60";
+import { Page, AccountData, IncomeData } from "common.60";
 
 import {DashboardPage} from "./dashboard_page.60";
 import {SettingsPage} from "./settings_page.60";
@@ -52,7 +52,7 @@ export AppWindow := Window {
     min-height: 1200px;
     property<int> active-page: 0;
 
-    property<[AccountData]> income;
+    property<[IncomeData]> income;
     property<[AccountData]> ssa;
     property<[AccountData]> retirement;
     property<[AccountData]> hsa;

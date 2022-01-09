@@ -148,6 +148,9 @@ impl Account for College<u32> {
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
     }
+    fn get_inputs(&self) -> String {
+        String::from("Hello")
+    }
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
         scatter_plot_file(
             filepath,

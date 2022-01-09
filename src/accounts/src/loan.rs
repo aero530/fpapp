@@ -107,6 +107,9 @@ impl Account for Loan<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
+    fn get_inputs(&self) -> String {
+        String::from("Hello")
+    }
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
         scatter_plot_file(
             filepath,

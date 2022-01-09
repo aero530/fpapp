@@ -5,6 +5,33 @@ struct ButtonColors := {
     hovered: color,
 }
 
+struct TableRow := {
+    year: string,
+    value: string,
+}
+
+export struct IncomeInput := {
+    /// String describing this account
+    name: string,
+    /// Table of account income
+    //table: [TableRow],
+    /// Base pay (with bonuses) [in today's dollars]
+    base: float,
+    /// Calendar year when money starts being earned by this account
+    start_in: string,
+    /// Calendar year when money stops being earned by this account
+    end_in: string,
+    /// Yearly increase in income as a percent
+    raise: string,
+    /// General information to store with this account
+    notes: string,
+}
+
+export struct IncomeData := {
+    graph: image,
+    input: IncomeInput,
+}
+
 export struct AccountData := {
     graph: image,
     input: string,

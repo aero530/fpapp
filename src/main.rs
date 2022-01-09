@@ -5,6 +5,8 @@
 use log::{info, trace, LevelFilter};
 use std::error::Error;
 use std::fs::read_to_string;
+use serde_json::Value;
+// use serde::{Deserialize, Serialize};
 
 extern crate image;
 use image::{ImageBuffer, Rgba};
@@ -139,7 +141,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let main_window = AppWindow::new();
 
     // Initialize vec to hold ui plot data
-    let mut ui_income: Vec<AccountData> = Vec::new();
+    let mut ui_income: Vec<IncomeData> = Vec::new();
     let mut ui_ssa: Vec<AccountData> = Vec::new();
     let mut ui_retirement: Vec<AccountData> = Vec::new();
     let mut ui_hsa: Vec<AccountData> = Vec::new();
@@ -155,57 +157,65 @@ fn main() -> Result<(), Box<dyn Error>> {
         let account = data.accounts.get(uuid).unwrap();
         match account.type_id() {
             accounts::AccountType::Income => {
-                ui_income.push(AccountData {
+                let data : Value = serde_json::from_str(&account.get_inputs()).unwrap();
+                ui_income.push(IncomeData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: IncomeInput {
+                        base: data["base"].to_string().parse().unwrap(),
+                        end_in: SharedString::from(data["end_in"].to_string()),
+                        name: SharedString::from(data["name"].to_string()),
+                        notes: SharedString::from(data["notes"].to_string()),
+                        raise: SharedString::from(data["raise"].to_string()),
+                        start_in: SharedString::from(data["start_in"].to_string()),
+                    }
                 });
             },
             accounts::AccountType::Ssa => {
                 ui_ssa.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::Retirement => {
                 ui_retirement.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::Hsa => {
                 ui_hsa.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::College => {
                 ui_college.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::Expense => {
                 ui_expense.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::Loan => {
                 ui_loan.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::Mortgage => {
                 ui_mortgage.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
             accounts::AccountType::Savings => {
                 ui_savings.push(AccountData {
                     graph: image_buf_to_image(account.plot_to_buf(1600, 1200)),
-                    input: SharedString::from("input stuff".to_string()),
+                    input: SharedString::from(account.name()),
                 });
             },
         }
