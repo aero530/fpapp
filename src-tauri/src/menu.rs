@@ -1,4 +1,4 @@
-use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
+use tauri::{CustomMenuItem, Menu, Submenu};
 
 pub fn get_menu() -> Menu {
     let open = CustomMenuItem::new("open".to_string(), "Open");

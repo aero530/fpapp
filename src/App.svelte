@@ -8,17 +8,27 @@
     import { Router } from "@roxi/routify";
     import { routes } from "../.routify/routes";
 
-    import { input_data } from './stores.js';
+    import { form_inputs, analysis_inputs, plot_data, summary_data } from './stores.js';
  
+    function run_analysis() {
+        console.log($analysis_inputs);
+        invoke("run_analysis", {
+            input: $analysis_inputs,
+        })
+        .then((results) => {
+            plot_data.initialize(results[0])
+            summary_data.initialize(results[1])
+            console.log(results);
+        });
+    }
+
     function openFile(pathString) {
 		invoke("file_open", {
 			path: pathString,
 		})
 		.then((data) => {
-            console.log(data);
-            input_data.initialize(data);
-            console.log($input_data.settings);
-            console.log($input_data);
+            form_inputs.initialize(data);
+            run_analysis();
         })
         .catch((error) => alert(error));
 	}

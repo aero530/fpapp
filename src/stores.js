@@ -77,4 +77,43 @@ function createInput() {
 	};
 }
 
-export const input_data = createInput();
+export const form_inputs = createInput();
+
+export const analysis_inputs = derived(
+	form_inputs,
+	$form_inputs => {
+        let output = {};
+        output.accounts = $form_inputs.accounts;
+        output.settings = $form_inputs.settings;
+        return output;
+    }
+);
+
+
+
+
+
+function createPlotData() {
+	const { subscribe, set, update } = writable({});
+
+	return {
+		subscribe,
+		initialize: (input) => set(input),
+		reset: () => set({})
+	};
+}
+
+export const plot_data = createPlotData();
+
+
+function createSummaryData() {
+	const { subscribe, set, update } = writable({});
+
+	return {
+		subscribe,
+		initialize: (input) => set(input),
+		reset: () => set({})
+	};
+}
+
+export const summary_data = createSummaryData();

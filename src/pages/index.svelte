@@ -5,7 +5,7 @@
 
 	import "carbon-components-svelte/css/white.css";
 
-	import { input_data } from '../stores.js';
+	import { form_inputs } from '../stores.js';
 
 	onMount(() => {
 	    invoke('my_custom_command');
@@ -16,7 +16,7 @@
 <h1>Dashboard</h1>
 
 <UnorderedList>
-{#each Object.entries($input_data.settings) as [setting, value]}
+{#each Object.entries($form_inputs.settings) as [setting, value]}
     <ListItem>{setting} : {JSON.stringify(value)}</ListItem>
 {/each}
 </UnorderedList>

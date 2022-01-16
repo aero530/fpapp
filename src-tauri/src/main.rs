@@ -9,11 +9,12 @@
   )]
 
 
+use std::collections::HashMap;
 
 use log::{info, trace, LevelFilter};
-use std::error::Error;
+// use std::error::Error;
 use std::fs::read_to_string;
-use serde_json::Value;
+// use serde_json::Value;
 use serde::{Deserialize, Serialize};
 
 // extern crate image;
@@ -21,7 +22,7 @@ use serde::{Deserialize, Serialize};
 
 mod menu;
 mod logconfig;
-use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals};
+use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataPoint};
 
 
 #[derive(Debug, Deserialize)]
@@ -36,6 +37,7 @@ struct MenuEvent {
   name: String,
 }
 
+
 #[tauri::command]
 fn my_custom_command() -> String {
     println!("I was invoked from JS!");
@@ -44,31 +46,24 @@ fn my_custom_command() -> String {
 
 #[tauri::command]
 fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
-    println!("{:?}", path);
-
-    // let filename = "../archive/fp_data.json";
-    // let json_file_str = read_to_string(std::path::Path::new(&path)).expect("Input file note found.");
     let json_file_str;
     match read_to_string(std::path::Path::new(&path)) {
         Ok(data) => json_file_str = data,
         Err(e) => return Err(format!("Unable to open file {}",e)),
     }
-    
-    // let mut data: UserData<Box<dyn Account>> = match serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str) {
-    //     Ok(data) => data.into(),
-    //     Err(e) => return format!("{}",e),
-    // };
-    // run_analysis(data);
 
     let data = match serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str) {
         Ok(data) => data,
-        // Err(e) => Error format!("{}",e),
         Err(e) => return Err(format!("Unable to process input data file {}", e)),
     };
 
-    // format!("ok")
     Ok(data)
-  // "message response".into()
+}
+
+#[tauri::command]
+fn run_analysis(input: UserData<AccountWrapper>) -> (HashMap<String, Vec<PlotDataPoint>>, YearlyTotals) {
+  let data : UserData<Box<dyn Account>> = input.into();
+  analyze(data)
 }
 
 #[tauri::command]
@@ -78,7 +73,7 @@ fn do_a_thing(body: RequestBody) -> String {
   // "message response".into()
 }
 
-fn run_analysis(mut data: UserData<Box<dyn Account>>) {
+fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDataPoint>>, YearlyTotals) {
     // Loop through accounts to determine what order they should be processed in
     let mut account_order: Vec<String> = Vec::new();
 
@@ -170,46 +165,24 @@ fn run_analysis(mut data: UserData<Box<dyn Account>>) {
             yearly_totals.pay_healthcare_expenses_from_net(year);
         }
     });
+
+    let mut plot_data : HashMap<String, Vec<PlotDataPoint>> = HashMap::new();
+
+    for (uuid, account) in data.accounts.iter() {
+        plot_data.insert(uuid.to_string(), account.get_plot_data());
+    }
+
+    (plot_data, yearly_totals)
 }
 
 
 /// Main loop
-// fn main() -> Result<(), Box<dyn Error>> {
 fn main() {
     
     // Initialize and gather config
     let logconfig = logconfig::Logconfig::new().expect("Unable to create config file.");
     initialize_logger(&logconfig.log_level);
     
-    // Read in user json data
-    // let filename = "../archive/fp_data.json";
-    // let json_file_str =
-    //     read_to_string(std::path::Path::new(&filename)).expect("Input file note found.");
-
-    // let mut data: UserData<Box<dyn Account>> =
-    //     serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str).expect("Unable to convert data.").into();
-
-    // run_analysis(data);
-    
-    /*
-    // Write results to files & do some plotting
-    data.write_tables(&account_order, years, "target/tables.csv".into());
-    yearly_totals.write_summary("target/summary.csv".into());
-    yearly_totals.plot_to_file("target/totals.png".into());
-
-    account_order.iter().for_each(|uuid| {
-        let account = data.accounts.get(uuid).unwrap();
-        account.plot_to_file(format!("target/{}.png", account.name()), 1600, 1200);
-        // account.write(format!("target/{}.csv", account.name()));
-    });
-    */
-
-
-
-
-
-
-
     tauri::Builder::default()
         .menu(menu::get_menu())
         .on_menu_event(|event| {
@@ -238,11 +211,10 @@ fn main() {
             my_custom_command,
             do_a_thing,
             file_open,
+            run_analysis,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-
-    // Ok(())
 }
 
 /// Initialize the logger used in the application with the specified log level

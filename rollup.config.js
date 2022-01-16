@@ -7,6 +7,7 @@ import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
 import routify from '@roxi/routify/plugins/rollup';
+import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -39,7 +40,12 @@ export default {
 		name: 'app',
 		file: 'public/build/bundle.js'
 	},
+	inlineDynamicImports: true,
 	plugins: [
+		replace({
+			preventAssignment: true,
+			'process.env.NODE_ENV': JSON.stringify('production'),
+		}),
 		svelte({
 			preprocess: sveltePreprocess({ sourceMap: !production }),
 			compilerOptions: {

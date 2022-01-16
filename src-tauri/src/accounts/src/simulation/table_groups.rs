@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io::Write;
 
-use super::Table;
+use super::{Table, PlotDataPoint};
 
 /// A single [table](Table) of values for simple account types
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -32,6 +32,20 @@ impl SingleTable {
             )
             .unwrap();
         });
+    }
+    /// Return analysis data to use in UI plotting
+    pub fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+        let years: Vec<u32> = self.value.0.keys().copied().collect();
+        let mut output : Vec<PlotDataPoint> = Vec::new();
+
+        years.iter().for_each(|year| {
+            output.push(PlotDataPoint{
+                group: String::from("value"),
+                year: *year,
+                value: self.value.get(*year).unwrap_or(0_f64),
+            });
+        });
+        output
     }
     /// Initialize a new year
     pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
@@ -103,6 +117,40 @@ impl LoanTables {
             )
             .unwrap();
         });
+    }
+    /// Return analysis data to use in UI plotting
+    pub fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+        let years: Vec<u32> = self.value.0.keys().copied().collect();
+        let mut output : Vec<PlotDataPoint> = Vec::new();
+
+        years.iter().for_each(|year| {
+            output.push(PlotDataPoint{
+                group: String::from("value"),
+                year: *year,
+                value: self.value.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("interest"),
+                year: *year,
+                value: self.interest.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("payments"),
+                year: *year,
+                value: self.payments.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("escrow"),
+                year: *year,
+                value: self.escrow.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("insurance"),
+                year: *year,
+                value: self.insurance.get(*year).unwrap_or(0_f64),
+            });
+        });
+        output
     }
     /// Initialize a new year
     pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
@@ -194,6 +242,40 @@ impl SavingsTables {
             )
             .unwrap();
         });
+    }
+    /// Return analysis data to use in UI plotting
+    pub fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+        let years: Vec<u32> = self.value.0.keys().copied().collect();
+        let mut output : Vec<PlotDataPoint> = Vec::new();
+
+        years.iter().for_each(|year| {
+            output.push(PlotDataPoint{
+                group: String::from("value"),
+                year: *year,
+                value: self.value.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("contributions"),
+                year: *year,
+                value: self.contributions.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("employer_contributions"),
+                year: *year,
+                value: self.employer_contributions.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("earnings"),
+                year: *year,
+                value: self.earnings.get(*year).unwrap_or(0_f64),
+            });
+            output.push(PlotDataPoint{
+                group: String::from("withdrawals"),
+                year: *year,
+                value: self.withdrawals.get(*year).unwrap_or(0_f64),
+            });
+        });
+        output
     }
     /// Initialize a new year
     pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {

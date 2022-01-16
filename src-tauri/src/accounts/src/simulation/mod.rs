@@ -34,3 +34,11 @@ pub struct Dates {
     /// Time range when the account has negative cashflow
     pub year_out: Option<YearRange>,
 }
+
+/// Data point used in UI plotting
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
+pub struct PlotDataPoint {
+    pub group: String,
+    pub year: u32,
+    pub value: f64,
+}

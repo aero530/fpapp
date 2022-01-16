@@ -141,6 +141,9 @@ impl Account for Income<u32> {
             height,
         )
     }
+    fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+        self.analysis.get_plot_data()
+    }
     fn simulate(
         &mut self,
         year: u32,
