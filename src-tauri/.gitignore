@@ -1,0 +1,8 @@
+# ignore the main target folder
+/target/
+
+# ignore all other target folders
+target/
+
+# dont wanna save Wix to git either
+WixTools

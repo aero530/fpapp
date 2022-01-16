@@ -1,14 +1,13 @@
-# ignore root target & archive folders
-/target
+# ignore root archive folder
 /archive
 
-# ignore all other target folders
-target/
+/node_modules/
+/public/build/
 
+.DS_Store
+.routify
+.vscode
 
 # Data
 data.json
 dataSimple.json
-
-*.json
-*.csv
