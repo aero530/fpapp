@@ -1,5 +1,7 @@
 # financial planning app #
 
+The main branch of this app is a bit stale.  I am currently working on porting the calculations to Rust and creating a new UI using Tauri.
+
 A financial planning & simulation application based on [Electron Boiler Plate](https://github.com/jschr/electron-react-redux-boilerplate) using <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, and <a href="https://github.com/reactjs/react-router">React Router</a>.
 
 ---
