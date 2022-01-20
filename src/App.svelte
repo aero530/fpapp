@@ -8,32 +8,32 @@
     import { Router } from "@roxi/routify";
     import { routes } from "../.routify/routes";
 
-    import { form_inputs, analysis_inputs, plot_data, summary_data } from './stores.js';
+    import { form_inputs, plot_data, summary_data } from './stores.js';
  
-    function run_analysis() {
-        console.log($analysis_inputs);
-        invoke("run_analysis", {
-            input: $analysis_inputs,
-        })
-        .then((results) => {
-            plot_data.initialize(results[0])
-            summary_data.initialize(results[1])
-            console.log(results);
-        });
-    }
+    // function run_analysis() {
+    //     console.log($analysis_inputs);
+    //     invoke("run_analysis", {
+    //         input: $analysis_inputs,
+    //     })
+    //     .then((results) => {
+    //         plot_data.initialize(results[0])
+    //         summary_data.initialize(results[1])
+    //         console.log(results);
+    //     });
+    // }
 
     function openFile(pathString) {
 		invoke("file_open", {
 			path: pathString,
 		})
 		.then((data) => {
-            form_inputs.initialize(data);
-            run_analysis();
+            form_inputs.set(data);
         })
         .catch((error) => alert(error));
 	}
 
     onMount(async () => {
+        form_inputs.reset();
         unlisten = await listen("rust-event", event => {
             switch (event.payload.name) {
                 case 'file-open' :
