@@ -6,8 +6,6 @@ import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
-import routify from '@roxi/routify/plugins/rollup';
-import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -40,12 +38,7 @@ export default {
 		name: 'app',
 		file: 'public/build/bundle.js'
 	},
-	inlineDynamicImports: true,
 	plugins: [
-		replace({
-			preventAssignment: true,
-			'process.env.NODE_ENV': JSON.stringify('production'),
-		}),
 		svelte({
 			preprocess: sveltePreprocess({ sourceMap: !production }),
 			compilerOptions: {
@@ -57,10 +50,6 @@ export default {
 		// a separate file - better for performance
 		css({ output: 'bundle.css' }),
 
-		// set dynamic imports to false so we can still compile all the js into a single file (which is what tauri is expecting)
-		routify({
-			dynamicImports: false
-		}),
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
 		// some cases you'll need additional configuration -

@@ -1,6 +1,6 @@
 <script>
 	import { invoke } from "@tauri-apps/api/tauri";
-    import { Button } from "carbon-components-svelte";
+    import Button, { Label } from '@smui/button';
 
     function performRequest() {
 		invoke("do_a_thing", {
@@ -17,5 +17,5 @@
 <h3>Settings</h3>
   
 <Button on:click={performRequest}>
-    Perform Request
+    <Label>Perform Request</Label>
 </Button>

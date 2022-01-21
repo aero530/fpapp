@@ -1,22 +1,28 @@
 <script>
 	import { form_inputs } from '../stores.js';
-	import {
-		Form,
-		FormGroup,
-		Checkbox,
-		RadioButtonGroup,
-		RadioButton,
-		Select,
-		SelectItem,
-		Button,
-		TextInput,
-		NumberInput,
-	} from "carbon-components-svelte";
+	
+	import LayoutGrid, { Cell } from '@smui/layout-grid';
+    // import { onMount, onDestroy } from "svelte";
 
 	import YearInput from "../components/YearInput.svelte";
 	import Contribution from "../components/Contribution.svelte";
+	import Withdrawal from "../components/Withdrawal.svelte";
+	import TaxStatus from "../components/TaxStatus.svelte";
+	import TextInput from "../components/TextInput.svelte";
+	import TextAreaInput from "../components/TextAreaInput.svelte";
+	import NumberInput from "../components/NumberInput.svelte";
+	import PercentInput from "../components/PercentInput.svelte";
+	import Table from "../components/Table.svelte";
 
 	export let id;
+
+	// onMount(async () => {
+    //     console.log($form_inputs.accounts[id].withdrawals);		
+	// 	console.log($form_inputs.accounts[id].hasOwnProperty('withdrawals'));
+	// 	console.log(Object.keys($form_inputs.accounts[id].withdrawals).length > 0);
+	// 	console.log($form_inputs.accounts[id].hasOwnProperty('withdrawals') && Object.keys($form_inputs.accounts[id].withdrawals).length > 0);
+    // })
+
 </script>
 
 <!-- pub struct College<T: std::cmp::Ord> {
@@ -53,42 +59,118 @@
 	/// General information to store with this account
 	notes: Option<String>,
 -->
-
-<Form on:submit>
-  	<TextInput
-		labelText="Account name"
-		helperText="Human friendly name for the account"
-		placeHolder="Account name..."
-		bind:value={$form_inputs.accounts[id].name}
+<LayoutGrid>
+	<Cell span={12}>
+		<TextInput
+			label="Account name"
+			bind:value={$form_inputs.accounts[id].name}
+			questionText="Human friendly name for the account"
 		/>
-	<YearInput
-		labelText="Start In"
-		placeHolder="When money will start going into this account..."
-		bind:value={$form_inputs.accounts[id].startIn}
+	</Cell>
+	<Cell span={12}>
+		<Table
+			label="Balance"
+			bind:data={$form_inputs.accounts[id].table}
 		/>
-	<YearInput
-		labelText="End In"
-		placeHolder="When money will stop going into this account..."
-		bind:value={$form_inputs.accounts[id].endIn}
+	</Cell>
+	{#if $form_inputs.accounts[id].hasOwnProperty('contributions') && Object.keys($form_inputs.accounts[id].contributions).length > 0}
+		<Cell span={12}>
+			<Table
+				label="Contributions"
+				bind:data={$form_inputs.accounts[id].contributions}
+			/>
+		</Cell>
+	{/if}
+	{#if $form_inputs.accounts[id].hasOwnProperty('earnings') && Object.keys($form_inputs.accounts[id].earnings).length > 0}
+		<Cell span={12}>
+			<Table
+				label="Earnings"
+				bind:data={$form_inputs.accounts[id].earnings}
+			/>
+		</Cell>
+	{/if}
+	{#if $form_inputs.accounts[id].withdrawals }
+		<Cell span={12}>
+			<Table
+				label="Withdrawals"
+				bind:data={$form_inputs.accounts[id].withdrawals}
+			/>
+		</Cell>
+	{/if}
+	<Cell span={6}>
+		<YearInput
+			label="Start In"
+			questionText="When money will start going into this account..."
+			bind:value={$form_inputs.accounts[id].startIn}
 		/>
-	<YearInput
-		labelText="Start Out"
-		placeHolder="When money will start coming out of this account..."
-		bind:value={$form_inputs.accounts[id].startOut}
+	</Cell>
+	<Cell span={6}>
+		<YearInput
+			label="End In"
+			questionText="When money will stop going into this account..."
+			bind:value={$form_inputs.accounts[id].endIn}
 		/>
-	<YearInput
-		labelText="End Out"
-		placeHolder="When money will stop coming out of this account..."
-		bind:value={$form_inputs.accounts[id].endOut}
+	</Cell>
+	<Cell span={6}>
+		<YearInput
+			label="Start Out"
+			questionText="When money will start coming out of this account..."
+			bind:value={$form_inputs.accounts[id].startOut}
 		/>
-	<NumberInput
-		label="Contribution Value"
-		helperText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]"
-		min=0
-		bind:value={$form_inputs.accounts[id].contributionValue}
-	/>
-	<Contribution
-		labelText="Contribution Type"
-		bind:selected={$form_inputs.accounts[id].contributionType}
-	/>
-  </Form>
+	</Cell>
+	<Cell span={6}>
+		<YearInput
+			label="End Out"
+			questionText="When money will stop coming out of this account..."
+			bind:value={$form_inputs.accounts[id].endOut}
+		/>
+	</Cell>
+	<Cell span={6}>
+		<NumberInput
+			label="Contribution Value"
+			step=1
+			bind:value={$form_inputs.accounts[id].contributionValue}
+			questionText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]"
+		/>
+	</Cell>
+	<Cell span={6}>
+		<Contribution
+			label="Contribution Type"
+			bind:value={$form_inputs.accounts[id].contributionType}
+		/>
+	</Cell>
+	<Cell span={12}>
+		<PercentInput
+			label="Yearly Return"
+			bind:value={$form_inputs.accounts[id].yearlyReturn}
+			questionText="Percent interest earned each year"
+		/>
+	</Cell>
+	<Cell span={6}>
+		<NumberInput
+			label="Withdrawal Value"
+			step=1
+			bind:value={$form_inputs.accounts[id].withdrawalValue}
+			questionText="How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]"
+		/>
+	</Cell>
+	<Cell span={6}>
+		<Withdrawal
+			label="Withdrawal Type"
+			bind:value={$form_inputs.accounts[id].withdrawalType}
+		/>
+	</Cell>
+	<Cell span={12}>
+		<TaxStatus
+			label="Tax Status"
+			bind:value={$form_inputs.accounts[id].taxStatus}
+		/>
+	</Cell>
+	<Cell span={12}>
+		<TextAreaInput
+			label="Notes"
+			bind:value={$form_inputs.accounts[id].notes}
+			questionText="General information to store with this account"
+		/>
+	</Cell>
+</LayoutGrid>
