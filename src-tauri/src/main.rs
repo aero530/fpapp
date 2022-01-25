@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 
 mod menu;
 mod logconfig;
-use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataPoint};
+use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
 
 
 #[derive(Debug, Deserialize)]
@@ -61,7 +61,7 @@ fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
 }
 
 #[tauri::command]
-fn run_analysis(input: UserData<AccountWrapper>) -> (HashMap<String, Vec<PlotDataPoint>>, YearlyTotals) {
+fn run_analysis(input: UserData<AccountWrapper>) -> (HashMap<String, Vec<PlotDataSet>>, YearlyTotals) {
   let data : UserData<Box<dyn Account>> = input.into();
   analyze(data)
 }
@@ -73,7 +73,7 @@ fn do_a_thing(body: RequestBody) -> String {
   // "message response".into()
 }
 
-fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDataPoint>>, YearlyTotals) {
+fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDataSet>>, YearlyTotals) {
     // Loop through accounts to determine what order they should be processed in
     let mut account_order: Vec<String> = Vec::new();
 
@@ -166,7 +166,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
         }
     });
 
-    let mut plot_data : HashMap<String, Vec<PlotDataPoint>> = HashMap::new();
+    let mut plot_data : HashMap<String, Vec<PlotDataSet>> = HashMap::new();
 
     for (uuid, account) in data.accounts.iter() {
         plot_data.insert(uuid.to_string(), account.get_plot_data());

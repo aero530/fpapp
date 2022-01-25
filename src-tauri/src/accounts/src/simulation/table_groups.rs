@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io::Write;
 
-use super::{Table, PlotDataPoint};
+use super::{Table, PlotDataPoint, PlotDataSet};
 
 /// A single [table](Table) of values for simple account types
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -34,17 +34,15 @@ impl SingleTable {
         });
     }
     /// Return analysis data to use in UI plotting
-    pub fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+    pub fn get_plot_data(&self) -> Vec<PlotDataSet> {
         let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataPoint> = Vec::new();
+        let mut output : Vec<PlotDataSet> = Vec::new();
 
-        years.iter().for_each(|year| {
-            output.push(PlotDataPoint{
-                group: String::from("value"),
-                year: *year,
-                value: self.value.get(*year).unwrap_or(0_f64),
-            });
+        output.push(PlotDataSet{
+            label: String::from("Value"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
         });
+
         output
     }
     /// Initialize a new year
@@ -119,37 +117,57 @@ impl LoanTables {
         });
     }
     /// Return analysis data to use in UI plotting
-    pub fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+    pub fn get_plot_data(&self) -> Vec<PlotDataSet> {
         let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataPoint> = Vec::new();
+        let mut output : Vec<PlotDataSet> = Vec::new();
 
-        years.iter().for_each(|year| {
-            output.push(PlotDataPoint{
-                group: String::from("value"),
-                year: *year,
-                value: self.value.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("interest"),
-                year: *year,
-                value: self.interest.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("payments"),
-                year: *year,
-                value: self.payments.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("escrow"),
-                year: *year,
-                value: self.escrow.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("insurance"),
-                year: *year,
-                value: self.insurance.get(*year).unwrap_or(0_f64),
-            });
+        output.push(PlotDataSet{
+            label: String::from("Value"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
         });
+        output.push(PlotDataSet{
+            label: String::from("Interest"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.interest.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        output.push(PlotDataSet{
+            label: String::from("Payments"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.payments.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        output.push(PlotDataSet{
+            label: String::from("Escrow"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.escrow.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        output.push(PlotDataSet{
+            label: String::from("Insurance"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.insurance.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        // years.iter().for_each(|year| {
+        //     output.push(PlotDataPoint{
+        //         group: String::from("value"),
+        //         year: *year,
+        //         value: self.value.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("interest"),
+        //         year: *year,
+        //         value: self.interest.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("payments"),
+        //         year: *year,
+        //         value: self.payments.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("escrow"),
+        //         year: *year,
+        //         value: self.escrow.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("insurance"),
+        //         year: *year,
+        //         value: self.insurance.get(*year).unwrap_or(0_f64),
+        //     });
+        // });
         output
     }
     /// Initialize a new year
@@ -244,37 +262,58 @@ impl SavingsTables {
         });
     }
     /// Return analysis data to use in UI plotting
-    pub fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+    pub fn get_plot_data(&self) -> Vec<PlotDataSet> {
         let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataPoint> = Vec::new();
+        let mut output : Vec<PlotDataSet> = Vec::new();
 
-        years.iter().for_each(|year| {
-            output.push(PlotDataPoint{
-                group: String::from("value"),
-                year: *year,
-                value: self.value.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("contributions"),
-                year: *year,
-                value: self.contributions.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("employer_contributions"),
-                year: *year,
-                value: self.employer_contributions.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("earnings"),
-                year: *year,
-                value: self.earnings.get(*year).unwrap_or(0_f64),
-            });
-            output.push(PlotDataPoint{
-                group: String::from("withdrawals"),
-                year: *year,
-                value: self.withdrawals.get(*year).unwrap_or(0_f64),
-            });
+        output.push(PlotDataSet{
+            label: String::from("Value"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
         });
+        output.push(PlotDataSet{
+            label: String::from("Contributions"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.contributions.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        output.push(PlotDataSet{
+            label: String::from("Employer Contributions"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.employer_contributions.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        output.push(PlotDataSet{
+            label: String::from("Earnings"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.earnings.get(*year).unwrap_or(0_f64)}).collect()
+        });
+        output.push(PlotDataSet{
+            label: String::from("Withdrawals"),
+            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.withdrawals.get(*year).unwrap_or(0_f64)}).collect()
+        });
+
+        // years.iter().for_each(|year| {
+        //     output.push(PlotDataPoint{
+        //         group: String::from("value"),
+        //         year: *year,
+        //         value: self.value.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("contributions"),
+        //         year: *year,
+        //         value: self.contributions.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("employer_contributions"),
+        //         year: *year,
+        //         value: self.employer_contributions.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("earnings"),
+        //         year: *year,
+        //         value: self.earnings.get(*year).unwrap_or(0_f64),
+        //     });
+        //     output.push(PlotDataPoint{
+        //         group: String::from("withdrawals"),
+        //         year: *year,
+        //         value: self.withdrawals.get(*year).unwrap_or(0_f64),
+        //     });
+        // });
         output
     }
     /// Initialize a new year

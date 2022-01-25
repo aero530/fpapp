@@ -38,7 +38,13 @@ pub struct Dates {
 /// Data point used in UI plotting
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
 pub struct PlotDataPoint {
-    pub group: String,
-    pub year: u32,
-    pub value: f64,
+    pub x: u32,
+    pub y: f64,
+}
+
+/// Data point used in UI plotting
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
+pub struct PlotDataSet {
+    pub label: String,
+    pub data: Vec<PlotDataPoint>,
 }

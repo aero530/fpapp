@@ -141,7 +141,7 @@ impl Account for Income<u32> {
             height,
         )
     }
-    fn get_plot_data(&self) -> Vec<PlotDataPoint> {
+    fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
     fn simulate(

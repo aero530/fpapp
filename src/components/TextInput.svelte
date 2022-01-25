@@ -1,5 +1,5 @@
 <script>
-    import Textfield from '@smui/textfield';
+    import TextField from '@smui/textfield';
     import QuestionField from './QuestionField.svelte'
 
     export let label;
@@ -10,11 +10,11 @@
 
 <QuestionField>
     <span slot="input">
-        <Textfield
+        <TextField
             label={label}
             bind:value={value}
         >
-    </Textfield>
+    </TextField>
     </span>
     <span slot="questionTip">
         {questionText}

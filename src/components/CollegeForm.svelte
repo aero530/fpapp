@@ -3,16 +3,18 @@
 	
 	import LayoutGrid, { Cell } from '@smui/layout-grid';
     // import { onMount, onDestroy } from "svelte";
+	
 
-	import YearInput from "../components/YearInput.svelte";
-	import Contribution from "../components/Contribution.svelte";
-	import Withdrawal from "../components/Withdrawal.svelte";
-	import TaxStatus from "../components/TaxStatus.svelte";
-	import TextInput from "../components/TextInput.svelte";
-	import TextAreaInput from "../components/TextAreaInput.svelte";
-	import NumberInput from "../components/NumberInput.svelte";
-	import PercentInput from "../components/PercentInput.svelte";
-	import Table from "../components/Table.svelte";
+	import YearInput from "./YearInput.svelte";
+	import Contribution from "./Contribution.svelte";
+	import Withdrawal from "./Withdrawal.svelte";
+	import TaxStatus from "./TaxStatus.svelte";
+	import TextInput from "./TextInput.svelte";
+	import TextAreaInput from "./TextAreaInput.svelte";
+	import NumberInput from "./NumberInput.svelte";
+	import PercentInput from "./PercentInput.svelte";
+	import Table from "./Table.svelte";
+	import Scatter from "./Scatter.svelte";
 
 	export let id;
 

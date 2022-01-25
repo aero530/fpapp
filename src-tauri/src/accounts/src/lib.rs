@@ -19,7 +19,7 @@ use simulation::{
     LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact,
 };
 // re-exported for use outside this lib
-pub use simulation::{Dates, YearlyTotals, PlotDataPoint};
+pub use simulation::{Dates, YearlyTotals, PlotDataSet};
 
 mod plot;
 use plot::{scatter_plot_buf, scatter_plot_file};
@@ -101,7 +101,7 @@ pub trait Account: std::fmt::Debug {
     fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>;
 
     /// Get plot data for UI plotting
-    fn get_plot_data(&self) -> Vec<PlotDataPoint>;
+    fn get_plot_data(&self) -> Vec<PlotDataSet>;
 
     /// Return string json of the inputs for the account
     fn get_inputs(&self) -> String;
