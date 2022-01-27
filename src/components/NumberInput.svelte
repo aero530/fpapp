@@ -1,25 +1,32 @@
-<script>
-    import Textfield from '@smui/textfield';
+<script lang="ts">
+    
     import QuestionField from './QuestionField.svelte'
 
-    export let label;
-    export let value;
-    export let questionText;
-    export let step;
+    export let label : string;
+    export let value : number;
+    export let questionText : string="";
+    export let step : number = 1;
+    let inputValue : string = '';
+
+    function handleUpdate() {
+        bind:value = round(parseFloat(inputValue), step);
+    }
+
+    function round(number: number, increment: number) {
+        return Math.ceil((number) / increment ) * increment;
+    }
 </script>
 
-
 <QuestionField>
-    <span slot="input">
-        <Textfield
+    <div slot="input">
+        <input
             label={label}
-            bind:value={value}
+            bind:value={inputValue}
             type="number"
-            input$step={step}
-        >
-    </Textfield>
-    </span>
-    <span slot="questionTip">
+            on:change={() => handleUpdate()}
+        />
+    </div>
+    <div slot="questionTip">
         {questionText}
-    </span>
+    </div>
 </QuestionField>

@@ -1,5 +1,6 @@
 <script lang="ts">
-    import Select, { Option } from '@smui/select';
+
+    import ChevronDown from '../icons/ChevronDown.svelte';
     import QuestionField from './QuestionField.svelte'
 
     export let label: string;
@@ -48,59 +49,56 @@
 
 
 
-    type TaxOption = { value: string; label: string; description: string };
-    let options : TaxOption[] = [
+    type TaxOption = { value: string; text: string; description: string };
+    let items : TaxOption[] = [
         {
             value: 'contribute_taxed_earnings_untaxed_when_used',
-            label: 'contribute taxed income - earnings taxed deferred',
+            text: 'contribute taxed income - earnings taxed deferred',
             description:
             'payed with taxed income, earnings are tax deferred, withdrawals are not taxed',
         },
         {
             value: 'contribute_taxed_earnings_taxed',
-            label: 'contribute taxed income - earings are capital gains',
+            text: 'contribute taxed income - earings are capital gains',
             description:
             'payed with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)',
         },
         {
             value: 'not_impliemented',
-            label: 'not implemented',
+            text: 'not implemented',
             description:
             'NOT IMPLEMENTED ## 2=payed with taxed income, earnings are taxed in year taken out as capital gains, withdrawals are not taxed',
         },
         {
             value: 'contribute_pretax_taxed_when_used',
-            label: 'contribute pretax income - taxed as income when used',
+            text: 'contribute pretax income - taxed as income when used',
             description: 'payed pretax and taxed in year of use as income',
         },
         {
             value: 'contribute_pretax_untaxed_when_used',
-            label: 'contribute pretax income - withdrawal not taxed as income (HSA)',
+            text: 'contribute pretax income - withdrawal not taxed as income (HSA)',
             description: 'payed pretax and not taxed as income (use with HSA)',
         }
     ];
-
-
-
 
 </script>
 
 
 <QuestionField>
-    <span slot="input">
-        <Select
-        label={label}
-        bind:value={value}
-    >
-        {#each options as option (option.label)}
-            <Option value={option.value}>{option.label}</Option>
+    <div slot="input">
+        <select
+            label={label}
+            bind:value={value}
+        >
+        {#each items as item}
+            <option value={item.value}>{item.text}</option>
         {/each}
-    </Select>
-    </span>
-    <span slot="questionTip">
+    </select>
+    </div>
+    <div slot="questionTip">
         How taxes impact this account.
-        {#each options as option (option.label)}
-            <p>{option.label} : {option.description}</p>
+        {#each items as item}
+            <p>{item.text} : {item.description}</p>
         {/each}
-    </span>
+    </div>
 </QuestionField>

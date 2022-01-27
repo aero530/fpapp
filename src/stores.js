@@ -80,3 +80,5 @@ function createSummaryData() {
 	};
 }
 export const summary_data = createSummaryData();
+
+export const dark = writable(false);

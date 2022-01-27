@@ -1,22 +1,19 @@
 <script>
-    import TextField from '@smui/textfield';
     import QuestionField from './QuestionField.svelte'
 
     export let label;
     export let value;
-    export let questionText;
+    export let questionText="";
 </script>
 
-
 <QuestionField>
-    <span slot="input">
-        <TextField
+    <div slot="input">
+        <input
             label={label}
             bind:value={value}
-        >
-    </TextField>
-    </span>
-    <span slot="questionTip">
+        />
+    </div>
+    <div slot="questionTip">
         {questionText}
-    </span>
+    </div>
 </QuestionField>

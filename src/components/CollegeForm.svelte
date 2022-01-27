@@ -1,7 +1,7 @@
 <script>
 	import { form_inputs } from '../stores.js';
 	
-	import LayoutGrid, { Cell } from '@smui/layout-grid';
+	// import LayoutGrid, { Cell } from '@smui/layout-grid';
     // import { onMount, onDestroy } from "svelte";
 	
 
@@ -14,7 +14,7 @@
 	import NumberInput from "./NumberInput.svelte";
 	import PercentInput from "./PercentInput.svelte";
 	import Table from "./Table.svelte";
-	import Scatter from "./Scatter.svelte";
+	
 
 	export let id;
 
@@ -61,118 +61,119 @@
 	/// General information to store with this account
 	notes: Option<String>,
 -->
-<LayoutGrid>
-	<Cell span={12}>
+<div class="grid grid-cols-10">
+	<div class="col-span-10">
 		<TextInput
 			label="Account name"
 			bind:value={$form_inputs.accounts[id].name}
 			questionText="Human friendly name for the account"
 		/>
-	</Cell>
-	<Cell span={12}>
+	</div>
+	<div class="col-span-10">
 		<Table
 			label="Balance"
 			bind:data={$form_inputs.accounts[id].table}
 		/>
-	</Cell>
+	</div>
 	{#if $form_inputs.accounts[id].hasOwnProperty('contributions') && Object.keys($form_inputs.accounts[id].contributions).length > 0}
-		<Cell span={12}>
+		<div class="col-span-10">
 			<Table
 				label="Contributions"
 				bind:data={$form_inputs.accounts[id].contributions}
 			/>
-		</Cell>
+		</div>
 	{/if}
 	{#if $form_inputs.accounts[id].hasOwnProperty('earnings') && Object.keys($form_inputs.accounts[id].earnings).length > 0}
-		<Cell span={12}>
+		<div class="col-span-10">
 			<Table
 				label="Earnings"
 				bind:data={$form_inputs.accounts[id].earnings}
 			/>
-		</Cell>
+		</div>
 	{/if}
 	{#if $form_inputs.accounts[id].withdrawals }
-		<Cell span={12}>
+		<div class="col-span-10">
 			<Table
 				label="Withdrawals"
 				bind:data={$form_inputs.accounts[id].withdrawals}
 			/>
-		</Cell>
+		</div>
 	{/if}
-	<Cell span={6}>
+	<div class="col-span-5">
 		<YearInput
 			label="Start In"
 			questionText="When money will start going into this account..."
 			bind:value={$form_inputs.accounts[id].startIn}
 		/>
-	</Cell>
-	<Cell span={6}>
+	
+	</div>
+	<div class="col-span-5">
 		<YearInput
 			label="End In"
 			questionText="When money will stop going into this account..."
 			bind:value={$form_inputs.accounts[id].endIn}
 		/>
-	</Cell>
-	<Cell span={6}>
+	</div>
+	<div class="col-span-5">
 		<YearInput
 			label="Start Out"
 			questionText="When money will start coming out of this account..."
 			bind:value={$form_inputs.accounts[id].startOut}
 		/>
-	</Cell>
-	<Cell span={6}>
+	</div>
+	<div class="col-span-5">
 		<YearInput
 			label="End Out"
 			questionText="When money will stop coming out of this account..."
 			bind:value={$form_inputs.accounts[id].endOut}
 		/>
-	</Cell>
-	<Cell span={6}>
+	</div>
+	<div class="col-span-5">
 		<NumberInput
 			label="Contribution Value"
 			step=1
 			bind:value={$form_inputs.accounts[id].contributionValue}
 			questionText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]"
 		/>
-	</Cell>
-	<Cell span={6}>
+	</div>
+	<div class="col-span-5">
 		<Contribution
 			label="Contribution Type"
 			bind:value={$form_inputs.accounts[id].contributionType}
 		/>
-	</Cell>
-	<Cell span={12}>
-		<PercentInput
-			label="Yearly Return"
-			bind:value={$form_inputs.accounts[id].yearlyReturn}
-			questionText="Percent interest earned each year"
-		/>
-	</Cell>
-	<Cell span={6}>
+	</div>
+	<div class="col-span-5">
 		<NumberInput
 			label="Withdrawal Value"
 			step=1
 			bind:value={$form_inputs.accounts[id].withdrawalValue}
 			questionText="How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]"
 		/>
-	</Cell>
-	<Cell span={6}>
+	</div>
+	<div class="col-span-5">
 		<Withdrawal
 			label="Withdrawal Type"
 			bind:value={$form_inputs.accounts[id].withdrawalType}
 		/>
-	</Cell>
-	<Cell span={12}>
+	</div>
+	<div class="col-span-5">
+		<PercentInput
+			label="Yearly Return"
+			bind:value={$form_inputs.accounts[id].yearlyReturn}
+			questionText="Percent interest earned each year"
+		/>
+	</div>
+	<div class="col-span-5">
 		<TaxStatus
 			label="Tax Status"
 			bind:value={$form_inputs.accounts[id].taxStatus}
 		/>
-	</Cell>
-	<Cell span={12}>
+	</div>
+	<div class="col-span-10">
 		<TextAreaInput
 			label="Notes"
 			bind:value={$form_inputs.accounts[id].notes}
 			questionText="General information to store with this account"
 		/>
-	</Cell>
-</LayoutGrid>
+	</div>
+</div>

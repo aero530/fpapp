@@ -1,12 +1,15 @@
 <script lang="ts">
-    import QuestionHelper from './QuestionHelper.svelte'
+    // import { Tooltip } from "smelte";
+    import Question from '../icons/Question.svelte';
 </script>
 
-<!-- style="display: flex; flex-wrap: wrap; align-items: center;" -->
-<!-- class="container" -->
-<div class="container" style="width: 100%;">
+
+<div class="flex">
     <slot name="input"/>
-    <QuestionHelper>
+    <!-- <Tooltip> -->
+        <!-- <div slot="activator"> -->
+            <Question/>
+        <!-- </div> -->
         <slot name="questionTip"/>
-    </QuestionHelper>
+    <!-- </Tooltip> -->
 </div>

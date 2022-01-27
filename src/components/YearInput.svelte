@@ -1,6 +1,6 @@
 <script>
-    import Textfield from '@smui/textfield';
-  	import HelperText from '@smui/textfield/helper-text';
+    // import { TextField } from "smelte";
+  	//import HelperText from '@smui/textfield/helper-text';
     import QuestionField from './QuestionField.svelte'
 
     export let label;
@@ -89,17 +89,18 @@
 
 
 <QuestionField>
-    <span slot="input">
-        <Textfield
+    <div slot="input">
+        <input
+            type="text"
             label={label}
             value={parseValue(value)}
             on:change={handleChange}
-            invalid={invalid}
-        >
-            <HelperText persistent={invalid} slot="helper">{questionText + helperText}</HelperText>
-        </Textfield>
-    </span>
-    <span slot="questionTip">
+            hint={questionText + helperText}
+            persistentHint={invalid}
+            error={invalid ? questionText + helperText : false}
+        />
+    </div>
+    <div slot="questionTip">
         Years can use variables (yearStart, yearEnd, yearRetire, yearDie), numbers, or equations (such as yearStart+4 or yearEnd-10)
-    </span>
+    </div>
 </QuestionField>

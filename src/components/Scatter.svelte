@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Scatter from "svelte-chartjs/src/Scatter.svelte";
-	
+	import {dark} from '../stores.js';
+
 	type Point = {x: number, y:number};
 	type DataSet = { data: Point[], label: string;};
 	
@@ -17,6 +18,9 @@
 		'rgba(0,180,180, .8)',
 		'rgba(180,0,180, .8)'
 	];
+
+	let lightModeText = 'rgba(0,0,0,1)';
+	let darkModeText = 'rgba(255,255,255,1)';
 	
 	let plugin = {
 		id: 'custom_canvas_background_color',
@@ -47,7 +51,7 @@
 		})
 	};
 	
-	let options = {
+	$: options = {
 		title: {
 			display: true,
 			text: title
@@ -58,18 +62,18 @@
 				title: {
 					text: xlabel,
 					display: true,
-					color: 'rgba(255,255,255, 1)', // color of text
+					color: $dark ? darkModeText : lightModeText, // color of text
 				},
 				ticks: {
 					callback: function (value,index,ticks) {
 						return value.toString().replace(/,/g, '');
 					},
-					color: 'rgba(255,255,255, 1)', // color of tick text
+					color: $dark ? darkModeText : lightModeText, // color of tick text
 				},
 
 				grid: {
-					borderColor: 'rgba(255,255,255, 1)',// color of horizontal border line on x-axis side
-					color: 'rgba(255,255,255, 1)', // color of vertical grid line
+					borderColor: $dark ? darkModeText : lightModeText,// color of horizontal border line on x-axis side
+					color: $dark ? darkModeText : lightModeText, // color of vertical grid line
 				}
 			},
 			y: {
@@ -77,15 +81,15 @@
 				title: {
 					text: ylabel,
 					display: true,
-					color: 'rgba(255,255,255, 1)', // color of text
+					color: $dark ? darkModeText : lightModeText, // color of text
 				},
 				ticks: {
-					color: 'rgba(255,255,255, 1)', // color of tick text
+					color: $dark ? darkModeText : lightModeText, // color of tick text
 				},
 
 				grid: {
-					borderColor: 'rgba(255,255,0, 1)', // color of vertical border line on y-axis side
-					color: 'rgba(0,0,255, 1)', // color of horizontal grid line
+					borderColor: $dark ? darkModeText : lightModeText, // color of vertical border line on y-axis side
+					color: $dark ? darkModeText : lightModeText, // color of horizontal grid line
 				}
 			}
 		},
@@ -94,7 +98,7 @@
 				labels: {
 					boxWidth: 15,
 					usePointStyle: true,
-					color: 'rgba(255,255,255, 1)', // color of legend text
+					color: $dark ? darkModeText : lightModeText, // color of legend text
 				}
 			},
 			tooltip: {
@@ -117,7 +121,7 @@
 			}
 		}
 	};
-	
+
 </script>
 
-<Scatter {data} options={options} {plugins}/>
+<Scatter {data} options={options} {plugins} class="bg-slate-300 dark:bg-slate-800"/>

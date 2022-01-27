@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Select, { Option } from '@smui/select';
+    
     import QuestionField from './QuestionField.svelte'
 
     export let label: string;
@@ -30,14 +30,14 @@
 
 <QuestionField>
     <span slot="input">
-        <Select
+        <select
         label={label}
         bind:value={value}
     >
         {#each options as option (option.label)}
-            <Option value={option.value}>{option.label}</Option>
+            <option value={option.value}>{option.label}</option>
         {/each}
-    </Select>
+    </select>
     </span>
     <span slot="questionTip">
         Select how money is put into the account.

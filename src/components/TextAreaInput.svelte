@@ -1,5 +1,4 @@
 <script>
-    import Textfield from '@smui/textfield';
     import QuestionField from './QuestionField.svelte'
 
     export let label;
@@ -9,17 +8,15 @@
 
 
 <QuestionField>
-    <span slot="input" style="width: 100%;">
-        <Textfield
+    <div slot="input" style="width: 100%;">
+        <textarea
             style="width: 100%;"
-            helperLine$style="width: 100%;"
             textarea
             label={label}
             bind:value={value}
-        >
-    </Textfield>
-    </span>
-    <span slot="questionTip">
+        />
+    </div>
+    <div slot="questionTip">
         {questionText}
-    </span>
+    </div>
 </QuestionField>

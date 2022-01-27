@@ -1,6 +1,5 @@
 <script>
-    import Textfield from '@smui/textfield';
-  	import HelperText from '@smui/textfield/helper-text';
+    
     import QuestionField from './QuestionField.svelte'
 
     export let label;
@@ -74,14 +73,14 @@
 
 <QuestionField>
     <span slot="input">
-        <Textfield
+        <input
             label={label}
             value={parseValue(value)}
             on:change={handleChange}
             invalid={invalid}
-        >
-            <HelperText persistent={invalid} slot="helper">{questionText + " " + helperText}</HelperText>
-        </Textfield>
+        />
+            <!-- <HelperText persistent={invalid} slot="helper">{questionText + " " + helperText}</HelperText> -->
+
     </span>
     <span slot="questionTip">
         Percentage can be a number (such at 15) or inflationBase. 
