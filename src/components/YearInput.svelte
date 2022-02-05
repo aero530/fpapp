@@ -5,7 +5,7 @@
 
     export let label;
     export let value;
-    export let questionText;
+    export let questionText = 'Years can use variables (yearStart, yearEnd, yearRetire, yearDie), numbers, or equations (such as yearStart+4 or yearEnd-10)';
 
     let invalid = false;
     let helperText = " ";
@@ -88,19 +88,14 @@
 </script>
 
 
-<QuestionField>
-    <div slot="input">
-        <input
-            type="text"
-            label={label}
-            value={parseValue(value)}
-            on:change={handleChange}
-            hint={questionText + helperText}
-            persistentHint={invalid}
-            error={invalid ? questionText + helperText : false}
-        />
-    </div>
-    <div slot="questionTip">
-        Years can use variables (yearStart, yearEnd, yearRetire, yearDie), numbers, or equations (such as yearStart+4 or yearEnd-10)
-    </div>
+<QuestionField {questionText} {label}>
+    <input
+        type="text"
+        value={parseValue(value)}
+        on:change={handleChange}
+        hint={questionText + helperText}
+        persistentHint={invalid}
+        error={invalid ? questionText + helperText : false}
+        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+    />
 </QuestionField>

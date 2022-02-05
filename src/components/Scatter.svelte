@@ -1,15 +1,16 @@
 <script lang="ts">
 	import Scatter from "svelte-chartjs/src/Scatter.svelte";
+	import { plot_data } from '../stores.js';
 	import {dark} from '../stores.js';
 
 	type Point = {x: number, y:number};
 	type DataSet = { data: Point[], label: string;};
 	
-	export let inputdata : DataSet[];
+	export let id : string;
 	export let title : string;
 	export let xlabel : string;
 	export let ylabel : string;
-	
+
 	let colors = [
 		'rgba(180,0,0, .8)',
 		'rgba(0,180,0, .8)',
@@ -35,20 +36,23 @@
 	};
 	let plugins=[plugin];
 	
-	let data = {
-		datasets: inputdata.map((element,index) => {
-			return {
-				borderColor: colors[index], // outline color for the data point
-				backgroundColor: colors[index], // color used for the line and data point fill
-				borderWidth: 2, // Set width of line
-				pointBorderWidth: 0, // Set width of outline of data point
-				pointRadius: 2, // setting to 0 will make the data point not render
-				pointStyle: 'rectRounded', // 'circle' 'cross' 'crossRot' 'dash' 'line' 'rect' 'rectRounded' 'rectRot' 'star' 'triangle'
-				label: element.label,
-				showLine: true,
-				data: element.data
-			}
-		})
+	$: data = {
+		datasets: 
+			$plot_data.hasOwnProperty(id) ? 
+				$plot_data[id].map((element:DataSet,index:number) => {
+					return {
+						borderColor: colors[index], // outline color for the data point
+						backgroundColor: colors[index], // color used for the line and data point fill
+						borderWidth: 2, // Set width of line
+						pointBorderWidth: 0, // Set width of outline of data point
+						pointRadius: 2, // setting to 0 will make the data point not render
+						pointStyle: 'rectRounded', // 'circle' 'cross' 'crossRot' 'dash' 'line' 'rect' 'rectRounded' 'rectRot' 'star' 'triangle'
+						label: element.label,
+						showLine: true,
+						data: element.data
+					}
+				})
+			: []
 	};
 	
 	$: options = {
@@ -124,4 +128,6 @@
 
 </script>
 
-<Scatter {data} options={options} {plugins} class="bg-slate-300 dark:bg-slate-800"/>
+{#if $plot_data.hasOwnProperty(id)}
+	<Scatter data={data} options={options} {plugins} class="bg-slate-100 dark:bg-slate-800"/>
+{/if}

@@ -4,62 +4,53 @@
     export let label: string;
     export let value: string;
     
-    type WithdrawalOption = { id: number; value: string; label: string; description: string };
+    type WithdrawalOption = { value: string; label: string; description: string };
     let options : WithdrawalOption[] = [
     {
-        id: 1,
         value: 'fixed',
-        label: 'fixed',
+        label: 'Fixed',
         description: 'Take out a fixed dollar amount',
     },
     {
-        id: 2,
         value: 'fixed_with_inflation',
-        label: 'fixed with inflation',
+        label: 'Fixed with inflation',
         description: 'Take out a fixed dollar amount with inflation compensation',
     },
     {
-        id: 3,
         value: 'end_at_zero',
-        label: 'end at zero',
+        label: 'End at zero',
         description:
         'take money out in equal amounts each year such that the balance at endOut is zero',
     },
     {
-        id: 4,
         value: 'col_frac_of_savings',
-        label: 'cost of living fraction of total savings',
+        label: 'Cost of living',
         description:
         'Take out the current cost of living * (this accounts value / total savings)',
     },
     {
-        id: 5,
         value: 'percent_of_income',
-        label: 'percent of income',
+        label: 'Percent of income',
         description: 'Take out a percent of income in each year',
     }];
 
 
+    let questionText = 'Select how money is taken out of the account.';
 
+    options.forEach((option) => {
+        questionText += `${option.label} : ${option.description}`;
+    });
 
 </script>
 
 
-<QuestionField>
-    <span slot="input">
-        <select
-        label={label}
+<QuestionField {questionText} {label}>
+    <select
         bind:value={value}
+        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
     >
         {#each options as option (option.label)}
             <option value={option.value}>{option.label}</option>
         {/each}
     </select>
-    </span>
-    <span slot="questionTip">
-        Select how money is taken out of the account.
-        {#each options as option (option.label)}
-            <p>{option.label} : {option.description}</p>
-        {/each}
-    </span>
 </QuestionField>

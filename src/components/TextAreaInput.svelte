@@ -2,21 +2,16 @@
     import QuestionField from './QuestionField.svelte'
 
     export let label;
-    export let value;
-    export let questionText;
+    export let value="";
+    export let questionText="";
 </script>
 
 
-<QuestionField>
-    <div slot="input" style="width: 100%;">
-        <textarea
-            style="width: 100%;"
-            textarea
-            label={label}
-            bind:value={value}
-        />
-    </div>
-    <div slot="questionTip">
-        {questionText}
-    </div>
+<QuestionField {questionText} {label}>
+    <textarea
+        style="width: 100%;"
+        textarea
+        bind:value={value}
+        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+    />
 </QuestionField>

@@ -1,8 +1,6 @@
 import { derived, writable } from 'svelte/store';
 import { invoke } from "@tauri-apps/api/tauri";
 
-
-
 function run_analysis(inputs) {
     invoke("run_analysis", {
         input: {...inputs},

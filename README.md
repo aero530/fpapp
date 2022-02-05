@@ -72,6 +72,14 @@ A financial planning & simulation application.
 git clone https://github.com/aero530/fpapp.git fpapp
 ```
 
+## Dev ##
+
+Start app in dev mode:
+
+```cmd
+> npm run tauri build
+```
+
 ## Packaging ##
 
 Create a package for macOS, Windows, or Linux using one of the following commands:
@@ -171,4 +179,4 @@ Create a package for macOS, Windows, or Linux using one of the following command
 
 ### v3.0.0 - ________ ###
 
-* Convert to Rust
+* Convert to Rust & Tauri

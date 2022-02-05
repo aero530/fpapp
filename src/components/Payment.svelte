@@ -4,16 +4,11 @@
     export let label: string;
     export let value: string;
 
-    type ContributionOption = { value: string; label: string; description: string };
-    let options : ContributionOption[] = [{
+    type PaymentOption = { value: string; label: string; description: string };
+    let options : PaymentOption[] = [{
         value: 'fixed',
         label: 'fixed',
         description: 'fixed dollar amount',
-    },
-    {
-        value: 'percent_of_income',
-        label: 'percent of income',
-        description: 'percent of cost of current living',
     },
     {
         value: 'fixed_with_inflation',
@@ -22,8 +17,7 @@
         'fixed dollar amount compensated for inflation from year start (ie dollar amount is in current dollars)',
     }];
 
-
-    let questionText = 'Select how money is put into the account.';
+    let questionText = 'Select how payment value should be interpreted.';
 
     options.forEach((option) => {
         questionText += `${option.label} : ${option.description}`;

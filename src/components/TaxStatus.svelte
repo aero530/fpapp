@@ -1,6 +1,4 @@
 <script lang="ts">
-
-    import ChevronDown from '../icons/ChevronDown.svelte';
     import QuestionField from './QuestionField.svelte'
 
     export let label: string;
@@ -53,13 +51,13 @@
     let items : TaxOption[] = [
         {
             value: 'contribute_taxed_earnings_untaxed_when_used',
-            text: 'contribute taxed income - earnings taxed deferred',
+            text: 'Earnings are taxed deferred',
             description:
             'payed with taxed income, earnings are tax deferred, withdrawals are not taxed',
         },
         {
             value: 'contribute_taxed_earnings_taxed',
-            text: 'contribute taxed income - earings are capital gains',
+            text: 'Earings taxes as capital gains',
             description:
             'payed with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)',
         },
@@ -71,34 +69,32 @@
         },
         {
             value: 'contribute_pretax_taxed_when_used',
-            text: 'contribute pretax income - taxed as income when used',
+            text: 'Taxed as income when used',
             description: 'payed pretax and taxed in year of use as income',
         },
         {
             value: 'contribute_pretax_untaxed_when_used',
-            text: 'contribute pretax income - withdrawal not taxed as income (HSA)',
+            text: 'Not taxed',
             description: 'payed pretax and not taxed as income (use with HSA)',
         }
     ];
 
+    let questionText = 'How taxes impact this account.';
+
+    items.forEach((item) => {
+        questionText += `${item.text} : ${item.description}`;
+    });
+    
 </script>
 
 
-<QuestionField>
-    <div slot="input">
-        <select
-            label={label}
-            bind:value={value}
-        >
+<QuestionField {questionText} {label}>
+    <select
+        bind:value={value}
+        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+    >
         {#each items as item}
             <option value={item.value}>{item.text}</option>
         {/each}
     </select>
-    </div>
-    <div slot="questionTip">
-        How taxes impact this account.
-        {#each items as item}
-            <p>{item.text} : {item.description}</p>
-        {/each}
-    </div>
 </QuestionField>

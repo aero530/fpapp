@@ -4,7 +4,7 @@
 
     export let label;
     export let value;
-    export let questionText;
+    export let questionText = "Percentage can be a number (such at 15) or inflationBase.";
 
     let invalid = false;
     let helperText = "";
@@ -71,18 +71,12 @@
 </script>
 
 
-<QuestionField>
-    <span slot="input">
-        <input
-            label={label}
-            value={parseValue(value)}
-            on:change={handleChange}
-            invalid={invalid}
-        />
-            <!-- <HelperText persistent={invalid} slot="helper">{questionText + " " + helperText}</HelperText> -->
-
-    </span>
-    <span slot="questionTip">
-        Percentage can be a number (such at 15) or inflationBase. 
-    </span>
+<QuestionField {questionText} {label}>
+    <input
+        value={parseValue(value)}
+        on:change={handleChange}
+        invalid={invalid}
+        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+    />
+    <!-- <HelperText persistent={invalid} slot="helper">{questionText + " " + helperText}</HelperText> -->
 </QuestionField>

@@ -101,51 +101,6 @@
 							
 </script>
 
-
-<!-- <div class="flex flex-row flex-wrap py-4">
-	<aside class="w-full sm:w-1/3 md:w-1/4 px-2">
-		<div class="sticky top-0 p-4 w-full">
-			<ul class="flex flex-col overflow-hidden">
-				{#each pages as page}
-					<li on:click={() => {selected = page;}}>
-						<a href="javascript:void(0)">
-							{page.text}
-						</a>
-					</li>
-				{/each}
-			</ul>
-			<hr />
-			<button class="bg-sky-600 hover:bg-sky-700" on:click={toggleDark}>Toggle Dark Mode</button>
-		</div>
-	</aside>
-	<main class="w-full sm:w-2/3 md:w-3/4 pt-1 px-2">
-		<svelte:component this={selected.value}/>
-	</main>
-</div> -->
-
-<!-- <div class="flex flex-row flex-wrap py-4">
-	<aside class="w-full sm:w-1/3 md:w-1/4 px-2"> 
-	<div class="sticky top-0 p-4 w-full bg-slate-300">
-			<ul class="flex flex-col overflow-hidden">
-				{#each pages as page}
-					<a href="javascript:void(0)">
-						<li on:click={() => {selected = page;}} class="hover:bg-violet-500 active:bg-violet-600 py-2 px-4">
-							{page.text}
-						</li>
-					</a>
-				{/each}
-			</ul>
-			<hr />
-			<button class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 " on:click={toggleDark}>Toggle Dark Mode</button>
-			
-	</div>
-	</aside>
-	<main class="w-full sm:w-2/3 md:w-3/4 pt-1 px-2">
-		<svelte:component this={selected.value}/>
-	</main>
-</div> -->
-
-
 <aside class="top-0 left-0 w-64 h-screen fixed bg-slate-200 dark:bg-slate-600">
 		<ul class="flex flex-col overflow-hidden">
 			{#each pages as page}
@@ -157,12 +112,11 @@
 			{/each}
 		</ul>
 		<hr />
-		<button class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mx-4 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 " on:click={toggleDark}>Toggle Dark Mode</button>
+		<button class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center mx-4 mb-2 dark:bg-primary-300 dark:hover:bg-primary-200 " on:click={toggleDark}>Toggle Dark Mode</button>
 </aside>
 <main class="top-0 right-0 pl-64 mx-4">
 	<svelte:component this={selected.value}/>
 </main>
-
 
 
 <!-- You can put your "global" style configurations here! -->
@@ -170,29 +124,13 @@
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
-/* 
-    body {
-        @apply bg-slate-200 dark:bg-slate-800 dark:text-slate-200;
-    }
 
-    button {
-        @apply bg-slate-300 hover:bg-slate-200 border border-slate-800 px-3 py-1 rounded-sm;
-    }
-
-    table {
-        @apply border-collapse;
-    }
-
-    th,
-    td {
-        @apply p-3;
-    } */
 	:global(body) {
-		background-color: #ebebeb;
-		color: #000000;
+		@apply bg-background-500;
+		@apply text-dark;
 	}
 	:global(body.dark) {
-		background-color: #272727;
-		color: #e2e2e2;
-	} 
+		@apply bg-darkbackground-500;
+		@apply text-light;
+	}
 </style>

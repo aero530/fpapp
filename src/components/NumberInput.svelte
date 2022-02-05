@@ -1,4 +1,6 @@
 <script lang="ts">
+import { onMount } from 'svelte';
+
     
     import QuestionField from './QuestionField.svelte'
 
@@ -6,10 +8,14 @@
     export let value : number;
     export let questionText : string="";
     export let step : number = 1;
-    let inputValue : string = '';
+    let inputValue : number = 1;
+
+    onMount(() => {
+        inputValue = value;
+    })
 
     function handleUpdate() {
-        bind:value = round(parseFloat(inputValue), step);
+        bind:value = round(inputValue, step);
     }
 
     function round(number: number, increment: number) {
@@ -17,16 +23,11 @@
     }
 </script>
 
-<QuestionField>
-    <div slot="input">
-        <input
-            label={label}
-            bind:value={inputValue}
-            type="number"
-            on:change={() => handleUpdate()}
-        />
-    </div>
-    <div slot="questionTip">
-        {questionText}
-    </div>
+<QuestionField {questionText} {label}>
+    <input
+        type="number"
+        bind:value={inputValue}
+        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+        on:change={() => handleUpdate()}
+    />
 </QuestionField>

@@ -4,16 +4,11 @@
     export let label: string;
     export let value: string;
 
-    type ContributionOption = { value: string; label: string; description: string };
-    let options : ContributionOption[] = [{
+    type ExpenseOption = { value: string; label: string; description: string };
+    let options : ExpenseOption[] = [{
         value: 'fixed',
         label: 'fixed',
         description: 'fixed dollar amount',
-    },
-    {
-        value: 'percent_of_income',
-        label: 'percent of income',
-        description: 'percent of cost of current living',
     },
     {
         value: 'fixed_with_inflation',

@@ -1,13 +1,12 @@
 <script lang="ts">
-    // import DataTable, { Head, Body, Row, Cell } from '@smui/data-table';
-    
-    // import {TextField} from 'smelte';
+	import {v4 as uuidv4 } from 'uuid';
     
     import AddAlt from '../icons/AddAlt.svelte';
     import SubtractAlt from '../icons/SubtractAlt.svelte';
 
     export let label: string;
-    export let data: { year: number; amount: number; }; // array of arrays of data
+    export let data: { year: number; amount: number; }; // object of year / amount
+    
     let inputYear: string = '';
     let inputValue: string = '';
     
@@ -23,51 +22,60 @@
         delete data[year];
         bind:data = data;
     }
+    let id = uuidv4();
 </script>
 
-<div class="subtitle-1">{label}</div>
-<table class="table-auto">
-    <thead>
-      <tr>
-        <th>Year</th>
-        <th>Amount</th>
-        <th> </th>
-      </tr>
-    </thead>
-    <tbody>
-        {#each Object.keys(data).sort() as thisYear}
+<div class="grid grid-col-1">
+	<div class="mr-3 text-md">
+		<label for="{id}" class="font-medium text-gray-700">{label}</label>
+	</div>
+	<div class="flex grow items-center mx-4">
+        <table class="table-auto">
+            <thead>
             <tr>
-                <td>{thisYear}</td>
-                <td>{data[thisYear]}</td>
-                <td>
-                    <div on:click={() => handleRemove(thisYear)}>
-                        <SubtractAlt />
-                    </div>
-                </td>
+                <th>Year</th>
+                <th>Amount</th>
+                <th> </th>
             </tr>
-        {/each}
+            </thead>
+            <tbody>
+                {#if data !== null}
+                    {#each Object.keys(data).sort() as thisYear}
+                        <tr>
+                            <td>{thisYear}</td>
+                            <td>{data[thisYear]}</td>
+                            <td>
+                                <div on:click={() => handleRemove(thisYear)}>
+                                    <SubtractAlt />
+                                </div>
+                            </td>
+                        </tr>
+                    {/each}
+                {/if}
 
-        <tr>
-            <td>
-                <input
-                    label="Year"
-                    type="number"
-                    bind:value={inputYear}
-                />    
-            </td>
-            <td>
-                <input
-                    label="Value"
-                    type="number"
-                    bind:value={inputValue}
-                />   
-            </td>
-            <td>
-                <div on:click={handleAdd}>
-                    <AddAlt />
-                </div>
-            </td>
-        </tr>
-    </tbody>
+                <tr>
+                    <td>
+                        <input
+                            type="number"
+                            class="p-0 m-0 text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+                            bind:value={inputYear}
+                        />    
+                    </td>
+                    <td>
+                        <input
+                            type="number"
+                            class="p-0 m-0 text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+                            bind:value={inputValue}
+                        />   
+                    </td>
+                    <td>
+                        <div on:click={handleAdd}>
+                            <AddAlt />
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
 
-</table>
+        </table>
+	</div>
+</div>
