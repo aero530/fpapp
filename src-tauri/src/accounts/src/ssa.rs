@@ -2,12 +2,14 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
 use super::*;
 
 /// Social Security Account
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Ssa {
     /// String describing this account

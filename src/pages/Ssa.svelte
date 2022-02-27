@@ -22,8 +22,8 @@
 <h1 class="text-lg">SSA</h1>
 
 <div class="grid grid-cols-1 gap-4">
-	{#each Object.entries($form_inputs.accounts) as [id, account]}
-		{#if account.type == 'ssa'}
+	{#each Object.keys($form_inputs.accounts) as id}
+		{#if $form_inputs.accounts[id].type == 'ssa'}
 			<div class="grid grid-rows-1 even:bg-slate-200">
 				<div class="grid grid-cols-10 gap-2 ">
 					<div class="col-span-5">
@@ -55,7 +55,7 @@
 							<div class="col-span-5">
 								<NumberInput
 									label="Base"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].base}
 									questionText="Base income from social security"
 								/>
@@ -72,7 +72,7 @@
 						</div>
 					</div>
 					<div class="col-span-5">
-						<Scatter id={id} title={account.name} xlabel="Year" ylabel="Amount"/>
+						<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
 					</div>
 				</div>
 			</div>

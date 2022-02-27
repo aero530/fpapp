@@ -8,22 +8,16 @@
     windows_subsystem = "windows"
   )]
 
-
 use std::collections::HashMap;
 
 use log::{info, trace, LevelFilter};
-// use std::error::Error;
 use std::fs::read_to_string;
-// use serde_json::Value;
 use serde::{Deserialize, Serialize};
-
-// extern crate image;
-// use image::{ImageBuffer, Rgba};
 
 mod menu;
 mod logconfig;
-use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
 
+use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
@@ -32,11 +26,10 @@ pub struct RequestBody {
   name: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 struct MenuEvent {
   name: String,
 }
-
 
 #[tauri::command]
 fn my_custom_command() -> String {
@@ -58,6 +51,20 @@ fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
     };
 
     Ok(data)
+}
+
+#[tauri::command]
+fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, String> {
+
+    let json = match serde_json::to_string(&data) {
+        Ok(value) => value,
+        Err(e) => return Err(format!("Unable to convert data to json {}", e)),
+    };
+
+    match std::fs::write(path,json) {
+        Ok(_) => Ok("File saved".into()),
+        Err(e) => return Err(format!("Unable to save json data {}", e)),
+    }
 }
 
 #[tauri::command]
@@ -194,13 +201,19 @@ fn main() {
                     let data = MenuEvent {
                         name: "file-open".to_string(),
                     };
-                    event.window().emit("rust-event", Some(data)).expect("failed to emit");
+                    event.window().emit("rust-event", data).expect("failed to emit");
                 },
                 "save" => {
                     let data = MenuEvent {
                         name: "file-save".to_string(),
                     };
-                    event.window().emit("rust-event", Some(data)).expect("failed to emit");
+                    event.window().emit("rust-event", data).expect("failed to emit");
+                },
+                "saveas" => {
+                    let data = MenuEvent {
+                        name: "file-saveas".to_string(),
+                    };
+                    event.window().emit("rust-event", data).expect("failed to emit");
                 },
                 _ => {
                 println!("{:?}", event.menu_item_id());
@@ -211,6 +224,7 @@ fn main() {
             my_custom_command,
             do_a_thing,
             file_open,
+            file_save,
             run_analysis,
         ])
         .run(tauri::generate_context!())

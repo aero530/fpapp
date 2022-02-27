@@ -1,5 +1,6 @@
-<script>
+<script lang="ts">
 	import { form_inputs } from '../stores.js';
+	import {addTableRow, removeTableRow} from "../helper";
 	
 	import Scatter from "../components/Scatter.svelte";
 	import YearInput from "../components/YearInput.svelte";
@@ -50,8 +51,8 @@ notes: Option<String>,
 
 
 <div class="grid grid-cols-1 gap-4">
-	{#each Object.entries($form_inputs.accounts) as [id, account]}
-		{#if account.type == 'hsa'}
+	{#each Object.keys($form_inputs.accounts) as id}
+		{#if $form_inputs.accounts[id].type == 'hsa'}
 			<div class="grid grid-rows-1 even:bg-slate-200">
 				<div class="grid grid-cols-10 gap-2 ">
 					<div class="col-span-5">
@@ -95,7 +96,7 @@ notes: Option<String>,
 							<div class="col-span-10">
 								<NumberInput
 									label="Contribution Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].contributionValue}
 									questionText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]"
 								/>
@@ -109,7 +110,7 @@ notes: Option<String>,
 							<div class="col-span-10">
 								<NumberInput
 									label="Withdrawal Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].withdrawalValue}
 									questionText="How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]"
 								/>
@@ -137,7 +138,7 @@ notes: Option<String>,
 							<div class="col-span-10">
 								<NumberInput
 									label="Employer Contribution"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].employerContribution}
 									questionText="Employer contributions to this account as a dollar amount [in today's dollars]"
 								/>
@@ -154,14 +155,16 @@ notes: Option<String>,
 						</div>
 					</div>
 					<div class="col-span-5">
-						<Scatter id={id} title={account.name} xlabel="Year" ylabel="Amount"/>
+						<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
 					</div>
 				</div>
 				<div class="grid grid-cols-2 gap-0">
 					<div>
 						<Table
 							label="Balance"
-							bind:data={$form_inputs.accounts[id].table}
+							data={$form_inputs.accounts[id].table}
+							on:add={(e)=>addTableRow(form_inputs, id, 'table', e.detail.year, e.detail.value)}
+							on:remove={(e)=>removeTableRow(form_inputs, id, 'table', e.detail.year)}
 						/>
 					</div>
 				</div>

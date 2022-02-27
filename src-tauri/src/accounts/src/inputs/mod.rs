@@ -1,6 +1,7 @@
 //! Interpret user input from UI / data files
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -23,7 +24,8 @@ pub use withdrawal::*;
 pub use year::*;
 
 /// Represents the user data file
-#[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
+#[derive(TS, Debug, Clone, Serialize, PartialEq, Deserialize)]
+#[ts(export)]
 pub struct UserData<T> {
     /// The system level configuration
     pub settings: Settings,

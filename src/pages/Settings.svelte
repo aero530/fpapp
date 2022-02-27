@@ -35,7 +35,7 @@
 		<NumberInput
 		label="ageRetire"
 		bind:value={$form_inputs.settings.ageRetire}
-		step=1
+		step={1}
 		questionText="Age you plan to retire at"
 		/>
 	</div>

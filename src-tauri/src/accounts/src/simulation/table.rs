@@ -3,12 +3,14 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
+use ts_rs::TS;
 
 /// Table is a map keyed by year that holds account values/amounts.
 ///
 /// Tables are stored as keyed on string but must be converted to
 /// be keyed on a u32 year prior to use for analysis.
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(TS, Debug, Default, Clone, Deserialize, Serialize)]
+#[ts(export)]
 pub struct Table<T: std::cmp::Ord>(
     /// Ordered map of (year, dollar amount) pairs
     pub BTreeMap<T, f64>,

@@ -1,27 +1,22 @@
 <script lang="ts">
 	import {v4 as uuidv4 } from 'uuid';
+	import { createEventDispatcher } from "svelte";
+
+    import type {Table} from "../stores";
     
     import AddAlt from '../icons/AddAlt.svelte';
     import SubtractAlt from '../icons/SubtractAlt.svelte';
 
     export let label: string;
-    export let data: { year: number; amount: number; }; // object of year / amount
+    export let data: Table; // object of year / amount
     
     let inputYear: string = '';
     let inputValue: string = '';
     
-    // Parse the object version of input back into a string for display
-    function handleAdd() {
-        data[parseInt(inputYear)] = parseInt(inputValue);
-        inputYear = '';
-        inputValue = '';
-        bind:data = data;
-    }
+    const dispatch = createEventDispatcher();
+	const handleRemove = (year: string) => dispatch('remove',{year});
+	const handleAdd = (year: string, value: number) => dispatch('add',{year, value});
 
-    function handleRemove(year:string) {
-        delete data[year];
-        bind:data = data;
-    }
     let id = uuidv4();
 </script>
 
@@ -69,7 +64,7 @@
                         />   
                     </td>
                     <td>
-                        <div on:click={handleAdd}>
+                        <div on:click={()=>handleAdd(inputYear,parseInt(inputValue))}>
                             <AddAlt />
                         </div>
                     </td>

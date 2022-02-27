@@ -6,7 +6,7 @@
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { onMount, onDestroy } from "svelte";
 
-	import { form_inputs, dark} from './stores.js';
+	import { path, form_inputs, dark} from './stores.js';
 	
 	import Dashboard from './pages/Dashboard.svelte';
 	import Settings from './pages/Settings.svelte';
@@ -42,6 +42,14 @@
 		})
 		.catch((error) => alert(error));
 	}
+
+	function saveFile(pathString, data) {
+		invoke("file_save", {
+			path: pathString,
+			data: data,
+		})
+		.catch((error) => alert(error));
+	}
 	
 	let unlisten;
 	onMount(async () => {
@@ -51,13 +59,23 @@
 				case 'file-open' :
 					open()
 					.then(function (pathString) {
-						openFile(pathString);
+						if (pathString) {
+							path.set(pathString);
+							openFile($path);
+						}
 					});
 					break;
 				case 'file-save' :
+					saveFile($path, $form_inputs);
 					break;
 				case 'file-saveas' :
-					save();
+					save()
+					.then(function (pathString) {
+						if (pathString) {
+							path.set(pathString);
+							saveFile($path, $form_inputs);
+						}
+					});
 					break;
 				default : 
 					alert("not sure what to do");

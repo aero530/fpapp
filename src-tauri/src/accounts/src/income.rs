@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use image::{ImageBuffer, Rgba};
 use serde_json::json;
+use ts_rs::TS;
 
 use super::*;
 
 /// Account to represent sources of income
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Income<T: std::cmp::Ord> {
     /// String describing this account

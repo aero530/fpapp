@@ -1,5 +1,6 @@
-<script>
+<script lang="ts">
 	import { form_inputs } from '../stores.js';
+	import {addTableRow, removeTableRow} from "../helper";
 	
 	import Scatter from "../components/Scatter.svelte";
 	import YearInput from "../components/YearInput.svelte";
@@ -46,8 +47,8 @@ notes: Option<String>, -->
 
 
 <div class="grid grid-cols-1 gap-4">
-	{#each Object.entries($form_inputs.accounts) as [id, account]}
-		{#if account.type == 'mortgage'}
+	{#each Object.keys($form_inputs.accounts) as id}
+		{#if $form_inputs.accounts[id].type == 'mortgage'}
 			<div class="grid grid-rows-1 even:bg-slate-200">
 				<div class="grid grid-cols-10 gap-2 ">
 					<div class="col-span-5">
@@ -83,14 +84,13 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<Payment
 									label="Payment Type"
-									step=1
 									bind:value={$form_inputs.accounts[id].paymentType}
 								/>
 							</div>
 							<div class="col-span-5">
 								<NumberInput
 									label="Payment Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].paymentValue}
 									questionText="How much money should be payed each year (either as a percentage or a fixed dollar amount) [in today's dollars]"
 								/>
@@ -107,7 +107,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Compound Freq"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].compoundTime}
 									questionText="Number of times per year that interest is compounded. (1=yearly, 12=monthly)"
 								/>
@@ -115,7 +115,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Mortgage Insurance"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].mortgageInsurance}
 									questionText="Mortgage insurance payment expressed as a yearly fixed number [in today's dollars]"
 								/>
@@ -123,7 +123,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Loan to Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].ltvLimit}
 									questionText="Loan to Value amount when mortgage insurance is no longer pulled from payment.  Since monthly payment does not change over time, after the insurance is done there is more money going to the principal each payment"
 								/>
@@ -131,7 +131,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Escrow"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].escrowValue}
 									questionText="Amount of money going into escrow every year to pay for property tax.  This number is currently assumed to be constant (ie property taxes do not increase) [in today's dollars]"
 								/>
@@ -139,7 +139,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Home Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].homeValue}
 									questionText="Current value of the home.  This is used to compute loan to value [in today's dollars]"
 								/>
@@ -157,14 +157,16 @@ notes: Option<String>, -->
 						</div>
 					</div>
 					<div class="col-span-5">
-						<Scatter id={id} title={account.name} xlabel="Year" ylabel="Amount"/>
+						<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
 					</div>
 				</div>
 				<div class="grid grid-cols-2 gap-0">
 					<div>
 						<Table
 							label="Balance"
-							bind:data={$form_inputs.accounts[id].table}
+							data={$form_inputs.accounts[id].table}
+							on:add={(e)=>addTableRow(form_inputs, id, 'table', e.detail.year, e.detail.value)}
+							on:remove={(e)=>removeTableRow(form_inputs, id, 'table', e.detail.year)}
 						/>
 					</div>
 				</div>

@@ -1,9 +1,11 @@
 //! User input withdrawal and tax status values
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 /// used to populate account dropdown for withdrawal type selection
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "snake_case")]
 pub enum WithdrawalOptions {
     /// fixed dollar amount
@@ -20,7 +22,8 @@ pub enum WithdrawalOptions {
 }
 
 /// used to populate account dropdown for tax status selection
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "snake_case")]
 pub enum TaxStatus {
     /// Paid with taxed income, earnings are not taxed, withdrawals are not taxed

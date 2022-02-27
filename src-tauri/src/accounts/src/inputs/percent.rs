@@ -4,11 +4,13 @@
 //! fields to return meaningful values based on text, calculate, and contant value inputs.
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::settings;
 
 /// These values can be input as constants or as computed values (strings)
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(untagged)]
 pub enum PercentInput {
     /// Calculated value based on suggested options
@@ -37,7 +39,8 @@ impl PercentInput {
 /// selected as the value for any field that is a percent such that if you change the base
 /// inflation setting then that account's percent value (such as increase in an expense) will
 /// change to reflect the newly set value.
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum PercentSuggestions {
     InflationBase,

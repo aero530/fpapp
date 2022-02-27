@@ -1,12 +1,14 @@
 //! User input year (date) values
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::settings;
 use crate::Dates;
 
 /// Options for strings on year inputs
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum YearEvalType {
     StartIn,
@@ -16,14 +18,16 @@ pub enum YearEvalType {
 }
 
 /// Struct to hold info about computed year values
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 pub struct YearComputation {
     base: YearSuggestion,
     delta: i32,
 }
 
 /// These values can be input as constants or as computed values (strings)
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(untagged)]
 pub enum YearInput {
     /// Calculated value based on suggested options
@@ -52,7 +56,8 @@ impl YearInput {
 }
 
 /// Options for strings on year inputs
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum YearSuggestion {
     /// Start of simulation

@@ -1,12 +1,14 @@
 //! User input contributions & employer matching values
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::PercentInput;
 // use super::fixed_with_inflation;
 
 /// description used to populate account dropdown for contribution type selection
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "snake_case")]
 pub enum ContributionOptions {
     /// fixed dollar amount
@@ -18,7 +20,8 @@ pub enum ContributionOptions {
 }
 
 /// Employer matching for retirement accounts
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "snake_case")]
 pub struct EmployerMatch {
     /// Percentage that the employer will match (such as 50%)

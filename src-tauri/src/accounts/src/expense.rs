@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
 use crate::inputs::fixed_with_inflation;
@@ -10,7 +11,8 @@ use account_expense_derive::AccountExpense;
 use super::*;
 
 /// Account type to represent generic expense
-#[derive(Debug, Clone, Deserialize, Serialize, AccountExpense)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountExpense)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Expense<T: std::cmp::Ord> {
     /// String describing this account

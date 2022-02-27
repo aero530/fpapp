@@ -1,5 +1,6 @@
-<script>
+<script lang="ts">
 	import { form_inputs } from '../stores.js';
+	import {addTableRow, removeTableRow} from "../helper";
 	
 	import Scatter from "../components/Scatter.svelte";
 	import YearInput from "../components/YearInput.svelte";
@@ -61,8 +62,8 @@ notes: Option<String>, -->
 
 
 <div class="grid grid-cols-1 gap-4">
-	{#each Object.entries($form_inputs.accounts) as [id, account]}
-		{#if account.type == 'retirement'}
+	{#each Object.keys($form_inputs.accounts) as id}
+		{#if $form_inputs.accounts[id].type == 'retirement'}
 			<div class="grid grid-rows-1 even:bg-slate-200">
 				<div class="grid grid-cols-10 gap-2 ">
 					<div class="col-span-5">
@@ -107,7 +108,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Contribution Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].contributionValue}
 									questionText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]"
 								/>
@@ -121,7 +122,7 @@ notes: Option<String>, -->
 							<div class="col-span-5">
 								<NumberInput
 									label="Withdrawal Value"
-									step=1
+									step={1}
 									bind:value={$form_inputs.accounts[id].withdrawalValue}
 									questionText="How much money should be take out per year (either as a percentage or a fixed dollar amount) [in today's dollars]"
 								/>
@@ -149,7 +150,7 @@ notes: Option<String>, -->
 
 							<AccountLink
 								label="Income link?"
-								value=true
+								value={true}
 								bind:account={$form_inputs.accounts[id].incomeLink}
 								accounts={$form_inputs.accounts}
 								accountTypeFilter='income'
@@ -167,21 +168,25 @@ notes: Option<String>, -->
 						</div>
 					</div>
 					<div class="col-span-5">
-						<Scatter id={id} title={account.name} xlabel="Year" ylabel="Amount"/>
+						<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
 					</div>
 				</div>
 				<div class="grid grid-cols-2 gap-0">
 					<div>
 						<Table
 							label="Balance"
-							bind:data={$form_inputs.accounts[id].table}
+							data={$form_inputs.accounts[id].table}
+							on:add={(e)=>addTableRow(form_inputs, id, 'table', e.detail.year, e.detail.value)}
+							on:remove={(e)=>removeTableRow(form_inputs, id, 'table', e.detail.year)}
 						/>
 					</div>
 					{#if $form_inputs.accounts[id].hasOwnProperty('contributions')}
 						<div>
 							<Table
 								label="Contributions"
-								bind:data={$form_inputs.accounts[id].contributions}
+								data={$form_inputs.accounts[id].contributions}
+								on:add={(e)=>addTableRow(form_inputs, id, 'contributions', e.detail.year, e.detail.value)}
+								on:remove={(e)=>removeTableRow(form_inputs, id, 'contributions', e.detail.year)}
 							/>
 						</div>
 					{/if}
@@ -189,7 +194,9 @@ notes: Option<String>, -->
 						<div>
 							<Table
 								label="Employer Contributions"
-								bind:data={$form_inputs.accounts[id].employerContributions}
+								data={$form_inputs.accounts[id].employerContributions}
+								on:add={(e)=>addTableRow(form_inputs, id, 'employerContributions', e.detail.year, e.detail.value)}
+								on:remove={(e)=>removeTableRow(form_inputs, id, 'employerContributions', e.detail.year)}
 							/>
 						</div>
 					{/if}
@@ -197,7 +204,9 @@ notes: Option<String>, -->
 						<div>
 							<Table
 								label="Earnings"
-								bind:data={$form_inputs.accounts[id].earnings}
+								data={$form_inputs.accounts[id].earnings}
+								on:add={(e)=>addTableRow(form_inputs, id, 'earnings', e.detail.year, e.detail.value)}
+								on:remove={(e)=>removeTableRow(form_inputs, id, 'earnings', e.detail.year)}
 							/>
 						</div>
 					{/if}
@@ -205,7 +214,9 @@ notes: Option<String>, -->
 						<div>
 							<Table
 								label="Withdrawals"
-								bind:data={$form_inputs.accounts[id].withdrawals}
+								data={$form_inputs.accounts[id].withdrawals}
+								on:add={(e)=>addTableRow(form_inputs, id, 'withdrawals', e.detail.year, e.detail.value)}
+								on:remove={(e)=>removeTableRow(form_inputs, id, 'withdrawals', e.detail.year)}
 							/>
 						</div>
 					{/if}

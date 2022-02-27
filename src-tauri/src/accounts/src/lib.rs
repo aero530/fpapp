@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
 mod inputs;
@@ -159,6 +160,8 @@ impl AccountType {
     }
 }
 
+
+
 /// Account Wrapper for json data storage
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -201,6 +204,22 @@ impl AccountWrapper {
             AccountType::Savings,
         ]
     }
+}
+
+/// Clone of Account Wrapper for the UI with number values in the tables
+#[derive(TS, Debug, Clone, Deserialize, Serialize)]
+#[ts(export)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum AccountWrapperUI {
+    Income(Income<u32>),
+    Ssa(Ssa),
+    Retirement(Retirement<u32>),
+    Hsa(Hsa<u32>),
+    College(College<u32>),
+    Expense(Expense<u32>),
+    Loan(Loan<u32>),
+    Mortgage(Mortgage<u32>),
+    Savings(Savings<u32>),
 }
 
 /// Common result structure used in yearly account simulation

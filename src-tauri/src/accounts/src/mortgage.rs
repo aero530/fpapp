@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
 use crate::inputs::fixed_with_inflation;
@@ -10,7 +11,8 @@ use account_payment_derive::AccountPayment;
 use super::*;
 
 /// Loan type specifically tailored for mortgages
-#[derive(Debug, Clone, Deserialize, Serialize, AccountPayment)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountPayment)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Mortgage<T: std::cmp::Ord> {
     /// String describing this account

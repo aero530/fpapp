@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
 use crate::inputs::fixed_with_inflation;
@@ -10,7 +11,8 @@ use account_savings_derive::AccountSavings;
 use super::*;
 
 /// Health Savings Account
-#[derive(Debug, Clone, Deserialize, Serialize, AccountSavings)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountSavings)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Hsa<T: std::cmp::Ord> {
     /// String describing this account

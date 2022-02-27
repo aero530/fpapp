@@ -1,9 +1,11 @@
 //! Generic settings that impact the simulation / analysis results
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 /// Generic span (something that has a min and max value)
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 pub struct Span<T> {
     /// Minimum value
     pub low: T,
@@ -12,7 +14,8 @@ pub struct Span<T> {
 }
 
 /// Social Security span settings
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct SsaSettings {
     /// SSA breakpoints to interpolate between
@@ -22,7 +25,8 @@ pub struct SsaSettings {
 }
 
 /// Analysis user settings
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// Age you plan to retire at

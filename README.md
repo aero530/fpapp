@@ -72,12 +72,21 @@ A financial planning & simulation application.
 git clone https://github.com/aero530/fpapp.git fpapp
 ```
 
+## Update TypeScript Bindings ##
+
+The accounts rust module uses ts-rs to automatically create TS bindings for use in the UI. Currently these 
+need to manually generated if the accounts module changes.
+
+```cmd
+> cd src-tauri/src/accounts; cargo test; cd ../../../
+```
+
 ## Dev ##
 
 Start app in dev mode:
 
 ```cmd
-> npm run tauri build
+> npm run tauri dev
 ```
 
 ## Packaging ##
@@ -85,8 +94,12 @@ Start app in dev mode:
 Create a package for macOS, Windows, or Linux using one of the following commands:
 
 ```cmd
-> cargo build --release
+> npm run tauri build
 ```
+
+<!-- ```cmd
+> cargo build --release
+``` -->
 
 ## Tests ##
 
