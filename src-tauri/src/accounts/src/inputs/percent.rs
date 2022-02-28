@@ -26,7 +26,7 @@ impl PercentInput {
         match self {
             Self::Calculate(input) => input.value(settings),
             Self::ConstantFloat(input) => *input,
-            Self::ConstantString(input) => input.parse().unwrap(),
+            Self::ConstantString(input) => input.parse().unwrap_or_default(),
         }
     }
 }

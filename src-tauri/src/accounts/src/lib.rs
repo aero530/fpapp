@@ -3,8 +3,10 @@
 //! Simulate accounts such as income, expense, retirement, 529, loan, mortgage, etc.
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use ts_rs::TS;
+use std::error::Error;
+// use std::collections::HashMap;
+// use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
 mod inputs;
@@ -158,6 +160,19 @@ impl AccountType {
             AccountType::Savings => "savings".to_string(),
         }
     }
+    pub fn order() -> Vec<AccountType> {
+        vec![
+            AccountType::Income,
+            AccountType::Ssa,
+            AccountType::Expense,
+            AccountType::Hsa, // Expenses must be run before HSA to be able to compute HSA withdrawal amount
+            AccountType::Mortgage,
+            AccountType::Loan,
+            AccountType::College,
+            AccountType::Retirement,
+            AccountType::Savings,
+        ]
+    }
 }
 
 
@@ -204,6 +219,7 @@ impl AccountWrapper {
             AccountType::Savings,
         ]
     }
+
 }
 
 /// Clone of Account Wrapper for the UI with number values in the tables

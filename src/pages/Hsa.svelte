@@ -12,6 +12,15 @@
 	import NumberInput from "../components/NumberInput.svelte";
 	import PercentInput from "../components/PercentInput.svelte";
 	import Table from "../components/Table.svelte";
+	import DeleteModal from "../components/DeleteModal.svelte";
+
+	import AddAlt from '../icons/AddAlt.svelte';
+	import {AccountType} from "../stores";
+
+	let deleteModal = {
+		open: false,
+		id:""
+	};
 
 </script>
 
@@ -47,8 +56,14 @@ notes: Option<String>,
 // The following items are used when running the program and are not stored with the user data
 /// Tables used to store simulation results -->
 
-<h1 class="text-lg">HSA</h1>
+<DeleteModal id={deleteModal.id} open={deleteModal.open}/>
 
+<div class="flex items-center">
+	<div class="text-lg pr-2">HSA</div>
+	<div on:click={()=>form_inputs.addAccount(AccountType.hsa)}>
+		<AddAlt />
+	</div>
+</div>
 
 <div class="grid grid-cols-1 gap-4">
 	{#each Object.keys($form_inputs.accounts) as id}
@@ -57,12 +72,20 @@ notes: Option<String>,
 				<div class="grid grid-cols-10 gap-2 ">
 					<div class="col-span-5">
 						<div class="grid grid-cols-10 gap-2">
-							<div class="col-span-10">
+							<div class="col-span-7">
 								<TextInput
 									label="Account name"
 									bind:value={$form_inputs.accounts[id].name}
 									questionText="Human friendly name for the account"
 								/>
+							</div>
+							<div class="col-span-3 flex grow items-center">
+								<button 
+									class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2 dark:bg-primary-300 dark:hover:bg-primary-200"
+									on:click={()=>(deleteModal = {open: true, id})}
+								>
+									Delete Account
+								</button>
 							</div>
 							<div class="col-span-5">
 								<YearInput

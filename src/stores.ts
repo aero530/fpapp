@@ -1,11 +1,15 @@
 import { writable } from 'svelte/store';
 import { invoke } from "@tauri-apps/api/tauri";
+import { v4 as uuid } from 'uuid';
 
 import type { AccountWrapperUI as Account } from "../src-tauri/src/accounts/bindings/AccountWrapperUI";
 
 import type {Settings} from "../src-tauri/src/accounts/bindings/Settings";
 
+import {defaultCollege, defaultExpense, defaultHsa, defaultIncome, defaultLoan, defaultMortgage, defaultRetirement, defaultSavings, defaultSsa} from "./accountDefaults";
+
 // import type { College } from "../src-tauri/src/accounts/bindings/College";
+
 // import type { Expense } from "../src-tauri/src/accounts/bindings/Expense";
 // import type { Hsa } from "../src-tauri/src/accounts/bindings/Hsa";
 // import type { Income } from "../src-tauri/src/accounts/bindings/Income";
@@ -116,8 +120,34 @@ type InputData = {
 
 let defaultInput : InputData = {
     accounts: {},
-    settings: {},
+    settings: {
+        ageRetire: 65,
+        ageDie: 90,
+        yearBorn: 1950,
+        yearStart: 2000,
+        inflationBase: 10,
+        taxIncome: 10,
+        taxCapitalGains: 10,
+        retirementCostOfLiving: 100,
+        ssa: {
+            breakpoints: {low:0,high:0},
+            taxableIncomePercentage: {low:0,high:0},
+        },
+    },
 };
+
+
+export enum AccountType {
+    college,
+    expense,
+    hsa,
+    income,
+    loan,
+    mortgage,
+    retirement,
+    savings,
+    ssa
+}
 
 function createInput() {
 	const { subscribe, set, update } = writable(defaultInput);
@@ -142,10 +172,50 @@ function createInput() {
                 return current;
             });
         },
-		reset: () => set({
-            accounts: {},
-            settings: {}
-        })
+        removeAccount: (id: string) => {
+            update(current => {
+                delete current.accounts[id]
+                run_analysis(current);
+                return current;
+            });
+        },
+        addAccount: (type: AccountType) => {
+            let id = uuid();
+            update(current => {
+                switch (type) {
+                    case AccountType.college :
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultCollege));
+                        break;
+                    case AccountType.expense:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultExpense));
+                        break;
+                    case AccountType.hsa:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultHsa));
+                        break;
+                    case AccountType.income:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultIncome));
+                        break;
+                    case AccountType.loan:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultLoan));
+                        break;
+                    case AccountType.mortgage:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultMortgage));
+                        break;
+                    case AccountType.retirement:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultRetirement));
+                        break;
+                    case AccountType.savings:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultSavings));
+                        break;
+                    case AccountType.ssa:
+                        current.accounts[id] = JSON.parse(JSON.stringify(defaultSsa));
+                        break;
+                }
+                run_analysis(current);
+                return current;
+            });
+        },
+		reset: () => set(defaultInput)
 	};
 }
 export const form_inputs = createInput();
@@ -205,3 +275,15 @@ function createSummaryData() {
 export const summary_data = createSummaryData();
 
 export const dark = writable(false);
+
+
+
+
+
+
+
+
+
+
+
+

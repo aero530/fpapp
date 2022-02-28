@@ -130,7 +130,7 @@
 			{/each}
 		</ul>
 		<hr />
-		<button class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center mx-4 mb-2 dark:bg-primary-300 dark:hover:bg-primary-200 " on:click={toggleDark}>Toggle Dark Mode</button>
+		<button class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center mx-4 mb-2 mt-4 dark:bg-primary-300 dark:hover:bg-primary-200 " on:click={toggleDark}>Toggle Dark Mode</button>
 </aside>
 <main class="top-0 right-0 pl-64 mx-4">
 	<svelte:component this={selected.value}/>

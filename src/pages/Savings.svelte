@@ -12,6 +12,16 @@
 	import NumberInput from "../components/NumberInput.svelte";
 	import PercentInput from "../components/PercentInput.svelte";
 	import Table from "../components/Table.svelte";
+	import DeleteModal from "../components/DeleteModal.svelte";
+
+	import AddAlt from '../icons/AddAlt.svelte';
+	import {AccountType} from "../stores";
+
+	let deleteModal = {
+		open: false,
+		id:""
+	};
+	
 </script>
 
 <!-- /// String describing this account
@@ -51,7 +61,14 @@
     /// General information to store with this account
     notes: Option<String>, -->
 
-<h1 class="text-lg">Savings</h1>
+<DeleteModal id={deleteModal.id} open={deleteModal.open}/>
+
+<div class="flex items-center">
+	<div class="text-lg pr-2">Savings</div>
+	<div on:click={()=>form_inputs.addAccount(AccountType.savings)}>
+		<AddAlt />
+	</div>
+</div>
 
 <div class="grid grid-cols-1 gap-4">
 	{#each Object.keys($form_inputs.accounts) as id}
@@ -60,12 +77,20 @@
 				<div class="grid grid-cols-10 gap-2 ">
 					<div class="col-span-5">
 						<div class="grid grid-cols-10 gap-2">
-							<div class="col-span-10">
+							<div class="col-span-7">
 								<TextInput
 									label="Account name"
 									bind:value={$form_inputs.accounts[id].name}
 									questionText="Human friendly name for the account"
 								/>
+							</div>
+							<div class="col-span-3 flex grow items-center">
+								<button 
+									class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2 dark:bg-primary-300 dark:hover:bg-primary-200"
+									on:click={()=>(deleteModal = {open: true, id})}
+								>
+									Delete Account
+								</button>
 							</div>
 							<div class="col-span-5">
 								<YearInput

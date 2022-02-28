@@ -7,6 +7,7 @@ use std::io::Write;
 
 use super::{Account, AccountWrapper};
 
+
 mod contribution;
 mod expense;
 mod payment;
@@ -24,7 +25,7 @@ pub use withdrawal::*;
 pub use year::*;
 
 /// Represents the user data file
-#[derive(TS, Debug, Clone, Serialize, PartialEq, Deserialize)]
+#[derive(TS, Debug, Clone, Serialize, Deserialize)]
 #[ts(export)]
 pub struct UserData<T> {
     /// The system level configuration
@@ -67,7 +68,6 @@ impl UserData<Box<dyn Account>> {
         years.iter().for_each(|year| {
             file.write_all(format!("{}", year).as_bytes()).unwrap();
             order.iter().for_each(|uuid| {
-                self.accounts[uuid].get_value(*year);
                 file.write_all(
                     format!(
                         ",\t{:.2}",

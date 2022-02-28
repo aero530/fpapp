@@ -89,10 +89,10 @@ impl YearSuggestion {
             Self::YearDie => settings.year_die(),
             Self::YearEnd => settings.year_end(),
             Self::IncomeLink => match eval_type {
-                YearEvalType::StartIn => linked_dates.unwrap().year_in.unwrap().start,
-                YearEvalType::EndIn => linked_dates.unwrap().year_in.unwrap().end,
-                YearEvalType::StartOut => linked_dates.unwrap().year_out.unwrap().start,
-                YearEvalType::EndOut => linked_dates.unwrap().year_out.unwrap().end,
+                YearEvalType::StartIn => linked_dates.unwrap_or_default().year_in.unwrap_or_default().start,
+                YearEvalType::EndIn => linked_dates.unwrap_or_default().year_in.unwrap_or_default().end,
+                YearEvalType::StartOut => linked_dates.unwrap_or_default().year_out.unwrap_or_default().start,
+                YearEvalType::EndOut => linked_dates.unwrap_or_default().year_out.unwrap_or_default().end,
             },
         }
     }
