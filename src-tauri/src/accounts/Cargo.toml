@@ -1,0 +1,24 @@
+[package]
+name = "accounts"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+env_logger = "0.9.0"
+image = "0.23.14"
+log = "0.4.14"
+plotters = "0.3.1"
+serde = { version = "1.0.126", features = ["derive"] }
+serde_json = "1.0.64"
+toml = "0.5.8"
+float-cmp = "0.9.0"
+ts-rs = "6.1.2"
+
+account_savings_derive = { path = "./src/account_savings_derive" }
+account_expense_derive = { path = "./src/account_expense_derive" }
+account_payment_derive = { path = "./src/account_payment_derive" }
+
+[dev-dependencies]
+float-cmp = "0.9.0"

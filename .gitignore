@@ -1,22 +1,13 @@
-# Development
-node_modules
+# ignore root archive folder
+/archive
 
-# Compiled
-dist
-dist-assets
-build
+/node_modules/
+/public/build/
 
-# OSX
 .DS_Store
-
-# Logs
-logs
-*.log
-*.log
+.routify
+.vscode
 
 # Data
 data.json
 dataSimple.json
-
-# vscode config
-.vscode

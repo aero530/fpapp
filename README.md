@@ -1,14 +1,28 @@
 # financial planning app #
 
+<<<<<<< HEAD
 The main branch of this app is a bit stale.  I am currently working on porting the calculations to Rust and creating a new UI using Tauri.
 
 A financial planning & simulation application based on [Electron Boiler Plate](https://github.com/jschr/electron-react-redux-boilerplate) using <a href="http://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://redux.js.org/">Redux</a>, and <a href="https://github.com/reactjs/react-router">React Router</a>.
+=======
+A financial planning & simulation application.
+>>>>>>> dev
 
 ---
 
-![screenshot_graphs](https://github.com/aero530/fpapp/raw/main/resources/screenshots/graphs.png "Graph")
+To do:
 
-![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/loan.png "Loan")
+- [x] Convert backend from JS to Rust
+- [x] Convert UI from Electron to Tauri
+- [x] Convert web front end from React to Svelte
+- [ ] Cleanup / improve look & style of layout
+- [ ] Convert charts to D3
+- [ ] Generate overall visualizations / charts for dashboard
+- [ ] Add use tips to dashboard page if there is no data loaded
+
+---
+
+![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/retirement.png "Retirement")
 
 ## Features ##
 
@@ -29,21 +43,44 @@ A financial planning & simulation application based on [Electron Boiler Plate](h
 
 ---
 
+## Computation Flow ##
+
+* Loop through accounts to determine what order they should be processed in
+* initialize tables to the correct sizes
+* Main loop to loop through each year
+  * Initialize this year
+  * Loop through accounts to make contributions and withdrawals
+    * Initialize the value of the account for this year
+    * Calculate earnings for savings, college, retirement, hsa, and income accounts
+    * Add earnings to the account table for the year
+    * Calculate interest for loan and mortgage
+    * Add interest to the account table for the year
+    * Calculate contribution amount if account has a yearlyContribution defined
+      * Calculate contribution amount based on contribution type (fixed_with_inflation, fixed, percent_of_income)
+      * Calculate the employer contribution
+    * Add contribution and employerMatch to the account table for the year
+    * Remove contribution from taxable income for the year based on taxStatus
+    * Calculate payment if paymentType is defined
+      * Calculate payment amount
+    * Add payment to the account table for the year
+    * Calculate withdrawal if withdrawalType is defined
+      * Calculate withdrawal amount for col_frac_of_savings, fixed, fixed_with_inflation, and end_at_zero
+      * Limit withdrawal amount to the current value of the account (do not allow an account to become overdrawn)
+    * Calculate expense amount
+      * Calculate expense amount for fixed and fixed_with_inflation
+    * Add earnings to incomeTotalTaxableTable and incomeTotalTable for the year
+    * Remove withdrawal from the account table for the year
+    * Add withdrawal to income table for the year (withdrawal came from another account and it added to the income tables)
+    * Add expense to the account table for the year
+    * Remove healthcare expenses from linked HSA account
+    * Add entry to expense total table
+    * Add entry to savings total
+  * Add Income to net account (subtract out paying for income tax)
+* Return Results
+
+---
+
 ## Development Setup ##
-
-This config works when using nodejs installed for windows (not through ubuntu in windows).
-
-### Install / Update Node ###
-
-[https://nodejs.org/en/](https://nodejs.org/en/)
-
-### Install shell launcher ###
-
-Add vs code extension shell launcher.
-
-[https://github.com/Tyriar/vscode-shell-launcher](https://github.com/Tyriar/vscode-shell-launcher)
-
-Use it by ctrl-shift-p 'shell'. Electron apps must be run from cmd.
 
 ### Clone the repo via git ###
 
@@ -51,18 +88,21 @@ Use it by ctrl-shift-p 'shell'. Electron apps must be run from cmd.
 git clone https://github.com/aero530/fpapp.git fpapp
 ```
 
-And then install dependencies with npm (from the node.js command prompt).
+## Update TypeScript Bindings ##
+
+The accounts rust module uses ts-rs to automatically create TS bindings for use in the UI. Currently these 
+need to manually generated if the accounts module changes.
 
 ```cmd
-> cd fpapp
-> npm install -g electron-builder
-> npm install
+> cd src-tauri/src/accounts; cargo test; cd ../../../
 ```
 
-Development
+## Dev ##
+
+Start app in dev mode:
 
 ```cmd
-> npm run develop
+> npm run tauri dev
 ```
 
 ## Packaging ##
@@ -70,13 +110,102 @@ Development
 Create a package for macOS, Windows, or Linux using one of the following commands:
 
 ```cmd
-> npm run pack:mac
-> npm run pack:win
-> npm run pack:linux
+> npm run tauri build
 ```
+
+<!-- ```cmd
+> cargo build --release
+``` -->
 
 ## Tests ##
 
 ```cmd
-> npm run test
+> cargo test
 ```
+
+## Revision History ##
+
+### v0.0.1 - 8.3.12 ###
+
+* Initial development in Octave
+
+### v0.0.2 - 8.27.12 ###
+
+* Convert to SciLab.
+
+### v0.0.3 - 9.1.12 ###
+
+* Update input numbers
+
+### v0.0.4 - 12.22.12 ###
+
+* Update input numbers
+
+### v0.0.5 - 10.27.13 ###
+
+* Update input numbers - http://money.msn.com/retirement/retirement-calculator.aspx
+
+### v0.1.0 - 12.30.13 ###
+
+* Convert to Python
+
+### v0.1.1 - 6.1.14 ###
+
+* Update input numbers
+
+### v0.1.2 - 12.7.14 ###
+
+* Update input numbers
+
+### v0.1.3 - 12.1.15 ###
+
+* Update input numbers
+
+### v0.1.4 - 3.10.17 ###
+
+* Update input numbers
+
+### v1.0.0 - 10.5.18 ###
+
+* Convert to JS / electron
+* Save user data as json instead of at the beginning of the code file
+* Release v1.0.0
+
+### v1.0.1 - 10.9.18 ###
+
+* Added social security account type
+
+### v1.0.2 - 10.10.18 ###
+
+* Update with new theme
+
+### v1.0.3 - 11.14.18 ###
+
+* Update to electron 3.0
+
+### v1.0.4 - 12.29.18 ###
+
+* Update to babel 7
+* Migrate from 2 package.json to single package.json
+* Replace react-router-redux with connected-react-router
+* Remove unused dependencies
+
+### v2.0.0 - 10.3.19 ###
+
+* Change to new project template
+* Update dependencies
+* Fix calculation bugs
+* Add social security income source
+
+### v2.1.0 - 10.17.19 ###
+
+* Add file-new
+* Refresh pages on file-open or file-new
+
+### v2.1.1 - 12.9.19 ###
+
+* Fix data type storage bug from MUI Editable table fields
+
+### v3.0.0 - ________ ###
+
+* Convert to Rust & Tauri
