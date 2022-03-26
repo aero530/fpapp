@@ -4,9 +4,19 @@ A financial planning & simulation application.
 
 ---
 
-![screenshot_graphs](https://github.com/aero530/fpapp/raw/main/resources/screenshots/graphs.png "Graph")
+To do:
 
-![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/loan.png "Loan")
+- [x] Convert backend from JS to Rust
+- [x] Convert UI from Electron to Tauri
+- [x] Convert web front end from React to Svelte
+- [ ] Cleanup / improve look & style of layout
+- [ ] Convert charts to D3
+- [ ] Generate overall visualizations / charts for dashboard
+- [ ] Add use tips to dashboard page if there is no data loaded
+
+---
+
+![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/retirement.png "Retirement")
 
 ## Features ##
 
