@@ -20,11 +20,11 @@
     let id = uuidv4();
 </script>
 
-<div class="grid grid-col-1">
-	<div class="mr-3 text-md">
+<div class="grid grid-col-1 w-fit gap-2 border rounded p-1">
+	<div class="text-md">
 		<label for="{id}" class="font-medium text-gray-700">{label}</label>
 	</div>
-	<div class="flex grow items-center mx-4">
+	<div class="flex grow items-center">
         <table class="table-auto">
             <thead>
             <tr>
@@ -37,8 +37,8 @@
                 {#if data !== null}
                     {#each Object.keys(data).sort() as thisYear}
                         <tr>
-                            <td>{thisYear}</td>
-                            <td>{data[thisYear]}</td>
+                            <td class="pl-1">{thisYear}</td>
+                            <td class="pl-1">{data[thisYear]}</td>
                             <td>
                                 <div on:click={() => handleRemove(thisYear)}>
                                     <SubtractAlt />
@@ -52,14 +52,14 @@
                     <td>
                         <input
                             type="number"
-                            class="p-0 m-0 text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+                            class="p-0 m-0 pl-1 w-16 text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
                             bind:value={inputYear}
                         />    
                     </td>
                     <td>
                         <input
                             type="number"
-                            class="p-0 m-0 text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+                            class="p-0 m-0 pl-1 w-32 text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
                             bind:value={inputValue}
                         />   
                     </td>

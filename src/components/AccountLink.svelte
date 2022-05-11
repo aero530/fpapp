@@ -19,7 +19,7 @@
 </script>
 
 <QuestionField {questionText} {label}>
-    <div class="flex items-center w-full gap-4">
+    <div class="flex items-center w-fit gap-4">
         <label for={id} class="flex items-center cursor-pointer">
             <!-- toggle -->
             <div class="relative">

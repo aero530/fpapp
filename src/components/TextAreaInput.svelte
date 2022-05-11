@@ -9,9 +9,8 @@
 
 <QuestionField {questionText} {label}>
     <textarea
-        style="width: 100%;"
         textarea
         bind:value={value}
-        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+        class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
     />
 </QuestionField>

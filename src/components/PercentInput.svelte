@@ -76,7 +76,7 @@
         value={parseValue(value)}
         on:change={handleChange}
         invalid={invalid}
-        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+        class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400 border"
     />
     <!-- <HelperText persistent={invalid} slot="helper">{questionText + " " + helperText}</HelperText> -->
 </QuestionField>

@@ -122,15 +122,22 @@
 <aside class="top-0 left-0 w-64 h-screen fixed bg-slate-200 dark:bg-slate-600">
 		<ul class="flex flex-col overflow-hidden">
 			{#each pages as page}
-				<a href="javascript:void(0)">
-					<li on:click={() => {selected = page;}} class="hover:bg-violet-500 active:bg-violet-600 py-2 px-4">
-						{page.text}
-					</li>
-				</a>
+				<li 
+					on:click={() => {selected = page;}}
+					class="hover:bg-primary-200 active:bg-primary-300 py-2 px-4 font-semibold"
+					class:bg-primary-400={selected === page}
+				>
+					{page.text}
+				</li>
 			{/each}
 		</ul>
 		<hr />
-		<button class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center mx-4 mb-2 mt-4 dark:bg-primary-300 dark:hover:bg-primary-200 " on:click={toggleDark}>Toggle Dark Mode</button>
+		<button 
+			class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center mx-4 mb-2 mt-4 dark:bg-primary-300 dark:hover:bg-primary-200 "
+			on:click={toggleDark}
+		>
+			Toggle Dark Mode
+		</button>
 </aside>
 <main class="top-0 right-0 pl-64 mx-4">
 	<svelte:component this={selected.value}/>

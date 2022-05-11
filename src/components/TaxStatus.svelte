@@ -91,7 +91,7 @@
 <QuestionField {questionText} {label}>
     <select
         bind:value={value}
-        class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
+        class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
     >
         {#each items as item}
             <option value={item.value}>{item.text}</option>
