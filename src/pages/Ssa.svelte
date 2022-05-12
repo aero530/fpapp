@@ -32,21 +32,17 @@
 	{#each Object.keys($form_inputs.accounts) as id}
 	{#if $form_inputs.accounts[id].type == 'ssa'}
 	<AccountCard>
-		<div slot="inputs" class="flex-initial w-fit">
-			
-			<div class="grid grid-cols-10 gap-2">
-				<div class="col-span-7">
-					<TextInput
-					label="Account name"
-					bind:value={$form_inputs.accounts[id].name}
-					questionText="Human friendly name for the account"
-					/>
-				</div>
-				<div class="col-span-3 flex grow items-center">
-					<button 
-					class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2 dark:bg-primary-300 dark:hover:bg-primary-200"
-					on:click={()=>(deleteModal = {open: true, id})}
-					>
+		
+		<div slot="inputs" class="grid grid-cols-10 gap-2">
+			<div class="col-span-7">
+				<TextInput
+				label="Account name"
+				bind:value={$form_inputs.accounts[id].name}
+				questionText="Human friendly name for the account"
+				/>
+			</div>
+			<div class="col-span-3 flex grow items-center">
+				<button class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2 dark:bg-primary-300 dark:hover:bg-primary-200" on:click={()=>(deleteModal = {open: true, id})}>
 					Delete Account
 				</button>
 			</div>
@@ -56,7 +52,6 @@
 				questionText="When money will start going into this account..."
 				bind:value={$form_inputs.accounts[id].startIn}
 				/>
-				
 			</div>
 			<div class="col-span-5">
 				<YearInput
@@ -65,8 +60,6 @@
 				bind:value={$form_inputs.accounts[id].endIn}
 				/>
 			</div>
-			
-			
 			<div class="col-span-5">
 				<NumberInput
 				label="Base"
@@ -75,7 +68,6 @@
 				questionText="Base income from social security"
 				/>
 			</div>
-			
 			<div class="col-span-10">
 				<TextAreaInput
 				label="Notes"
@@ -83,13 +75,10 @@
 				questionText="General information to store with this account"
 				/>
 			</div>
-			
 		</div>
-	</div>
-	<div slot="chart" class="flex-auto w-[38rem]">
-		<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
-	</div>
-</AccountCard>
-{/if}
-{/each}
+		
+		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
+	</AccountCard>
+	{/if}
+	{/each}
 </div>

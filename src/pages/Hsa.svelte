@@ -38,20 +38,17 @@
 	{#each Object.keys($form_inputs.accounts) as id}
 	{#if $form_inputs.accounts[id].type == 'hsa'}
 	<AccountCard>
-		<div  slot="inputs" class="flex-initial w-fit">
-			<div class="grid grid-cols-10 gap-2">
-				<div class="col-span-7">
-					<TextInput
-					label="Account name"
-					bind:value={$form_inputs.accounts[id].name}
-					questionText="Human friendly name for the account"
-					/>
-				</div>
-				<div class="col-span-3 flex grow items-center">
-					<button 
-					class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2 dark:bg-primary-300 dark:hover:bg-primary-200"
-					on:click={()=>(deleteModal = {open: true, id})}
-					>
+		
+		<div slot="inputs" class="grid grid-cols-10 gap-2">
+			<div class="col-span-7">
+				<TextInput
+				label="Account name"
+				bind:value={$form_inputs.accounts[id].name}
+				questionText="Human friendly name for the account"
+				/>
+			</div>
+			<div class="col-span-3 flex grow items-center">
+				<button class="text-light bg-primary-500 hover:bg-primary-400 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2 dark:bg-primary-300 dark:hover:bg-primary-200" on:click={()=>(deleteModal = {open: true, id})}>
 					Delete Account
 				</button>
 			</div>
@@ -142,21 +139,18 @@
 				questionText="General information to store with this account"
 				/>
 			</div>
-			
 		</div>
-	</div>
-	<div slot="chart" class="flex-auto w-[38rem]">
-		<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
-	</div>
-	<div slot="tables" class="flex flex-wrap gap-4">
+		
+		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
+		
 		<Table
+		slot="balance"
 		label="Balance"
 		data={$form_inputs.accounts[id].table}
 		on:add={(e)=>addTableRow(form_inputs, id, 'table', e.detail.year, e.detail.value)}
 		on:remove={(e)=>removeTableRow(form_inputs, id, 'table', e.detail.year)}
 		/>
-	</div>
-</AccountCard>
-{/if}
-{/each}
+	</AccountCard>
+	{/if}
+	{/each}
 </div>

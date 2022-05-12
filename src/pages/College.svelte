@@ -38,22 +38,16 @@
 	{#each Object.keys($form_inputs.accounts) as id}
 	{#if $form_inputs.accounts[id].type == 'college'}
 	<AccountCard>
-		<div slot="inputs" class="flex-initial w-fit">
-			<div class="grid grid-cols-10 gap-2">
-				<div class="col-span-7">
-					<TextInput
-					label="Account name"
-					bind:value={$form_inputs.accounts[id].name}
-					questionText="Human friendly name for the account"
-					/>
-				</div>
-				<div class="col-span-3 flex grow items-center">
-					<button 
-					class="text-light bg-primary-500 hover:bg-primary-400 
-					dark:bg-primary-300 dark:hover:bg-primary-200
-					font-medium rounded-lg text-sm px-2 py-1 text-center mx-2"
-					on:click={()=>(deleteModal = {open: true, id})}
-					>
+		<div slot="inputs" class="grid grid-cols-10 gap-2">
+			<div class="col-span-7">
+				<TextInput
+				label="Account name"
+				bind:value={$form_inputs.accounts[id].name}
+				questionText="Human friendly name for the account"
+				/>
+			</div>
+			<div class="col-span-3 flex grow items-center">
+				<button class="text-light bg-primary-500 hover:bg-primary-400 dark:bg-primary-300 dark:hover:bg-primary-200 font-medium rounded-lg text-sm px-2 py-1 text-center mx-2"on:click={()=>(deleteModal = {open: true, id})}>
 					Delete Account
 				</button>
 			</div>
@@ -63,7 +57,6 @@
 				questionText="When money will start going into this account..."
 				bind:value={$form_inputs.accounts[id].startIn}
 				/>
-				
 			</div>
 			<div class="col-span-5">
 				<YearInput
@@ -135,43 +128,38 @@
 				/>
 			</div>
 		</div>
-	</div>
-	<div slot="chart" class="flex-auto w-[38rem]">
-		<Scatter id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
-	</div>
-	<div slot="tables" class="flex flex-wrap gap-4">
+		
+		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
+		
 		<Table
+		slot="balance"
 		label="Balance"
 		data={$form_inputs.accounts[id].table}
 		on:add={(e)=>addTableRow(form_inputs, id, 'table', e.detail.year, e.detail.value)}
 		on:remove={(e)=>removeTableRow(form_inputs, id, 'table', e.detail.year)}
 		/>
-		{#if $form_inputs.accounts[id].hasOwnProperty('contributions') && Object.keys($form_inputs.accounts[id].contributions).length > 0}
 		<Table
+		slot="contributions"
 		label="Contributions"
 		data={$form_inputs.accounts[id].contributions}
 		on:add={(e)=>addTableRow(form_inputs, id, 'contributions', e.detail.year, e.detail.value)}
 		on:remove={(e)=>removeTableRow(form_inputs, id, 'contributions', e.detail.year)}
 		/>
-		{/if}
-		{#if $form_inputs.accounts[id].hasOwnProperty('earnings') && Object.keys($form_inputs.accounts[id].earnings).length > 0}
 		<Table
+		slot="earnings"
 		label="Earnings"
 		data={$form_inputs.accounts[id].earnings}
 		on:add={(e)=>addTableRow(form_inputs, id, 'earnings', e.detail.year, e.detail.value)}
 		on:remove={(e)=>removeTableRow(form_inputs, id, 'earnings', e.detail.year)}
 		/>
-		{/if}
-		{#if $form_inputs.accounts[id].withdrawals }
 		<Table
+		slot="withdrawals"
 		label="Withdrawals"
 		data={$form_inputs.accounts[id].withdrawals}
 		on:add={(e)=>addTableRow(form_inputs, id, 'withdrawals', e.detail.year, e.detail.value)}
 		on:remove={(e)=>removeTableRow(form_inputs, id, 'withdrawals', e.detail.year)}
 		/>
-		{/if}
-	</div>
-</AccountCard>
-{/if}
-{/each}
+	</AccountCard>
+	{/if}
+	{/each}
 </div>
