@@ -124,7 +124,6 @@
 				bind:value={$form_inputs.accounts[id].taxStatus}
 				/>
 			</div>
-			
 			<div class="col-span-10">
 				<TextAreaInput
 				label="Notes"

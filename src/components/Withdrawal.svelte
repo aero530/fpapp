@@ -35,16 +35,17 @@
     }];
 
 
-    let questionText = 'Select how money is taken out of the account.';
+    // let questionText = 'Select how money is taken out of the account.';
 
-    options.forEach((option) => {
-        questionText += `${option.label} : ${option.description}`;
-    });
+    // options.forEach((option) => {
+    //     questionText += `${option.label} : ${option.description}`;
+    // });
+    // <div slot="helper">{questionText}</div>
 
 </script>
 
 
-<QuestionField {questionText} {label}>
+<QuestionField {label}>
     <select
         bind:value={value}
         class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
@@ -53,4 +54,13 @@
             <option value={option.value}>{option.label}</option>
         {/each}
     </select>
+
+    <div slot="helper">
+        <b>Select how money is taken out of the account.</b>
+        <ul>
+            {#each options as option}
+                <li>{option.label} : {option.description}</li>
+            {/each}
+        </ul>
+    </div>
 </QuestionField>

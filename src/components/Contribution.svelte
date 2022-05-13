@@ -22,16 +22,9 @@
         'fixed dollar amount compensated for inflation from year start (ie dollar amount is in current dollars)',
     }];
 
-
-    let questionText = 'Select how money is put into the account.';
-
-    options.forEach((option) => {
-        questionText += `${option.label} : ${option.description}`;
-    });
-
 </script>
 
-<QuestionField {questionText} {label}>
+<QuestionField {label}>
     <select
         bind:value={value}
         class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
@@ -40,4 +33,12 @@
             <option value={option.value}>{option.label}</option>
         {/each}
     </select>
+    <div slot="helper">
+        <b>Select how money is put into the account.</b>
+        <ul>
+            {#each options as option}
+                <li>{option.label} : {option.description}</li>
+            {/each}
+        </ul>
+    </div>
 </QuestionField>

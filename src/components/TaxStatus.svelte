@@ -79,16 +79,18 @@
         }
     ];
 
-    let questionText = 'How taxes impact this account.';
+    // let questionText = 'How taxes impact this account.';
 
-    items.forEach((item) => {
-        questionText += `${item.text} : ${item.description}`;
-    });
+    // items.forEach((item) => {
+    //     questionText += `${item.text} : ${item.description}`;
+    // });
+
+    //    <div slot="helper">{questionText}</div>
     
 </script>
 
 
-<QuestionField {questionText} {label}>
+<QuestionField {label}>
     <select
         bind:value={value}
         class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
@@ -97,4 +99,13 @@
             <option value={item.value}>{item.text}</option>
         {/each}
     </select>
+
+    <div slot="helper">
+        <b>How taxes impact this account.</b>
+        <ul>
+            {#each items as item}
+                <li>{item.text} : {item.description}</li>
+            {/each}
+        </ul>
+    </div>
 </QuestionField>

@@ -25,12 +25,12 @@
 				<path d="M17,8H15.5A4.49,4.49,0,0,0,11,12.5V13h2v-.5A2.5,2.5,0,0,1,15.5,10H17a2.5,2.5,0,0,1,0,5H15v4.5h2V17a4.5,4.5,0,0,0,0-9Z"/>
 				<rect class="cls-1" width="32" height="32"/>
 			</svg >
-			<span class="tooltip px-1 py-1 -mt-10 ml-6 text-center border rounded-sm bg-background-400 dark:bg-darkbackground-300 border-dark">{questionText}</span>
+			<div class="tooltip px-1 py-1 -mt-10 ml-6 text-center border rounded-sm bg-background-400 dark:bg-darkbackground-300 border-dark"><slot name="helper"/></div>
 		</div>
 	</div>
 </div>
 
-<style>
+<style lang="postcss">
 	.tooltip {
 		@apply invisible absolute;
 	}

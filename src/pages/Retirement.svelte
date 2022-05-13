@@ -126,14 +126,16 @@
 				/>
 			</div>
 			
-			<AccountLink
-			label="Income link?"
-			value={true}
-			bind:account={$form_inputs.accounts[id].incomeLink}
-			accounts={$form_inputs.accounts}
-			accountTypeFilter='income'
-			questionText="Is this account linked to an income account"
-			/>
+			<div class="col-span-10">
+				<AccountLink
+				label="Income link?"
+				value={true}
+				bind:account={$form_inputs.accounts[id].incomeLink}
+				accounts={$form_inputs.accounts}
+				accountTypeFilter='income'
+				questionText="Is this account linked to an income account"
+				/>
+			</div>
 			
 			<div class="col-span-10">
 				<TextAreaInput

@@ -1,11 +1,11 @@
 <script>
-    // import { TextField } from "smelte";
-  	//import HelperText from '@smui/textfield/helper-text';
     import QuestionField from './QuestionField.svelte'
 
     export let label;
     export let value;
-    export let questionText = 'Years can use variables (yearStart, yearEnd, yearRetire, yearDie), numbers, or equations (such as yearStart+4 or yearEnd-10)';
+    export let questionText = '';
+
+    let defaultHelp = 'Years can use variables (yearStart, yearEnd, yearRetire, yearDie), numbers, or equations (such as yearStart+4 or yearEnd-10)';
 
     let invalid = false;
     let helperText = " ";
@@ -84,18 +84,15 @@
             return input
         }
     }
-
 </script>
 
-
-<QuestionField {questionText} {label}>
+<QuestionField {label}>
     <input
         type="text"
         value={parseValue(value)}
         on:change={handleChange}
-        hint={questionText + helperText}
-        persistentHint={invalid}
-        error={invalid ? questionText + helperText : false}
+        class:bg-warning-500={invalid}
         class="p-0 m-0 pl-1 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400"
     />
+    <div slot="helper">{invalid ? helperText+defaultHelp : questionText+defaultHelp}</div>
 </QuestionField>

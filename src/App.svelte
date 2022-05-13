@@ -143,7 +143,6 @@
 	<svelte:component this={selected.value}/>
 </main>
 
-
 <!-- You can put your "global" style configurations here! -->
 <style global lang="postcss">
     @tailwind base;
