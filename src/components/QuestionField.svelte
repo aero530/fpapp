@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {v4 as uuidv4 } from 'uuid';
-
-	export let questionText = "";
+	
 	export let label="";
 	let size = 24;
     let padding = 2;

@@ -141,7 +141,7 @@
 			</div>
 		</div>
 		
-		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xlabel="Year" ylabel="Amount"/>
+		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
 		
 		<Table
 		slot="balance"
