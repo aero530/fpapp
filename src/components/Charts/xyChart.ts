@@ -21,10 +21,8 @@ export class XyChart {
     // Data that will be displayed on this chart.  This base chart does not plot the data but this is needed to properly scale the axis
     public data: PointArray<xType, yType> = [];
 
-
     // // Override default chart domain. This is in the same units as the data itself.
     // public domain : PointLimit;
-
 
     // The element that holds the chart
     public el;
@@ -165,6 +163,7 @@ export class XyChart {
             .attr("transform", `translate(${chartTranslate.x},${chartTranslate.y})`);
         this.#axisGroup = this.svg.append("g")
             .attr("transform", `translate(${chartTranslate.x},${chartTranslate.y})`);
+
     }
 
     public addAxis() {

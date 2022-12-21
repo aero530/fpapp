@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { onMount } from "svelte";
-	import Line from "../components/Charts/Line.svelte"; 
+	import Line from "../components/Charts/Line.svelte";
+	import { summary_data } from '../stores.js';
 
 	import type { PointArray, PointLimit } from "../components/Charts/chart.type";
 
@@ -22,14 +23,46 @@
         },
     }
 
+	function toPoints(data) {
+		let arr = [];
+		Object.entries(data).forEach(entry => {
+			const [key, value] = entry;
+			arr.push({ x:parseInt(key), y:value })
+		});
+		return arr;
+	}
+
 </script>
 
 <h1 class="text-lg">Dashboard</h1>
 
+
+<!-- {#if Object.keys($summary_data.income).length !== 0 }
 <Line 
-	{data}
-	title="asdf"
-	xLabel="xlab"
-	yLabel="ylab"
+	data={toPoints($summary_data.income)}
+	title="Income"
+	xLabel="Year"
+	yLabel="i"
 	{domain}
 />
+{/if}
+
+<!-- {#if Object.keys($summary_data.saving).length !== 0 }
+<Line 
+	data={toPoints($summary_data.saving)}
+	title="Savings"
+	xLabel="Year"
+	yLabel="s"
+	{domain}
+/>
+{/if} -->
+
+{#if Object.keys($summary_data.col).length !== 0 }
+<Line 
+	data={toPoints($summary_data.col)}
+	title="Cost of Living"
+	xLabel="Year"
+	yLabel="c"
+	{domain}
+/>
+{/if}

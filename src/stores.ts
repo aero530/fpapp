@@ -8,6 +8,8 @@ import type {Settings} from "../src-tauri/src/accounts/bindings/Settings";
 
 import {defaultCollege, defaultExpense, defaultHsa, defaultIncome, defaultLoan, defaultMortgage, defaultRetirement, defaultSavings, defaultSsa} from "./accountDefaults";
 
+import type { PointArray } from "./components/Charts/chart.type";
+
 function run_analysis(inputs) {
     invoke("run_analysis", {
         input: {...inputs},
@@ -160,8 +162,36 @@ function createPlotData() {
 export const plot_data = createPlotData();
 
 
+
+type SummaryData = {
+    col: PointArray<number,number>,
+    expense: PointArray<number,number>,
+    healthcare_expense: PointArray<number,number>,
+    hsa: PointArray<number,number>,
+    income: PointArray<number,number>,
+    income_during_retirement: PointArray<number,number>,
+    income_taxable: PointArray<number,number>,
+    net: PointArray<number,number>,
+    saving: PointArray<number,number>,
+    tax_burden: PointArray<number,number>
+}
+
+
+let defaultSummary : SummaryData = {
+    col: [],
+    expense: [],
+    healthcare_expense: [],
+    hsa: [],
+    income: [],
+    income_during_retirement: [],
+    income_taxable: [],
+    net: [],
+    saving: [],
+    tax_burden: [],
+};
+
 function createSummaryData() {
-	const { subscribe, set, update } = writable({});
+	const { subscribe, set, update } = writable(defaultSummary);
 
 	return {
 		subscribe,

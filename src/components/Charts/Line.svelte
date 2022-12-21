@@ -79,6 +79,9 @@
         fullDataset = [...fullDataset, ...element.data];
     });
 
+console.log(dataSets);
+
+
     let wr;
     let el;
     
@@ -92,6 +95,7 @@
         let chart = new XyChart(xLabel, yLabel, title, format, fullDataset, domain, el);
         chart.addAxis();
 
+console.log(chart.domain)
         var hideTooltip = () => {
             tooltip.style("opacity", 0);
             tooltipCircle.style("opacity", 0);
@@ -210,11 +214,11 @@
         makeChart();
     });
 
-    afterUpdate(() => {
-        // Remove all existing svg elements
-        d3.select(el).selectAll('*').remove();
-        makeChart();
-    })
+    // afterUpdate(() => {
+    //     // Remove all existing svg elements
+    //     d3.select(el).selectAll('*').remove();
+    //     makeChart();
+    // })
 
 </script>
 
