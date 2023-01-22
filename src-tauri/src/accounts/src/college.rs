@@ -187,6 +187,7 @@ impl Account for College<u32> {
         year: u32,
         totals: &YearlyTotals,
         settings: &Settings,
+        _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         // Init value table with previous year's value
         self.analysis.add_year(year, true)?;

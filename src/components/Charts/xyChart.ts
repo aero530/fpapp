@@ -63,6 +63,10 @@ export class XyChart {
                 y: NumberFormat.Decimal,
             }
         },
+        legend: {
+            fontSize : 2,
+            translate : {x:2, y:2},
+        },
         lineStrokeWidth : 0.6,
         dataPointSize : .3,
         fontAR : 0.5,
@@ -72,6 +76,7 @@ export class XyChart {
     #titleGroup;
     #chartGroup;
     #axisGroup;
+    #legendGroup;
     #x;
     #y;
     #xAxis;
@@ -83,6 +88,7 @@ export class XyChart {
     #margin;
     #numberFormat;
     #domain;
+    #legend;
     
     constructor(xLabel: string, yLabel: string, title: string, format: ChartFormat, data: PointArray<xType, yType>, domain: PointLimit<xType, yType>, element) {        
         this.xLabel = xLabel;
@@ -102,6 +108,7 @@ export class XyChart {
     get titleGroup() {return this.#titleGroup;}
     get chartGroup() {return this.#chartGroup;}
     get axisGroup() {return this.#axisGroup;}
+    get legendGroup() {return this.#legendGroup;}
     get width() {return this.#width;}
     get height() {return this.#height;}
     get margin() {return this.#margin;}
@@ -112,6 +119,7 @@ export class XyChart {
     get yAxis() {return this.#yAxis};
     get chartXaxis() {return this.#chartXaxis};
     get chartYaxis() {return this.#chartYaxis};
+    get legend() {return this.#legend};
     set domain(domain : PointLimit<xType, yType>) {
         this.applyDomain(domain)
     }
@@ -163,7 +171,13 @@ export class XyChart {
             .attr("transform", `translate(${chartTranslate.x},${chartTranslate.y})`);
         this.#axisGroup = this.svg.append("g")
             .attr("transform", `translate(${chartTranslate.x},${chartTranslate.y})`);
+        this.#legendGroup = this.#chartGroup.append("g")
+            .attr("transform", `translate(${this.format.legend.translate.x},${this.format.legend.translate.x})`);
 
+    }
+
+    public addLegend() {
+        this.#legend = this.#legendGroup.append("g");
     }
 
     public addAxis() {

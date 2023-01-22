@@ -1,6 +1,5 @@
 //! Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
 
-use log::trace;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use ts_rs::TS;
@@ -96,7 +95,7 @@ impl Account for Retirement<u32> {
         AccountType::Retirement
     }
     fn link_id(&self) -> Option<String> {
-        trace!("Link ID - {:?}", self.income_link);
+        log::trace!("Link ID - {:?}", self.income_link);
         self.income_link.clone()
     }
     fn name(&self) -> String {
@@ -203,6 +202,7 @@ impl Account for Retirement<u32> {
         year: u32,
         totals: &YearlyTotals,
         settings: &Settings,
+        linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
 
@@ -229,6 +229,9 @@ impl Account for Retirement<u32> {
                 Some(employer_match) => {
                     if self.income_link.is_some() {
                         // somehow get the income value from income link
+                        let a = linked_value;
+                        log::info!("income link {:?}",self.income_link);
+                        log::info!("{:?}", a);
                     } else {
                         return Err(
                             String::from("Matching is set but there is no linked account").into(),
@@ -256,7 +259,7 @@ impl Account for Retirement<u32> {
                     //         employerMatch = contribution * (account.employerMatch[0] / 100); // the employer contribution is computed based on the entire contribution
                     //     }
                     // }
-                    let link_income = 500_f64;
+                    let link_income = linked_value.unwrap_or(0_f64);
                     result.employer_contribution = match result.contribution
                         >= employer_match.limit.value(settings) / 100_f64 * link_income
                     {

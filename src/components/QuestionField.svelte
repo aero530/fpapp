@@ -35,6 +35,6 @@
 	}
 
 	.has-tooltip:hover .tooltip {
-		@apply visible z-50
+		@apply visible z-50;
 	}
 </style>

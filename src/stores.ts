@@ -196,7 +196,7 @@ function createSummaryData() {
 	return {
 		subscribe,
         set: (input) => set(input),
-		reset: () => set({})
+		reset: () => set(defaultSummary)
 	};
 }
 export const summary_data = createSummaryData();

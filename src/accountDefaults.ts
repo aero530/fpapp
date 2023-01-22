@@ -104,7 +104,10 @@ export let defaultRetirement: Account ={
     withdrawalValue: 0,
     taxStatus: "contribute_taxed_earnings_untaxed_when_used",
     incomeLink: "",
-    matching: {},
+    matching: {
+        amount: 0,
+        limit: 0,
+    },
     notes: ""
 }
 export let defaultSavings: Account ={

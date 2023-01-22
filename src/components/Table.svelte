@@ -18,6 +18,7 @@
 	const handleAdd = (year: string, value: number) => dispatch('add',{year, value});
 
     let id = uuidv4();
+
 </script>
 
 <div class="grid grid-col-1 w-fit gap-2 border rounded p-1">
@@ -40,7 +41,7 @@
                             <td class="pl-1">{thisYear}</td>
                             <td class="pl-1">{data[thisYear]}</td>
                             <td>
-                                <div on:click={() => handleRemove(thisYear)}>
+                                <div on:click={() => handleRemove(thisYear)}  on:keypress={()=>{}}>
                                     <SubtractAlt />
                                 </div>
                             </td>
@@ -64,7 +65,7 @@
                         />   
                     </td>
                     <td>
-                        <div on:click={()=>handleAdd(inputYear,parseInt(inputValue))}>
+                        <div on:click={()=>handleAdd(inputYear,parseInt(inputValue))}  on:keypress={()=>{}}>
                             <AddAlt />
                         </div>
                     </td>

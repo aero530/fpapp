@@ -106,6 +106,7 @@ impl Account for Ssa {
         year: u32,
         _totals: &YearlyTotals,
         _settings: &Settings,
+        _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut _result = WorkingValues::default();
 

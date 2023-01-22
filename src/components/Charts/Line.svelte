@@ -7,7 +7,7 @@
     import {NumberFormat, toFormattedString} from "./chart"
     import {XyChart} from "./xyChart";
 
-    import {theme} from "../../../tailwind.config";
+    import {graphics} from "../../../tailwind_colors_graphics";
 
     type xType = Date | number;
     type yType = number;
@@ -18,6 +18,7 @@
     export let title: string="";
     export let xLabel: string="";
     export let yLabel: string="";
+    export let displayLegend: boolean=false;
 
     export let format: ChartFormat = {
         box: {
@@ -55,6 +56,10 @@
                 y: NumberFormat.Decimal,
             }
         },
+        legend: {
+            fontSize : 2,
+            translate : {x:2, y:2},
+        },
         lineStrokeWidth : 0.6,
         dataPointSize : 0,
         fontAR : 0.5,
@@ -81,21 +86,24 @@
 
 console.log(dataSets);
 
-
     let wr;
     let el;
     
     let imageWidth:number;
     let imageHeight:number;
 
-    const colors = theme.colors.graphics;
+    const colors = graphics;
 
     function makeChart() {
         
         let chart = new XyChart(xLabel, yLabel, title, format, fullDataset, domain, el);
         chart.addAxis();
+        if (displayLegend) {
+            chart.addLegend();
+        }
 
-console.log(chart.domain)
+        console.log(chart.domain)
+        
         var hideTooltip = () => {
             tooltip.style("opacity", 0);
             tooltipCircle.style("opacity", 0);
@@ -185,10 +193,21 @@ console.log(chart.domain)
                     // .curve(d3.curveBumpX)
                     .x((d:Point<xType, yType>) => chart.x(d.x))
                     .y((d:Point<xType, yType>) => chart.y(d.y))
-                )
+                );
+            if (displayLegend) {
+                chart.legendGroup
+                    .append("text")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("dy", format.axis.tick.fontSize * index)
+                    .attr("text-anchor", "left")
+                    .attr("fill", `${colors[index+1][500]}`)
+                    .style("font-size", `${format.axis.tick.fontSize}px`)
+                    .text(dataSet.label);
+            }
+
         })
         
-
         // Add circle to highlight data point
         const tooltipCircle = chartGroup
             .append("circle")

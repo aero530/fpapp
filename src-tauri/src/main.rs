@@ -10,7 +10,9 @@
 
 use std::collections::HashMap;
 
-use log::{info, trace, LevelFilter};
+use flexi_logger::Logger;
+
+// use log::{info, trace, LevelFilter};
 use std::fs::read_to_string;
 use serde::{Deserialize, Serialize};
 
@@ -137,7 +139,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
             yearly_totals.update(*year, *impact);
         });
 
-        trace!(
+        log::trace!(
             "{:?} {:?} {:?}",
             data.accounts.get(uuid).unwrap().type_id(),
             uuid,
@@ -145,7 +147,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
         );
     });
 
-    info!("Main Loop");
+    log::info!("Main Loop");
 
     // Main loop to loop through each year
     years.iter().copied().for_each(|year| {
@@ -156,10 +158,24 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
         if yearly_totals.add_year(year, true).is_ok() {
             // Loop through accounts to make contributions and withdrawals
             account_order.iter().for_each(|uuid| {
-                // Simulate this year for the account with specified uuid
+                // Get the linked account uuid (if this account has a linked account)
+                let link_id = data.accounts.get(uuid).unwrap().link_id();
+
+                let link_value = match link_id {
+                    Some(id) => {
+                        match data.accounts.get(&id) {
+                            Some(linked_account) => {linked_account.get_value(year)},
+                            None => None
+                        }
+                    },
+                    None => None,
+                };
+
                 let account = data.accounts.get_mut(uuid).unwrap();
+
+                // Simulate this year for the account with specified uuid
                 let impact = account
-                    .simulate(year, &yearly_totals, &data.settings)
+                    .simulate(year, &yearly_totals, &data.settings, link_value)
                     .unwrap();
                 // Apply the impact for this account to yearly_totals
                 yearly_totals.update(year, impact);
@@ -188,8 +204,18 @@ fn main() {
     
     // Initialize and gather config
     let logconfig = logconfig::Logconfig::new().expect("Unable to create config file.");
-    initialize_logger(&logconfig.log_level);
+    // initialize_logger(&logconfig.log_level);
     
+    // Logger::try_with_env_or_str("debug, cursive_core=Error, cursive_async_view::infinite=Error")
+    //     .expect("Could not create Logger from environment :(")
+    //     .log_to_file(flexi_logger::FileSpec::default().basename("programming_result").suffix("log").suppress_timestamp())
+    //     // .do_not_log()
+    //     .format(flexi_logger::colored_default_format)
+    //     .start()
+        // .expect("failed to initialize logger!");
+    Logger::try_with_str(logconfig.log_level).unwrap().start().unwrap();
+
+
     tauri::Builder::default()
         .menu(menu::get_menu())
         .on_menu_event(|event| {
@@ -229,18 +255,4 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-/// Initialize the logger used in the application with the specified log level
-///
-/// # Panics
-/// If the specified `log_level` is not one of `off`, `error`, `warn`, `info`, `debug`, or `trace`.
-fn initialize_logger(log_level: &str) {
-    let log_level = log_level
-        .parse::<LevelFilter>()
-        .expect("Unable to parse log level");
-    env_logger::builder()
-        .filter(Some("fpapp"), log_level)
-        .init();
-    info!("Initializing...");
 }

@@ -2,7 +2,7 @@
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { onMount } from "svelte";
 	import Line from "../components/Charts/Line.svelte";
-	import { summary_data } from '../stores.js';
+	import { summary_data } from '../stores';
 
 	import type { PointArray, PointLimit } from "../components/Charts/chart.type";
 
@@ -36,33 +36,35 @@
 
 <h1 class="text-lg">Dashboard</h1>
 
+<div class="grid grid-cols-1 gap-1 mx-32">
+	{#if Object.keys($summary_data.col).length !== 0 }
+		<Line 
+			data={[
+				{label:"Cost of Living", data:toPoints($summary_data.col)},
+				{label:"Expenses", data:toPoints($summary_data.expense)},
+				{label:"Income", data:toPoints($summary_data.income)},
+				{label:"Net", data:toPoints($summary_data.net)},
+			]}
+			title="Overview"
+			xLabel="Year"
+			yLabel="$"
+			displayLegend={true}
+		/>
 
-<!-- {#if Object.keys($summary_data.income).length !== 0 }
-<Line 
-	data={toPoints($summary_data.income)}
-	title="Income"
-	xLabel="Year"
-	yLabel="i"
-	{domain}
-/>
-{/if}
+		<Line 
+			data={toPoints($summary_data.saving)}
+			title="Savings"
+			xLabel="Year"
+			yLabel="$"
+		/>
 
-<!-- {#if Object.keys($summary_data.saving).length !== 0 }
-<Line 
-	data={toPoints($summary_data.saving)}
-	title="Savings"
-	xLabel="Year"
-	yLabel="s"
-	{domain}
-/>
-{/if} -->
+		<Line 
+			data={toPoints($summary_data.col)}
+			title="Cost of Living"
+			xLabel="Year"
+			yLabel="$"
+			{domain}
+		/>
+	{/if}
+</div>
 
-{#if Object.keys($summary_data.col).length !== 0 }
-<Line 
-	data={toPoints($summary_data.col)}
-	title="Cost of Living"
-	xLabel="Year"
-	yLabel="c"
-	{domain}
-/>
-{/if}

@@ -4,7 +4,7 @@
     import QuestionField from './QuestionField.svelte'
 
     export let label="";            // label for the input field
-    export let value=false;               // if this account is linked to another account
+    export let value=false;         // if this account is linked to another account
     export let account='';          // selected account id
     export let questionText="";     // help text
     export let accounts={};         // accounts object used to populated selection box

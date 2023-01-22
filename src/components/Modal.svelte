@@ -10,6 +10,7 @@
     class="fixed inset-0 w-screen h-screen bg-black opacity-50"
     transition:fade
     on:click={() => dispatch("close")}
+    on:keypress={()=>{}}
 />
 
 <div

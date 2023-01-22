@@ -16,7 +16,7 @@
 	
 	import NumberInput from "../components/NumberInput.svelte"
 	import YearInput from "../components/YearInput.svelte"
-	import { form_inputs } from '../stores.js';
+	import { form_inputs } from '../stores';
 </script>
 
 <h1 class="text-lg">Settings</h1>

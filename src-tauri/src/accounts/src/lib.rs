@@ -5,7 +5,6 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use std::error::Error;
-// use std::collections::HashMap;
 // use ts_rs::TS;
 use image::{ImageBuffer, Rgba};
 
@@ -92,6 +91,7 @@ pub trait Account: std::fmt::Debug {
         year: u32,
         totals: &YearlyTotals,
         settings: &Settings,
+        linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>>;
 
     /// Save the account simulation results to a csv file

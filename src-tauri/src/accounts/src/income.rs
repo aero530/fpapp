@@ -151,6 +151,7 @@ impl Account for Income<u32> {
         year: u32,
         _totals: &YearlyTotals,
         settings: &Settings,
+        _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.year_in.unwrap().start;
         let mut result = WorkingValues::default();

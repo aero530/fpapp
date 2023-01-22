@@ -8,7 +8,7 @@
     import {NumberFormat, toFormattedString} from "./chart"
     import {XyChart} from "./xyChart";
 
-    import {theme} from "../../../tailwind.config";
+    import {graphics} from "../../../tailwind_colors_graphics";
         
     export let data: DataInput | null;
     export let bounds: BoundInput | null;
@@ -57,6 +57,10 @@
                 y: NumberFormat.Decimal,
             }
         },
+        legend: {
+            fontSize : 2,
+            translate : {x:2, y:2},
+        },
         lineStrokeWidth : 0.6,
         dataPointSize : .3,
         fontAR : 0.5,
@@ -68,7 +72,7 @@
     let imageWidth;
     let imageHeight;
 
-    const colors = theme.colors.graphics;
+    const colors = graphics;
 
     // Calculated chart dimensions
 

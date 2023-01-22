@@ -133,6 +133,7 @@ impl Account for Expense<u32> {
         year: u32,
         _totals: &YearlyTotals,
         settings: &Settings,
+        _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, false)?;

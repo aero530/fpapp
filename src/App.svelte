@@ -6,7 +6,7 @@
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { onMount, onDestroy } from "svelte";
 
-	import { path, form_inputs, dark} from './stores.js';
+	import { path, form_inputs, dark} from './stores';
 	
 	import Dashboard from './pages/Dashboard.svelte';
 	import Settings from './pages/Settings.svelte';
@@ -60,6 +60,7 @@
 					open()
 					.then(function (pathString) {
 						if (pathString) {
+							// @ts-ignore
 							path.set(pathString);
 							openFile($path);
 						}
@@ -93,30 +94,7 @@
 		dark.set(!$dark);
 		window.document.body.classList.toggle('dark')
 	}
-	
-	// function log() {
-	//     invoke("log_operation", {
-	//     event: "tauri-click",
-	//     payload: "this payload is optional because we used Option in Rust",
-	//     });
-	// }
-		
-	// function performRequest() {
-	//     invoke("perform_request", {
-	//     endpoint: "dummy endpoint arg",
-	//     body: {
-	//         id: 5,
-	//         name: "test",
-	//     },
-	//     })
-	//     .then(onMessage)
-	//     .catch(onMessage);
-	// }
-			
-	// function emitEvent() {
-	//     emit("js-event", "this is the payload string");
-	// }
-							
+						
 </script>
 
 <aside class="top-0 left-0 w-64 h-screen fixed bg-slate-200 dark:bg-slate-600">
@@ -124,6 +102,7 @@
 			{#each pages as page}
 				<li 
 					on:click={() => {selected = page;}}
+					on:keypress={() => {}}
 					class="hover:bg-primary-200 active:bg-primary-300 py-2 px-4 font-semibold"
 					class:bg-primary-400={selected === page}
 				>

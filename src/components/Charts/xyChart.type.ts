@@ -23,14 +23,18 @@ export type ChartFormat = {
         format: AxisFormat;
     };
     tooltip: {
-        circleRadius : number,
-        circleStrokeWidth : number,
-        borderWidth : number,
-        borderRadius : number,
-        padding : number,
+        circleRadius : number;
+        circleStrokeWidth : number;
+        borderWidth : number;
+        borderRadius : number;
+        padding : number;
         format : AxisFormat
     };
+    legend: {
+        fontSize : number;
+        translate : Point<number, number>; // x/y translation of the legend from top left corner of the plotting area
+    };
     lineStrokeWidth: number;
-    dataPointSize: number,
+    dataPointSize: number;
     fontAR: number; // aspect ratio of font (width of font is about 1/2 the height)
 };

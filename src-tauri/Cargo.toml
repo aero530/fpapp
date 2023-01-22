@@ -1,29 +1,27 @@
 [package]
 name = "fpapp"
-version = "0.1.0"
+version = "3.0.0"
 description = "fp app"
-authors = ["you"]
+authors = ["Phil Spindler"]
 license = ""
 repository = ""
 default-run = "fpapp"
 edition = "2021"
-# edition = "2018"
-build = "src/build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.0.0-rc.8", features = [] }
+tauri-build = { version = "1.2.1", features = [] }
 
 [dependencies]
-env_logger = "0.9.0"
-image = "0.23.14"
+flexi_logger = "0.24.2"
+image = "0.24.5"
 log = "0.4.17"
-plotters = "0.3.1"
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = "1.0.81"
-tauri = { version = "1.0.0-rc.10", features = ["api-all"] }
-toml = "0.5.9"
+plotters = "0.3.4"
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.91"
+tauri = { version = "1.2.4", features = ["api-all"] }
+toml = "0.5.11"
 
 accounts = { path = "./src/accounts" }
 

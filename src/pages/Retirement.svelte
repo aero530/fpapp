@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { form_inputs } from '../stores.js';
+	import { AccountType, form_inputs } from '../stores';
 	import {addTableRow, removeTableRow} from "../helper";
 	
 	import Scatter from "../components/Scatter.svelte";
@@ -12,12 +12,12 @@
 	import NumberInput from "../components/NumberInput.svelte";
 	import PercentInput from "../components/PercentInput.svelte";
 	import AccountLink from "../components/AccountLink.svelte";
+	import EmployerMatch from '../components/EmployerMatch.svelte';
 	import Table from "../components/Table.svelte";
 	import DeleteModal from "../components/DeleteModal.svelte";
 	import AccountCard from "../components/AccountCard.svelte";
 	
 	import AddAlt from '../icons/AddAlt.svelte';
-	import {AccountType} from "../stores";
 	
 	let deleteModal = {
 		open: false,
@@ -30,7 +30,7 @@
 
 <div class="flex items-center">
 	<div class="text-lg pr-2">Retirement</div>
-	<div on:click={()=>form_inputs.addAccount(AccountType.retirement)}>
+	<div on:click={()=>form_inputs.addAccount(AccountType.retirement)} on:keypress={() => {}}>
 		<AddAlt />
 	</div>
 </div>
@@ -135,6 +135,15 @@
 				accountTypeFilter='income'
 				questionText="Is this account linked to an income account"
 				/>
+			</div>
+
+			<div class="col-span-10">
+				<EmployerMatch
+				label="Employer Match"
+				bind:matching={$form_inputs.accounts[id].matching}
+				questionText="Is this account linked to an income account"
+				/>
+				
 			</div>
 			
 			<div class="col-span-10">

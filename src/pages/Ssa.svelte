@@ -1,5 +1,5 @@
 <script>
-	import { form_inputs } from '../stores.js';
+	import { AccountType, form_inputs } from '../stores';
 	
 	import Scatter from "../components/Scatter.svelte";
 	import YearInput from "../components/YearInput.svelte";
@@ -10,7 +10,6 @@
 	import AccountCard from "../components/AccountCard.svelte";
 	
 	import AddAlt from '../icons/AddAlt.svelte';
-	import {AccountType} from "../stores";
 	
 	let deleteModal = {
 		open: false,
@@ -23,7 +22,7 @@
 
 <div class="flex items-center">
 	<div class="text-lg pr-2">SSA</div>
-	<div on:click={()=>form_inputs.addAccount(AccountType.ssa)}>
+	<div on:click={()=>form_inputs.addAccount(AccountType.ssa)} on:keypress={() => {}}>
 		<AddAlt />
 	</div>
 </div>
