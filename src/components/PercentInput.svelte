@@ -36,9 +36,8 @@
         let result;
         let isValid = false;
         helperText = "";
-
         
-        console.log("value is " + search);
+        //console.log("value is " + search);
 
         if (isNaN(Number(search))) { // input is not just a number
             result = search;

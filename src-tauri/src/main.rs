@@ -106,17 +106,18 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
         // Get dates from the linked account if this account has a link ID
         let linked_dates: Option<Dates> = match data.accounts.get(uuid).unwrap().link_id() {
             Some(link_id) => {
+                log::trace!("Liunk ID {:?}",&link_id);
                 // This explicitly does not allow recursion in linked_dates
                 Some(Dates {
                     year_in: data
                         .accounts
                         .get(&link_id)
-                        .unwrap()
+                        .expect("Unable to get linked account")
                         .get_range_in(&data.settings, None),
                     year_out: data
                         .accounts
                         .get(&link_id)
-                        .unwrap()
+                        .expect("Unable to get linked account")
                         .get_range_out(&data.settings, None),
                 })
             }
@@ -203,18 +204,8 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
 fn main() {
     
     // Initialize and gather config
-    let logconfig = logconfig::Logconfig::new().expect("Unable to create config file.");
-    // initialize_logger(&logconfig.log_level);
-    
-    // Logger::try_with_env_or_str("debug, cursive_core=Error, cursive_async_view::infinite=Error")
-    //     .expect("Could not create Logger from environment :(")
-    //     .log_to_file(flexi_logger::FileSpec::default().basename("programming_result").suffix("log").suppress_timestamp())
-    //     // .do_not_log()
-    //     .format(flexi_logger::colored_default_format)
-    //     .start()
-        // .expect("failed to initialize logger!");
-    Logger::try_with_str(logconfig.log_level).unwrap().start().unwrap();
-
+    let logconfig = logconfig::Logconfig::new().expect("Unable to create config file.");    
+    Logger::try_with_str(logconfig.log_level).expect("Could not parse log level.").format(flexi_logger::colored_default_format).start().unwrap();
 
     tauri::Builder::default()
         .menu(menu::get_menu())

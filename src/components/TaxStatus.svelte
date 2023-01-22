@@ -78,15 +78,6 @@
             description: 'payed pretax and not taxed as income (use with HSA)',
         }
     ];
-
-    // let questionText = 'How taxes impact this account.';
-
-    // items.forEach((item) => {
-    //     questionText += `${item.text} : ${item.description}`;
-    // });
-
-    //    <div slot="helper">{questionText}</div>
-    
 </script>
 
 

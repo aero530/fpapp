@@ -223,6 +223,8 @@ impl Account for College<u32> {
         self.analysis.withdrawals.update(year, result.withdrawal);
         self.analysis.value.update(year, -result.withdrawal);
 
+        log::trace!("Value {:?} Contribution {:?}",self.analysis.value.get(year), self.analysis.contributions.get(year));
+
         match self.tax_status {
             // contribute taxed income
             // payed with taxed income, earnings are not taxed, withdrawals are not taxed

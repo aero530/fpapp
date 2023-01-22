@@ -52,7 +52,6 @@ let defaultInput : InputData = {
     },
 };
 
-
 export enum AccountType {
     college,
     expense,
@@ -136,7 +135,6 @@ function createInput() {
 }
 export const form_inputs = createInput();
 
-
 function createPath() {
 	const { subscribe, set } = writable("");
 
@@ -148,8 +146,6 @@ function createPath() {
 }
 export const path = createPath();
 
-
-
 function createPlotData() {
 	const { subscribe, set, update } = writable({});
 
@@ -160,8 +156,6 @@ function createPlotData() {
 	};
 }
 export const plot_data = createPlotData();
-
-
 
 type SummaryData = {
     col: PointArray<number,number>,
@@ -175,7 +169,6 @@ type SummaryData = {
     saving: PointArray<number,number>,
     tax_burden: PointArray<number,number>
 }
-
 
 let defaultSummary : SummaryData = {
     col: [],

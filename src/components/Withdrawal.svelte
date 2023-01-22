@@ -34,14 +34,6 @@
         description: 'Take out a percent of income in each year',
     }];
 
-
-    // let questionText = 'Select how money is taken out of the account.';
-
-    // options.forEach((option) => {
-    //     questionText += `${option.label} : ${option.description}`;
-    // });
-    // <div slot="helper">{questionText}</div>
-
 </script>
 
 

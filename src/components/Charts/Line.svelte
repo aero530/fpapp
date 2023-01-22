@@ -18,7 +18,7 @@
     export let title: string="";
     export let xLabel: string="";
     export let yLabel: string="";
-    export let displayLegend: boolean=false;
+    export let displayLegend: boolean = false;
 
     export let format: ChartFormat = {
         box: {
@@ -70,39 +70,33 @@
         y: {min:null,max:null},
     }
 
-    let dataSets: Array<DataSet>
-    // If data was input as a single dataset then put into an array of DataSets
-    if ("x" in data[0]) {
-        dataSets = [{"data": data, "label": yLabel}];
-    } else {
-        dataSets = data;
-    }
-
-    // Make an array with all the data points to find the extents of the data
-    let fullDataset: PointArray<xType, yType> = [];
-    dataSets.forEach(element => {
-        fullDataset = [...fullDataset, ...element.data];
-    });
-
-console.log(dataSets);
-
     let wr;
     let el;
-    
+
     let imageWidth:number;
     let imageHeight:number;
 
     const colors = graphics;
 
+
     function makeChart() {
         
+        // If data was input as a single dataset then put into an array of DataSets
+        let dataSets: Array<DataSet> = ("x" in data[0])  
+            ? [{"data": data, "label": yLabel}] // incoming data is defined as a PointArray
+            : data; // incoming data is defined as an Array<DataSet>
+        
+        // An array with all the data points to find the extents of the data
+        let fullDataset: PointArray<xType, yType> = [];
+        dataSets.forEach(element => {
+            fullDataset = [...fullDataset, ...element.data];
+        });
+
         let chart = new XyChart(xLabel, yLabel, title, format, fullDataset, domain, el);
         chart.addAxis();
         if (displayLegend) {
             chart.addLegend();
         }
-
-        console.log(chart.domain)
         
         var hideTooltip = () => {
             tooltip.style("opacity", 0);
@@ -118,7 +112,7 @@ console.log(dataSets);
             .style("border-width", `${format.tooltip.borderWidth}px`)
             .style("border-radius", `${format.tooltip.borderRadius}px`)
             .style("padding", `${format.tooltip.padding}px`)
-            .attr("class","bg-background-500")
+            .attr("class","bg-background-500 dark:bg-darkbackground-500")
 
         var onPointerMove = (event) => {
             event.preventDefault();
@@ -214,7 +208,7 @@ console.log(dataSets);
             .attr("id", "tooltip-circle")
             .attr("r", format.tooltip.circleRadius)
             .attr("stroke-width", format.tooltip.circleStrokeWidth)
-            .attr("class", "stroke-graphics-1-500 fill-light")
+            .attr("class","stroke-graphics-1-500 fill-light dark:fill-dark")
             .style("opacity", 0);
 
         // Add rectangle for background action listening area
@@ -226,18 +220,19 @@ console.log(dataSets);
             .attr("fill", "rgba(0,0,0,0)")
             .on("pointermove", onPointerMove)
             .on("pointerout", hideTooltip);
-
     };
 
     onMount(() => {
         makeChart();
     });
 
-    // afterUpdate(() => {
-    //     // Remove all existing svg elements
-    //     d3.select(el).selectAll('*').remove();
-    //     makeChart();
-    // })
+    afterUpdate(() => {
+        // Remove all existing svg elements
+        d3.select(el).selectAll("*").remove();
+        makeChart();
+    });
+
+
 
 </script>
 

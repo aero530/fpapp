@@ -1,7 +1,7 @@
 <script>
 	import { AccountType, form_inputs } from '../stores';
 	
-	import Scatter from "../components/Scatter.svelte";
+	import Line from "../components/Line.svelte";
 	import YearInput from "../components/YearInput.svelte";
 	import TextInput from "../components/TextInput.svelte";
 	import TextAreaInput from "../components/TextAreaInput.svelte";
@@ -76,7 +76,7 @@
 			</div>
 		</div>
 		
-		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
+		<Line slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
 	</AccountCard>
 	{/if}
 	{/each}

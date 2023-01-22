@@ -2,7 +2,7 @@
 	import { AccountType, form_inputs } from '../stores';
 	import {addTableRow, removeTableRow} from "../helper";
 	
-	import Scatter from "../components/Scatter.svelte";
+	import Line from "../components/Line.svelte";
 	import YearInput from "../components/YearInput.svelte";
 	import Contribution from "../components/Contribution.svelte";
 	import Withdrawal from "../components/Withdrawal.svelte";
@@ -140,7 +140,7 @@
 			</div>
 		</div>
 		
-		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
+		<Line slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount" displayLegend={true}/>
 		
 		<Table
 		slot="balance"

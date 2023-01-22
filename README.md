@@ -7,9 +7,13 @@ A financial planning & simulation application.
 To do:
 
 - [ ] Cleanup / improve look & style of layout
-- [ ] Add use tips to dashboard page if there is no data loaded
-- [ ] Add employer matching to retirement account UI
-- [ ] Add account link to retirement employer match
+- [ ] Chart tooltip circle should match the color of the line
+- [ ] Remove chart lines / legend value for types that are always zero / not used (such as employer contributions on college savings accounts). This goes back to how plot data is generated in `table_groups.rs`.  All `savings` account types use the same simulation result table type which has optional employer_match.  When plot data is generated if that option is `None` default values of `0` are inserted.
+- [x] Add use tips to dashboard page if there is no data loaded
+- [x] Add employer matching to retirement account UI
+- [x] Add account link to retirement employer match
+- [x] Update chart domain on data change
+- [x] Make charts update on data change
 - [x] Convert backend from JS to Rust
 - [x] Convert UI from Electron to Tauri
 - [x] Convert web front end from React to Svelte

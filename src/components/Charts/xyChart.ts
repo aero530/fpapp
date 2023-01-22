@@ -216,7 +216,7 @@ export class XyChart {
         .attr("transform", "translate(0," + this.#height + ")")
         .attr("stroke-width", this.format.axis.strokeWidth)
         .style("font-size", `${this.format.axis.tick.fontSize}px`)
-        .attr("class","text-dark")
+        .attr("class","text-dark dark:text-light")
         .call(this.#xAxis);
 
         // Add x-axis label
@@ -226,7 +226,7 @@ export class XyChart {
         .attr("y", this.format.axis.tick.size+this.format.axis.tick.padding+this.format.axis.tick.fontSize)
         .attr("dy", this.format.axis.label.fontSize)
         .attr("text-anchor", "middle")
-        .attr("class","fill-dark")
+        .attr("class","fill-dark dark:fill-light")
         .style("font-size", `${this.format.axis.label.fontSize}px`)
         .text(this.xLabel);
 
@@ -234,7 +234,7 @@ export class XyChart {
         this.#chartYaxis = this.#axisGroup.append("g")
         .attr("stroke-width", this.format.axis.strokeWidth)
         .style("font-size", `${this.format.axis.tick.fontSize}px`)
-        .attr("class","text-dark")
+        .attr("class","text-dark dark:text-light")
         .call(this.#yAxis);
 
         // Add y-axis label
@@ -245,7 +245,7 @@ export class XyChart {
         .attr("dy", this.format.axis.label.fontSize)
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
-        .attr("class","fill-dark")
+        .attr("class","fill-dark dark:fill-light")
         .style("font-size", `${this.format.axis.label.fontSize}px`)
         .text(this.yLabel);
 
@@ -256,7 +256,7 @@ export class XyChart {
         .attr("y", 0)
         .attr("dy", this.format.title.fontSize)
         .attr("text-anchor", "left")
-        .attr("class","fill-dark")
+        .attr("class","fill-dark dark:fill-light")
         .style("font-size", `${this.format.title.fontSize}px`)
         .text(this.title);
     }

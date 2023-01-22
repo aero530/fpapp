@@ -141,33 +141,7 @@ impl LoanTables {
             label: String::from("Insurance"),
             data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.insurance.get(*year).unwrap_or(0_f64)}).collect()
         });
-        // years.iter().for_each(|year| {
-        //     output.push(PlotDataPoint{
-        //         group: String::from("value"),
-        //         year: *year,
-        //         value: self.value.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("interest"),
-        //         year: *year,
-        //         value: self.interest.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("payments"),
-        //         year: *year,
-        //         value: self.payments.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("escrow"),
-        //         year: *year,
-        //         value: self.escrow.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("insurance"),
-        //         year: *year,
-        //         value: self.insurance.get(*year).unwrap_or(0_f64),
-        //     });
-        // });
+
         output
     }
     /// Initialize a new year
@@ -287,33 +261,6 @@ impl SavingsTables {
             data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.withdrawals.get(*year).unwrap_or(0_f64)}).collect()
         });
 
-        // years.iter().for_each(|year| {
-        //     output.push(PlotDataPoint{
-        //         group: String::from("value"),
-        //         year: *year,
-        //         value: self.value.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("contributions"),
-        //         year: *year,
-        //         value: self.contributions.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("employer_contributions"),
-        //         year: *year,
-        //         value: self.employer_contributions.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("earnings"),
-        //         year: *year,
-        //         value: self.earnings.get(*year).unwrap_or(0_f64),
-        //     });
-        //     output.push(PlotDataPoint{
-        //         group: String::from("withdrawals"),
-        //         year: *year,
-        //         value: self.withdrawals.get(*year).unwrap_or(0_f64),
-        //     });
-        // });
         output
     }
     /// Initialize a new year

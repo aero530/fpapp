@@ -2,7 +2,7 @@
 	import { AccountType, form_inputs } from '../stores';
 	import {addTableRow, removeTableRow} from "../helper";
 	
-	import Scatter from "../components/Scatter.svelte";
+	import Line from "../components/Line.svelte";
 	import YearInput from "../components/YearInput.svelte";
 	import Contribution from "../components/Contribution.svelte";
 	import Withdrawal from "../components/Withdrawal.svelte";
@@ -129,7 +129,6 @@
 			<div class="col-span-10">
 				<AccountLink
 				label="Income link?"
-				value={true}
 				bind:account={$form_inputs.accounts[id].incomeLink}
 				accounts={$form_inputs.accounts}
 				accountTypeFilter='income'
@@ -141,7 +140,7 @@
 				<EmployerMatch
 				label="Employer Match"
 				bind:matching={$form_inputs.accounts[id].matching}
-				questionText="Is this account linked to an income account"
+				questionText="Does employer match your contributions made into this account?"
 				/>
 				
 			</div>
@@ -155,7 +154,7 @@
 			</div>
 		</div>
 		
-		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
+		<Line slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount" displayLegend={true}/>
 		
 		<Table
 		slot="balance"

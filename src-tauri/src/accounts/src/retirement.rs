@@ -227,51 +227,21 @@ impl Account for Retirement<u32> {
 
             match &self.matching {
                 Some(employer_match) => {
-                    if self.income_link.is_some() {
-                        // somehow get the income value from income link
-                        let a = linked_value;
-                        log::info!("income link {:?}",self.income_link);
-                        log::info!("{:?}", a);
-                    } else {
-                        return Err(
-                            String::from("Matching is set but there is no linked account").into(),
-                        );
-                    }
-
-                    // if (account.matchLimit.length > 1) {
-                    //     // and if it is a complex employer matching (more than one level)
-                    //     if (contribution >= (account.matchLimit[0] / 100 + account.matchLimit[1] / 100) * accounts[account.incomeLink].table[yearCurrent]) {
-                    //         // and if the contribution is above the highest employer matching level
-                    //         employerMatch = accounts[account.incomeLink].table[yearCurrent] * ((account.employerMatch[1] / 100) * (account.matchLimit[1] / 100) + (account.employerMatch[0] / 100) * (account.matchLimit[0] / 100)); // calculate the employer matching based on the match limits
-                    //     } else if (contribution >= (account.matchLimit[0] / 100) * accounts[account.incomeLink].table[yearCurrent]) {
-                    //         // otherwise if the contribution is between the employer matching levels ) {
-                    //         employerMatch = accounts[account.incomeLink].table[yearCurrent] * ((account.employerMatch[0] / 100) * (account.matchLimit[0] / 100) + (account.employerMatch[1] / 100) * (account.matchLimit[1] / 100) * (contribution / accounts[account.incomeLink].table[yearCurrent] - account.matchLimit[0] / 100)); // calculate the employer matching with all the first level and part of the second level
-                    //     } else {
-                    //         employerMatch = contribution * (account.employerMatch[0] / 100); // the employer contribution is computed based on the entire contribution
-                    //     }
-                    // } else {
-                    //     // if it is a simple employer matching (only one level)
-                    //     if (contribution >= account.matchLimit[0] * accounts[account.incomeLink].table[yearCurrent]) {
-                    //         // and if the contribution is above the highest employer matching level
-                    //         employerMatch = accounts[account.incomeLink].table[yearCurrent] * (account.employerMatch[0] / 100) * (account.matchLimit[0] / 100); // calculate the employer matching based on the match limits
-                    //     } else {
-                    //         // otherwise  if below the employer match limit
-                    //         employerMatch = contribution * (account.employerMatch[0] / 100); // the employer contribution is computed based on the entire contribution
-                    //     }
-                    // }
                     let link_income = linked_value.unwrap_or(0_f64);
-                    result.employer_contribution = match result.contribution
-                        >= employer_match.limit.value(settings) / 100_f64 * link_income
+                    result.employer_contribution = match (result.contribution / link_income * 100_f64)
+                        >= employer_match.limit.value(settings)
                     {
-                        true => {
+                        true => { // Employer match is based on % of salary
                             link_income
-                                * (employer_match.amount.value(settings) / 100_f64)
                                 * (employer_match.limit.value(settings) / 100_f64)
-                        } // calculate the employer matching based on the match limits,
-                        false => {
+                                * (employer_match.amount.value(settings) / 100_f64)
+                        }
+                        false => { // Employer match is based on your contribution
                             result.contribution * (employer_match.amount.value(settings) / 100_f64)
-                        } // the employer contribution is computed based on the entire contribution,
+                        }
                     };
+                    log::trace!("Employer Matching {:?} {:?} {:?} {:?}",link_income, result.employer_contribution, employer_match.amount.value(settings), employer_match.limit.value(settings));
+                    
                 }
                 None => {}
             }

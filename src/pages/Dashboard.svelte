@@ -12,8 +12,8 @@
 	    invoke('my_custom_command');
 	});
 
-	let data: PointArray<number, number>;
-	data = [{x:0,y:0},{x:1,y:3},{x:2,y:4}]
+	// let data: PointArray<number, number>;
+	// data = [{x:0,y:0},{x:1,y:3},{x:2,y:4}]
 
     let domain: PointLimit<Date, number> = {
         x: {min:null, max:null},
@@ -34,10 +34,14 @@
 
 </script>
 
-<h1 class="text-lg">Dashboard</h1>
-
-<div class="grid grid-cols-1 gap-1 mx-32">
-	{#if Object.keys($summary_data.col).length !== 0 }
+	{#if Object.keys($summary_data.col).length == 0 }
+		<div class="grid grid-cols-3 gap-4 place-content-center h-48">
+			<div></div>
+			<div><h2 class="text-lg text-center">to begin load data from file or configure settings & add accounts</h2></div>
+			<div></div>
+		</div>
+	{:else}
+	<div class="grid grid-cols-1 gap-1 mx-32">
 		<Line 
 			data={[
 				{label:"Cost of Living", data:toPoints($summary_data.col)},
@@ -65,6 +69,7 @@
 			yLabel="$"
 			{domain}
 		/>
+	</div>
 	{/if}
-</div>
+
 

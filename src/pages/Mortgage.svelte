@@ -2,7 +2,7 @@
 	import { AccountType, form_inputs } from '../stores';
 	import {addTableRow, removeTableRow} from "../helper";
 	
-	import Scatter from "../components/Scatter.svelte";
+	import Line from "../components/Line.svelte";
 	import YearInput from "../components/YearInput.svelte";
 	import Payment from "../components/Payment.svelte";
 	import TextInput from "../components/TextInput.svelte";
@@ -132,7 +132,7 @@
 			</div>
 		</div>
 		
-		<Scatter slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
+		<Line slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount" displayLegend={true}/>
 		
 		<Table
 		slot="balance"

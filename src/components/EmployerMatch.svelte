@@ -4,7 +4,7 @@
     import QuestionField from './QuestionField.svelte'
     import PercentInput from './PercentInput.svelte'
 
-    type Match = { amount: number; limit: number;} | undefined;
+    type Match = { amount: number; limit: number;} | null;
 
     export let label="";            // label for the input field
     export let questionText="";     // help text
@@ -19,11 +19,12 @@
     $:matching = enabled ? {
         "amount": amount,
         "limit": limit,
-    } : undefined
+    } : null
+    //p-0 m-0 pl-1 grow
 </script>
 
-<QuestionField {questionText} {label}>
-    <div class="p-0 m-0 pl-1 grow">
+<QuestionField {label}>
+    <div class="grow flex items-center w-fit gap-4">
 
         <label for={id} class="flex items-center cursor-pointer">
             <!-- toggle -->
@@ -38,21 +39,28 @@
         </label>
 
         {#if enabled}
-            <PercentInput
-            label="Employer Match"
-            bind:value={amount}
-            questionText="% of what you put in that the employer matches"
-            />
-            <PercentInput
-            label="Match Limit"
-            bind:value={limit}
-            questionText="% of what you put in when the employer stops matching"
-            />
+            <div class="grid grid-cols-10 gap-2">
+                <div class="col-span-10">
+                    <PercentInput
+                    label="Employer Match"
+                    bind:value={amount}
+                    questionText="% of what you put in that the employer matches"
+                    />
+                </div>
+                <div class="col-span-10">
+                <PercentInput
+                label="Match Limit"
+                bind:value={limit}
+                questionText="% of what you put in when the employer stops matching"
+                />
+                </div>
+            </div>
         {/if}
     </div>
+    <div slot="helper">{questionText}</div>
 </QuestionField>
 
-<style>
+<style lang=postcss>
     input:checked ~ .dot {
         transform: translateX(200%);
         @apply bg-primary-500;
