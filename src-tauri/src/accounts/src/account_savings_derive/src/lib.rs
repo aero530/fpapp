@@ -17,15 +17,20 @@ fn impl_savings_type(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
         impl AccountSavings for #name<u32> {
-            fn get_contribution(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64 {
+            fn get_contribution(&self, year:u32, totals: &YearlyTotals, settings: &Settings, linked_value: Option<f64> ) -> f64 {
                 match self.contribution_type {
                     ContributionOptions::Fixed => {
                         // set the contribution amount to the value input
                         self.contribution_value
                     }
                     ContributionOptions::PercentOfIncome => {
-                        // calculate the contribution using the total income for the year
-                        totals.get_income(year) * self.contribution_value / 100_f64
+                        if let Some(linked_income) = linked_value {
+                            // calculate the contribution using the income from this account for the year
+                            linked_income * self.contribution_value / 100_f64
+                        } else {
+                            // calculate the contribution using the total income for the year
+                            totals.get_income(year) * self.contribution_value / 100_f64
+                        }
                     }
                     ContributionOptions::FixedWithInflation => {
                         // increase the value by inflation

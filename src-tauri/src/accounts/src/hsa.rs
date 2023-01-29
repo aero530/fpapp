@@ -201,7 +201,7 @@ impl Account for Hsa<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.get_contribution(year, totals, settings);
+            result.contribution = self.get_contribution(year, totals, settings, None);
             result.employer_contribution = fixed_with_inflation(self.employer_contribution, year, settings);
         }
 

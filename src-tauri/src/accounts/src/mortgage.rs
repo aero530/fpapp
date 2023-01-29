@@ -156,7 +156,7 @@ impl Account for Mortgage<u32> {
         )
     }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
-        self.analysis.get_plot_data()
+        self.analysis.get_mortgage_plot_data()
     }
     fn simulate(
         &mut self,
@@ -230,6 +230,12 @@ impl Account for Mortgage<u32> {
         })
     }
     fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
+        self.analysis.write_mortgage(filepath);
+    }
+}
+
+impl MortgagePlot for Mortgage<u32> {
+    fn get_mortgage_plot_data(&self) -> Vec<PlotDataSet> {
+        self.analysis.get_plot_data()
     }
 }

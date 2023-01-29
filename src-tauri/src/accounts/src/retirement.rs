@@ -195,7 +195,14 @@ impl Account for Retirement<u32> {
         )
     }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
-        self.analysis.get_plot_data()
+        match &self.matching {
+            Some(_) => {
+                self.analysis.get_matching_plot_data()
+            }
+            None => {
+                self.analysis.get_plot_data()
+            }
+        }
     }
     fn simulate(
         &mut self,
@@ -223,7 +230,7 @@ impl Account for Retirement<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.get_contribution(year, totals, settings);
+            result.contribution = self.get_contribution(year, totals, settings, linked_value);
 
             match &self.matching {
                 Some(employer_match) => {
@@ -240,17 +247,19 @@ impl Account for Retirement<u32> {
                             result.contribution * (employer_match.amount.value(settings) / 100_f64)
                         }
                     };
-                    log::trace!("Employer Matching {:?} {:?} {:?} {:?}",link_income, result.employer_contribution, employer_match.amount.value(settings), employer_match.limit.value(settings));
-                    
+                    log::trace!("{} income {:.2} my cont {:.2} match {:.2} ({:.1}% up to {:.1}%)",self.name, link_income, result.contribution, result.employer_contribution, employer_match.amount.value(settings), employer_match.limit.value(settings));
                 }
                 None => {}
             }
         }
-
+        
         // Add contribution to contribution and value tables
         self.analysis
             .contributions
-            .update(year, result.contribution + result.employer_contribution);
+            .update(year, result.contribution);
+        self.analysis
+            .employer_contributions
+            .update(year, result.employer_contribution);
         self.analysis
             .value
             .update(year, result.contribution + result.employer_contribution);
@@ -326,6 +335,13 @@ impl Account for Retirement<u32> {
         }
     }
     fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
+        match &self.matching {
+            Some(_) => {
+                self.analysis.write_matching(filepath);
+            }
+            None => {
+                self.analysis.write(filepath);
+            }
+        }
     }
 }

@@ -78,7 +78,6 @@
 
     const colors = graphics;
 
-
     function makeChart() {
         
         // If data was input as a single dataset then put into an array of DataSets
@@ -136,7 +135,7 @@
             let yScale = (chart.domain.y.max - chart.domain.y.min);
 
             // Calculate the distance between input x value and the mouse hover x value
-            const getDistanceFromHoveredDate = (d: Point<xType, yType>) => {
+            const getDistanceFromHoveredPoint = (d: Point<xType, yType>) => {
                 if (typeof d.x==="number" && typeof hover.x==="number") {
                     return Math.sqrt(Math.pow((d.x - hover.x)/xScale,2) + Math.pow((d.y - hover.y)/yScale,2))
                 } else if (d.x instanceof Date && hover.x instanceof Date) {
@@ -144,13 +143,25 @@
                 }
             };
 
-            // Scan through all the input data and find the closest x value
+            // Scan through all the input data and find the closest value
+            // For each dataset find closest point
+            let ds_mins = [];
+            for (const ds of dataSets) {
+                // find min of ds
+                const index = d3.minIndex(
+                    ds.data,
+                    (a: Point<xType, yType>) => {return getDistanceFromHoveredPoint(a)}
+                );
+                ds_mins.push({label: ds.label, value: ds.data[index]});
+            }
+            // Find closest point between datasets
             const closestIndex = d3.minIndex(
-                fullDataset,
-                (a: Point<xType, yType>) => {return getDistanceFromHoveredDate(a)}
+                ds_mins,
+                (a) => {return getDistanceFromHoveredPoint(a.value)}
             );
-            const closestDataPoint = fullDataset[closestIndex];
-            
+            const closestDataPoint = ds_mins[closestIndex].value;
+            const closestDataLabel = ds_mins[closestIndex].label;
+
             // Get the current scale factors for the svg image (as the svg rendered size is reactive on the page)
             const scale: Point<number, number> = {"x":imageWidth/format.box.width, "y":imageHeight/format.box.height};
 
@@ -160,8 +171,10 @@
                 "y": scale.y * (chart.y(closestDataPoint.y) + chart.margin.top + 0.7071*format.tooltip.circleRadius)
             };
 
+            const closestSetIndex = ds_mins.findIndex(e => e.label == closestDataLabel);
+
             tooltip
-                .html(`${toFormattedString(closestDataPoint.x, format.tooltip.format.x)}, ${toFormattedString(closestDataPoint.y, format.tooltip.format.y)}`)
+                .html(`${dataSets.length > 1 ? closestDataLabel : ""} ${toFormattedString(closestDataPoint.x, format.tooltip.format.x)}, ${toFormattedString(closestDataPoint.y, format.tooltip.format.y)}`)
                 .style("left", tooltipPx.x+"px")
                 .style("top", tooltipPx.y+"px")
                 .style("opacity", 1);
@@ -169,7 +182,8 @@
             tooltipCircle
                 .attr("cx", chart.x(closestDataPoint.x))
                 .attr("cy", chart.y(closestDataPoint.y))
-                .style("opacity", 1);
+                .style("opacity", 1)
+                .style("stroke", () => `${colors[closestSetIndex+1][500]}`)
         }
 
         const chartGroup = chart.chartGroup;
@@ -208,7 +222,7 @@
             .attr("id", "tooltip-circle")
             .attr("r", format.tooltip.circleRadius)
             .attr("stroke-width", format.tooltip.circleStrokeWidth)
-            .attr("class","stroke-graphics-1-500 fill-light dark:fill-dark")
+            .attr("class","stroke-graphics-1-500 fill-background-500 dark:fill-darkbackground-500")
             .style("opacity", 0);
 
         // Add rectangle for background action listening area

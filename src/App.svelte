@@ -14,6 +14,7 @@
 	import Expenses from './pages/Expenses.svelte';
 	import Hsa from './pages/Hsa.svelte';
 	import Income from './pages/Income.svelte';
+	import Loan from './pages/Loan.svelte';
 	import Mortgage from './pages/Mortgage.svelte';
 	import Retirement from './pages/Retirement.svelte';
 	import Savings from './pages/Savings.svelte';
@@ -26,6 +27,7 @@
 		{text: 'Expenses', value: Expenses, to: 'Expenses'},
 		{text: 'HSA', value: Hsa, to: 'Hsa'},
 		{text: 'Income', value: Income, to: 'Income'},
+		{text: 'Loan', value: Loan, to: 'Loan'},
 		{text: 'Mortgage', value: Mortgage, to: 'Mortgage'},
 		{text: 'Retirement', value: Retirement, to: 'Retirement'},
 		{text: 'Savings', value: Savings, to: 'Savings'},
@@ -97,7 +99,7 @@
 						
 </script>
 
-<aside class="top-0 left-0 w-64 h-screen fixed bg-slate-200 dark:bg-slate-600">
+<aside class="top-0 left-0 w-64 h-screen fixed bg-background-200 dark:bg-darkbackground-500">
 		<ul class="flex flex-col overflow-hidden">
 			{#each pages as page}
 				<li 

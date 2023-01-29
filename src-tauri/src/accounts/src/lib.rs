@@ -21,7 +21,7 @@ use simulation::{
     LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact,
 };
 // re-exported for use outside this lib
-pub use simulation::{Dates, YearlyTotals, PlotDataSet};
+pub use simulation::{Dates, YearlyTotals, PlotDataSet, TableGroup};
 
 mod plot;
 use plot::{scatter_plot_buf, scatter_plot_file};
@@ -113,7 +113,7 @@ pub trait Account: std::fmt::Debug {
 /// Trait for savings accounts of various types that have contributions & withdrawals
 pub trait AccountSavings: Account {
     /// Calculate the contribution amount for the specified year
-    fn get_contribution(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64;
+    fn get_contribution(&self, year:u32, totals: &YearlyTotals, settings: &Settings, linked_value: Option<f64> ) -> f64;
     /// Calculate the withdrawal amount for the specified year.  This value is limited by the 
     /// account value for that year (so the account can not become overdrawn).
     fn get_withdrawal(&self, year:u32, totals: &YearlyTotals, settings: &Settings ) -> f64;
@@ -129,6 +129,13 @@ pub trait AccountPayment: Account {
 pub trait AccountExpense: Account {
     /// Calculate the contribution amount for the specified year
     fn get_expense(&self, year:u32, settings: &Settings ) -> f64;
+}
+
+
+/// Trait for savings accounts of various types that have contributions & withdrawals
+pub trait MortgagePlot: Account {
+    /// Get plot data for UI plotting
+    fn get_mortgage_plot_data(&self) -> Vec<PlotDataSet>;
 }
 
 /// List of the types of accounts that are available

@@ -207,7 +207,7 @@ impl Account for Savings<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.get_contribution(year, totals, settings);
+            result.contribution = self.get_contribution(year, totals, settings, None);
         }
 
         // Add contribution to contribution table & increase account value by contribution
@@ -309,7 +309,7 @@ mod tests {
         account.contribution_value = 500_f64;
         account.init(None, &settings).unwrap();
         
-        let contribution = account.get_contribution(year, &yearly_totals, &settings);
+        let contribution = account.get_contribution(year, &yearly_totals, &settings, None);
         assert_approx_eq!(f64, contribution, 500_f64);
     }
 
@@ -330,7 +330,7 @@ mod tests {
         account.contribution_value = 25_f64;
         account.init(None, &settings).unwrap();
         
-        let contribution = account.get_contribution(year, &yearly_totals, &settings);
+        let contribution = account.get_contribution(year, &yearly_totals, &settings, None);
         assert_approx_eq!(f64, contribution, 2500_f64);
     }
 
@@ -346,7 +346,7 @@ mod tests {
         account.contribution_value = 500_f64;
         account.init(None, &settings).unwrap();
         
-        let contribution = account.get_contribution(year, &yearly_totals, &settings);
+        let contribution = account.get_contribution(year, &yearly_totals, &settings, None);
         assert_approx_eq!(f64, contribution, 814.447, epsilon=0.001);
     }
 

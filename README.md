@@ -7,8 +7,9 @@ A financial planning & simulation application.
 To do:
 
 - [ ] Cleanup / improve look & style of layout
-- [ ] Chart tooltip circle should match the color of the line
-- [ ] Remove chart lines / legend value for types that are always zero / not used (such as employer contributions on college savings accounts). This goes back to how plot data is generated in `table_groups.rs`.  All `savings` account types use the same simulation result table type which has optional employer_match.  When plot data is generated if that option is `None` default values of `0` are inserted.
+- [x] Chart tooltip circle should match the color of the line
+- [x] Remove chart lines / legend value for types that are always zero / not used (such as employer contributions on college savings accounts). This goes back to how plot data is generated in `table_groups.rs`.  All `savings` account types use the same simulation result table type which has optional employer_match.  When plot data is generated if that option is `None` default values of `0` are inserted.
+- [x] Add menu link for Loans
 - [x] Add use tips to dashboard page if there is no data loaded
 - [x] Add employer matching to retirement account UI
 - [x] Add account link to retirement employer match

@@ -207,7 +207,7 @@ impl Account for College<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.get_contribution(year, totals, settings);
+            result.contribution = self.get_contribution(year, totals, settings, None);
         }
 
         // Add contribution to contribution and value tables

@@ -88,7 +88,7 @@
 				label="Contribution Value"
 				step={1}
 				bind:value={$form_inputs.accounts[id].contributionValue}
-				questionText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. [in today's dollars]"
+				questionText="Amount put into this account every year.  Numbers less than 100 are assumed to be a percentage. If an income link is configured the percentage will come from the value for that account otherwise it will be from the total income from the year. [in today's dollars]"
 				/>
 			</div>
 			<div class="col-span-5">
