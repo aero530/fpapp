@@ -81,7 +81,7 @@
 			<div class="col-span-10">
 				<AccountLink
 				label="Healthcare cost?"
-				bind:value={$form_inputs.accounts[id].isHealthcare}
+				bind:isOn={$form_inputs.accounts[id].isHealthcare}
 				bind:account={$form_inputs.accounts[id].hsaLink}
 				accounts={$form_inputs.accounts}
 				accountTypeFilter='hsa'
@@ -97,7 +97,7 @@
 			</div>
 		</div>
 		
-		<Line slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" ylabel="Amount"/>
+		<Line slot="chart" id={id} title={$form_inputs.accounts[id].name} xLabel="Year" yLabel="Amount"/>
 		
 		<Table
 		slot="balance"

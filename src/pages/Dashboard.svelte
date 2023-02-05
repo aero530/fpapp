@@ -4,16 +4,13 @@
 	import Line from "../components/Charts/Line.svelte";
 	import { summary_data } from '../stores';
 
-	import type { PointArray, PointLimit } from "../components/Charts/chart.type";
+	import type { PointLimit } from "../components/Charts/chart.type";
 
     export let zeroBase: boolean=true;
 
 	onMount(() => {
 	    invoke('my_custom_command');
 	});
-
-	// let data: PointArray<number, number>;
-	// data = [{x:0,y:0},{x:1,y:3},{x:2,y:4}]
 
     let domain: PointLimit<Date, number> = {
         x: {min:null, max:null},
@@ -71,5 +68,3 @@
 		/>
 	</div>
 	{/if}
-
-

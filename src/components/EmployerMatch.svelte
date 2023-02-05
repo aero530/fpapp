@@ -20,7 +20,7 @@
         "amount": amount,
         "limit": limit,
     } : null
-    //p-0 m-0 pl-1 grow
+
 </script>
 
 <QuestionField {label}>

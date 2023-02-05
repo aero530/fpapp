@@ -8,16 +8,16 @@
     export let questionText="";     // help text
     export let accounts={};         // accounts object used to populated selection box
     export let accountTypeFilter='';// filter on a single account type
+    export let isOn=false;
 
     $: options = Object.keys(accounts)
         .filter(id => accountTypeFilter ? accounts[id].type==accountTypeFilter : true)
         .map((id) => {return {value: id, label: accounts[id].name}})
 
     let account_id = account;
-    let enabled = account_id && account_id.length > 0;
 	let id = uuidv4();
 
-    $:account = enabled ? account_id : null;
+    $:account = isOn ? account_id : null;
 </script>
 
 <QuestionField {label}>
@@ -26,7 +26,7 @@
             <!-- toggle -->
             <div class="relative">
                 <!-- input -->
-                <input id={id} type="checkbox" class="sr-only" bind:checked={enabled}/>
+                <input id={id} type="checkbox" class="sr-only" bind:checked={isOn}/>
                 <!-- line -->
                 <div class="w-10 h-2 bg-background-600 dark:bg-darkbackground-600 rounded-full shadow-inner"></div>
                 <!-- dot -->
@@ -34,7 +34,7 @@
             </div>
         </label>
     
-        {#if enabled}
+        {#if isOn}
             <select bind:value={account_id} class="p-0 m-0 grow text-dark dark:text-light bg-background-400 dark:bg-darkbackground-400">
                 {#each options as option (option.label)}
                     <option value={option.value}>{option.label}</option>

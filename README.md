@@ -7,6 +7,8 @@ A financial planning & simulation application.
 To do:
 
 - [ ] Cleanup / improve look & style of layout
+- [ ] Improve tests to verify calculations for all account types
+- [ ] Tooltips fall off edge of window on Settings page.  This is also why the Settings page ends up with a bottom scroll bar.
 - [x] Chart tooltip circle should match the color of the line
 - [x] Remove chart lines / legend value for types that are always zero / not used (such as employer contributions on college savings accounts). This goes back to how plot data is generated in `table_groups.rs`.  All `savings` account types use the same simulation result table type which has optional employer_match.  When plot data is generated if that option is `None` default values of `0` are inserted.
 - [x] Add menu link for Loans
