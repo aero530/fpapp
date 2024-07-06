@@ -4,10 +4,6 @@
 /node_modules/
 /public/build/
 
-.DS_Store
-.routify
-.vscode
-
 # Data
 data.json
 dataSimple.json

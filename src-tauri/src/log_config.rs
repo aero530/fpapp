@@ -13,7 +13,7 @@ use std::path::Path;
 /// that data should be laid out within its table. This allows changes to be made closer to where
 /// they are used.
 #[derive(Debug, Deserialize)]
-pub struct Logconfig {
+pub struct LogConfig {
     /// The log level to be used by the program. This value will be parsed to a `LogLevel` to
     /// determine how much logging output the program should generate. Valid values are `off`,
     /// `error`, `warn`, `info`, `debug`, and `trace`. Note that if the passed string is not one
@@ -21,7 +21,7 @@ pub struct Logconfig {
     pub log_level: String,
 }
 
-impl Logconfig {
+impl LogConfig {
     /// Creates a new set of configurations, either by reading them off the disk, or by using
     /// defaults and saving them in the correct location.
     ///

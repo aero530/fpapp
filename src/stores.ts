@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core"
 import { v4 as uuid } from 'uuid';
 
 import type { AccountWrapperUI as Account } from "../src-tauri/src/accounts/bindings/AccountWrapperUI";
