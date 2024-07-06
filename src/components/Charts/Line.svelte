@@ -7,7 +7,7 @@
     import {NumberFormat, toFormattedString} from "./chart"
     import {XyChart} from "./xyChart";
 
-    import {graphics} from "../../../tailwind_colors_graphics";
+    import {graphics} from "../../tailwind_colors_graphics";
 
     type xType = Date | number;
     type yType = number;

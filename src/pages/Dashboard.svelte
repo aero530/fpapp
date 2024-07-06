@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invoke } from "@tauri-apps/api/tauri";
+	import { invoke } from "@tauri-apps/api/core"
 	import { onMount } from "svelte";
 	import Line from "../components/Charts/Line.svelte";
 	import { summary_data } from '../stores';
@@ -62,6 +62,22 @@
 		<Line 
 			data={toPoints($summary_data.col)}
 			title="Cost of Living"
+			xLabel="Year"
+			yLabel="$"
+			{domain}
+		/>
+
+		<Line 
+			data={toPoints($summary_data.expense)}
+			title="expense of Living"
+			xLabel="Year"
+			yLabel="$"
+			{domain}
+		/>
+
+		<Line 
+			data={toPoints($summary_data.healthcare_expense)}
+			title="healthcare_expense of Living"
 			xLabel="Year"
 			yLabel="$"
 			{domain}

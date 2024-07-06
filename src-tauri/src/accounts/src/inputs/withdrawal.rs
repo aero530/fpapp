@@ -32,6 +32,7 @@ pub enum TaxStatus {
     /// Contributions do not impact taxable income (as they are made with dollars that have already been taxed).
     /// Withdrawals count as income but do not to taxable income.
     /// aka 0
+    /// contribute_taxed_earnings_untaxed_when_used
     ContributeTaxedEarningsUntaxedWhenUsed,
     /// Paid with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)
     ///
@@ -50,6 +51,7 @@ pub enum TaxStatus {
     /// Contributions reduce taxable income (they are a deduction).
     /// Withdrawals count as income and add to taxable income.
     /// aka 3
+    /// contribute_pretax_taxed_when_used
     ContributePretaxTaxedWhenUsed,
     /// Paid with pretax income and not taxed as income (use with HSA)
     ///
@@ -57,5 +59,6 @@ pub enum TaxStatus {
     /// Contributions reduce taxable income (they are a deduction).
     /// Withdrawals count as income but do not add to taxable income.
     /// aka 4
+    /// contribute_pretax_untaxed_when_used
     ContributePretaxUntaxedWhenUsed,
 }

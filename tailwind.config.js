@@ -1,6 +1,6 @@
 export default {
   darkMode: 'class',
-  content: ["./index.html","./src/**/*.{html,js,svelte,ts}"],
+  content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
     extend: {},
     colors: {

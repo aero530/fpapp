@@ -1,7 +1,7 @@
 //! Financial Planning Application
 //!
 //! Application to simulate financial standing over time.
-//! The calculations and subsiquent types are all defined in the [Accounts](accounts) crate
+//! The calculations and subsequent types are all defined in the [Accounts](accounts) crate
 
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
@@ -11,13 +11,13 @@
 use std::collections::HashMap;
 
 use flexi_logger::Logger;
+use tauri::{menu::{Menu, MenuItemBuilder, SubmenuBuilder}, Manager};
 
-// use log::{info, trace, LevelFilter};
 use std::fs::read_to_string;
 use serde::{Deserialize, Serialize};
 
-mod menu;
-mod logconfig;
+
+mod log_config;
 
 use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
 
@@ -98,7 +98,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
     let years: Vec<u32> =
         (data.settings.year_start()..data.settings.year_end()).collect::<Vec<u32>>();
 
-    // Initilize object to keep track of yearly totals across all accounts
+    // Initialize object to keep track of yearly totals across all accounts
     let mut yearly_totals = YearlyTotals::new();
 
     // Initialize accounts
@@ -106,7 +106,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
         // Get dates from the linked account if this account has a link ID
         let linked_dates: Option<Dates> = match data.accounts.get(uuid).unwrap().link_id() {
             Some(link_id) => {
-                log::trace!("Liunk ID {:?}",&link_id);
+                log::trace!("Link ID {:?}",&link_id);
                 // This explicitly does not allow recursion in linked_dates
                 Some(Dates {
                     year_in: data
@@ -204,39 +204,56 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
 fn main() {
     
     // Initialize and gather config
-    let logconfig = logconfig::Logconfig::new().expect("Unable to create config file.");    
-    Logger::try_with_str(logconfig.log_level).expect("Could not parse log level.").format(flexi_logger::colored_default_format).start().unwrap();
+    let log_config = log_config::LogConfig::new().expect("Unable to create config file.");    
+    Logger::try_with_str(log_config.log_level).expect("Could not parse log level.").format(flexi_logger::colored_default_format).start().unwrap();
 
     tauri::Builder::default()
-        .menu(menu::get_menu())
-        .on_menu_event(|event| {
-            match event.menu_item_id() {
-                "quit" => {
-                std::process::exit(0);
-                },
-                "open" => {
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+
+            let handle = app.handle();
+            let menu = Menu::new(handle)?;
+
+            let open = MenuItemBuilder::with_id("open", "Open").build(app)?;
+            let save = MenuItemBuilder::with_id("save", "Save").build(app)?;
+            let save_as = MenuItemBuilder::with_id("save_as", "Save As").build(app)?;
+            let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+            
+            let submenu = SubmenuBuilder::new(handle, "File").items(&[ 
+                &open, &save, &save_as
+             ]).build()?;
+
+            menu.append(&submenu)?;
+            menu.append(&quit)?;
+
+            app.set_menu(menu)?;
+
+            app.on_menu_event(move |app_handle, event| {
+                if event.id() == quit.id() {
+                    std::process::exit(0);
+                } else if event.id() == open.id() {
                     let data = MenuEvent {
                         name: "file-open".to_string(),
                     };
-                    event.window().emit("rust-event", data).expect("failed to emit");
-                },
-                "save" => {
+                    app_handle.emit("rust-event", data).expect("failed to emit");
+                }  else if event.id() == save.id() {
                     let data = MenuEvent {
                         name: "file-save".to_string(),
                     };
-                    event.window().emit("rust-event", data).expect("failed to emit");
-                },
-                "saveas" => {
+                    app_handle.emit("rust-event", data).expect("failed to emit");
+                } else if event.id() == save_as.id() {
                     let data = MenuEvent {
-                        name: "file-saveas".to_string(),
+                        name: "file-save_as".to_string(),
                     };
-                    event.window().emit("rust-event", data).expect("failed to emit");
-                },
-                _ => {
-                println!("{:?}", event.menu_item_id());
+                    app_handle.emit("rust-event", data).expect("failed to emit");
+                } else  {
+                    println!("{:?}", event.id());
                 }
-            }
+            });
+            Ok(())
         })
+        
         .invoke_handler(tauri::generate_handler![
             my_custom_command,
             do_a_thing,

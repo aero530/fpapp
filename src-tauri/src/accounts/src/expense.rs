@@ -28,6 +28,7 @@ pub struct Expense<T: std::cmp::Ord> {
     /// Yearly cost of the expense [in today's dollars]
     expense_value: f64,
     /// This expense account is for healthcare costs.  If so it will pull first from HSA accounts.
+    #[serde(default)] // default bool is false
     is_healthcare: bool,
     /// Link this account to an income source
     hsa_link: Option<String>,

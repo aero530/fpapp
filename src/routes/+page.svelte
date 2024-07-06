@@ -1,24 +1,23 @@
 <script>
-	
-	import { listen, emit } from "@tauri-apps/api/event";
-	import { open, save } from "@tauri-apps/api/dialog";
-	
-	import { invoke } from "@tauri-apps/api/tauri";
+	import { listen } from "@tauri-apps/api/event";
+	import { open, save } from '@tauri-apps/plugin-dialog';
+
+	import { invoke } from "@tauri-apps/api/core"
 	import { onMount, onDestroy } from "svelte";
 
-	import { path, form_inputs, dark} from './stores';
+	import { path, form_inputs, dark} from '../stores';
 	
-	import Dashboard from './pages/Dashboard.svelte';
-	import Settings from './pages/Settings.svelte';
-	import College from './pages/College.svelte';
-	import Expenses from './pages/Expenses.svelte';
-	import Hsa from './pages/Hsa.svelte';
-	import Income from './pages/Income.svelte';
-	import Loan from './pages/Loan.svelte';
-	import Mortgage from './pages/Mortgage.svelte';
-	import Retirement from './pages/Retirement.svelte';
-	import Savings from './pages/Savings.svelte';
-	import Ssa from './pages/Ssa.svelte';
+	import Dashboard from '../pages/Dashboard.svelte';
+	import Settings from '../pages/Settings.svelte';
+	import College from '../pages/College.svelte';
+	import Expenses from '../pages/Expenses.svelte';
+	import Hsa from '../pages/Hsa.svelte';
+	import Income from '../pages/Income.svelte';
+	import Loan from '../pages/Loan.svelte';
+	import Mortgage from '../pages/Mortgage.svelte';
+	import Retirement from '../pages/Retirement.svelte';
+	import Savings from '../pages/Savings.svelte';
+	import Ssa from '../pages/Ssa.svelte';
 	
 	const pages = [
 		{text: 'Dashboard', value: Dashboard, to: 'Dashboard'},
@@ -35,6 +34,9 @@
 	];
 	let selected = pages[0];
 
+	/**
+     * @param {string} pathString
+     */
 	function openFile(pathString) {
 		invoke("file_open", {
 			path: pathString,
@@ -45,6 +47,10 @@
 		.catch((error) => alert(error));
 	}
 
+	/**
+     * @param {string} pathString
+     * @param {{ accounts: { [id: string]: import("../../src-tauri/src/accounts/bindings/AccountWrapperUI").AccountWrapperUI; }; settings: import("../../src-tauri/src/accounts/bindings/Settings").Settings; }} data
+     */
 	function saveFile(pathString, data) {
 		invoke("file_save", {
 			path: pathString,
@@ -53,17 +59,24 @@
 		.catch((error) => alert(error));
 	}
 	
+	/**
+     * @type {import("@tauri-apps/api/event").UnlistenFn}
+     */
 	let unlisten;
 	onMount(async () => {
 		form_inputs.reset();
-		unlisten = await listen("rust-event", event => {
+
+		unlisten = await listen('rust-event', (event) => {
+			console.log(event);
+
 			switch (event.payload.name) {
 				case 'file-open' :
 					open()
 					.then(function (pathString) {
+						console.log(pathString);
 						if (pathString) {
 							// @ts-ignore
-							path.set(pathString);
+							path.set(pathString.path);
 							openFile($path);
 						}
 					});
@@ -71,9 +84,10 @@
 				case 'file-save' :
 					saveFile($path, $form_inputs);
 					break;
-				case 'file-saveas' :
+				case 'file-save_as' :
 					save()
 					.then(function (pathString) {
+						console.log(pathString);
 						if (pathString) {
 							path.set(pathString);
 							saveFile($path, $form_inputs);
@@ -102,6 +116,7 @@
 <aside class="top-0 left-0 w-64 h-screen fixed bg-background-200 dark:bg-darkbackground-500">
 		<ul class="flex flex-col overflow-hidden">
 			{#each pages as page}
+				<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 				<li 
 					on:click={() => {selected = page;}}
 					on:keypress={() => {}}
@@ -126,10 +141,6 @@
 
 <!-- You can put your "global" style configurations here! -->
 <style global lang="postcss">
-    @tailwind base;
-    @tailwind components;
-    @tailwind utilities;
-
 	:global(body) {
 		@apply bg-background-500;
 		@apply text-dark;

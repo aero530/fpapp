@@ -8,7 +8,7 @@
     import {NumberFormat, toFormattedString} from "./chart"
     import {XyChart} from "./xyChart";
 
-    import {graphics} from "../../../tailwind_colors_graphics";
+    import {graphics} from "../../tailwind_colors_graphics";
         
     export let data: DataInput | null;
     export let bounds: BoundInput | null;
