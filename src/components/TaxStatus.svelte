@@ -62,7 +62,7 @@
             'payed with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)',
         },
         {
-            value: 'not_impliemented',
+            value: 'not_implemented',
             text: 'not implemented',
             description:
             'NOT IMPLEMENTED ## 2=payed with taxed income, earnings are taxed in year taken out as capital gains, withdrawals are not taxed',

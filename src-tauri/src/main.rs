@@ -175,11 +175,13 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
                 let account = data.accounts.get_mut(uuid).unwrap();
 
                 // Simulate this year for the account with specified uuid
-                let impact = account
-                    .simulate(year, &yearly_totals, &data.settings, link_value)
-                    .unwrap();
+                // let impact = 
+                    // .unwrap();
+                match account.simulate(year, &yearly_totals, &data.settings, link_value) {
+                    Ok(impact) => yearly_totals.update(year, impact), // Apply the impact for this account to yearly_totals
+                    Err(e) => eprintln!("Error {}",e)
+                }
                 // Apply the impact for this account to yearly_totals
-                yearly_totals.update(year, impact);
             });
 
             // Close out the year

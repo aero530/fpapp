@@ -6,15 +6,17 @@
     let dispatch = createEventDispatcher();
 </script>
 
+<!-- div to fill the screen and close the window if clicked outside the modal -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
-    class="fixed inset-0 w-screen h-screen bg-black opacity-50"
+    class="fixed inset-0 w-screen h-screen bg-black opacity-50 z-50"
     transition:fade
     on:click={() => dispatch("close")}
     on:keypress={()=>{}}
 />
 
 <div
-    class="fixed inset-0 m-auto bg-background-500 w-fit h-fit rounded"
+    class="fixed inset-0 m-auto bg-background-500 w-fit h-fit rounded z-50"
     transition:fade
 >
     {#if title !== ""}
