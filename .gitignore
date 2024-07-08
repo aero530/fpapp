@@ -7,3 +7,5 @@
 # Data
 data.json
 dataSimple.json
+
+.svelte-kit/

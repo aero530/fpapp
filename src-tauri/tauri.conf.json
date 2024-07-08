@@ -1,7 +1,7 @@
 {
   "productName": "fpapp",
   "version": "4.0.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.aero530.dev",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
