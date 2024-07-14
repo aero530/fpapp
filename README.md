@@ -107,7 +107,7 @@ Start app in dev mode:
 Note that vscode terminal is somehow broken in linux and this fails to run there.  Running it from a os terminal window works fine.
 
 ```cmd
-> npm run tauri dev
+> cargo tauri dev
 ```
 
 ## Packaging ##
@@ -115,7 +115,7 @@ Note that vscode terminal is somehow broken in linux and this fails to run there
 Create a package for macOS, Windows, or Linux using one of the following commands:
 
 ```cmd
-> npm run tauri build
+> cargo tauri build
 ```
 
 <!-- ```cmd

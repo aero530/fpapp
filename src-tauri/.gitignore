@@ -6,3 +6,5 @@ target/
 
 # dont wanna save Wix to git either
 WixTools
+
+*.csv

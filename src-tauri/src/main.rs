@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 
 use flexi_logger::Logger;
-use tauri::{menu::{Menu, MenuItemBuilder, SubmenuBuilder}, Manager};
+use tauri::{menu::{Menu, MenuItemBuilder, SubmenuBuilder}, Emitter};
 
 use std::fs::read_to_string;
 use serde::{Deserialize, Serialize};
@@ -193,6 +193,23 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
     });
 
     let mut plot_data : HashMap<String, Vec<PlotDataSet>> = HashMap::new();
+
+
+
+
+
+
+
+
+    // data.write_tables(&account_order, years, "out.csv".to_owned());
+    // data.accounts["c56b7430-c5bb-11e8-a00d-d173fe7faee3"].write("mort.csv".to_owned());
+
+
+
+
+
+
+
 
     for (uuid, account) in data.accounts.iter() {
         plot_data.insert(uuid.to_string(), account.get_plot_data());

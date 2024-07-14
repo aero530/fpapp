@@ -41,7 +41,7 @@
                             <td class="pl-1">{thisYear}</td>
                             <td class="pl-1">{data[thisYear]}</td>
                             <td>
-                                <div on:click={() => handleRemove(thisYear)}  on:keypress={()=>{}}>
+                                <div on:click={() => handleRemove(thisYear)}  on:keypress={()=>{}} role="button" tabindex="0">
                                     <SubtractAlt />
                                 </div>
                             </td>
@@ -65,7 +65,7 @@
                         />   
                     </td>
                     <td>
-                        <div on:click={()=>handleAdd(inputYear,parseInt(inputValue))}  on:keypress={()=>{}}>
+                        <div on:click={()=>handleAdd(inputYear,parseInt(inputValue))}  on:keypress={()=>{}} role="button" tabindex="0">
                             <AddAlt />
                         </div>
                     </td>

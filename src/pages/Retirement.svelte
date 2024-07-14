@@ -30,7 +30,7 @@
 
 <div class="flex items-center">
 	<div class="text-lg pr-2">Retirement</div>
-	<div on:click={()=>form_inputs.addAccount(AccountType.retirement)} on:keypress={() => {}}>
+	<div on:click={()=>form_inputs.addAccount(AccountType.retirement)} on:keypress={() => {}} role="button" tabindex="0">
 		<AddAlt />
 	</div>
 </div>

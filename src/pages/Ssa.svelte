@@ -22,7 +22,7 @@
 
 <div class="flex items-center">
 	<div class="text-lg pr-2">SSA</div>
-	<div on:click={()=>form_inputs.addAccount(AccountType.ssa)} on:keypress={() => {}}>
+	<div on:click={()=>form_inputs.addAccount(AccountType.ssa)} on:keypress={() => {}} role="button" tabindex="0">
 		<AddAlt />
 	</div>
 </div>

@@ -17,7 +17,7 @@ use super::*;
 pub struct Expense<T: std::cmp::Ord> {
     /// String describing this account
     name: String,
-    /// Table of account expence for each year
+    /// Table of account expense for each year
     table: Table<T>,
     /// Calendar year when then expense of this account started to have impact
     start_out: YearInput,
@@ -139,10 +139,16 @@ impl Account for Expense<u32> {
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, false)?;
 
+        // Cost of living scale to apply to the expense
+        let col_scale = match settings.is_retired(year) {
+            true => settings.retirement_cost_of_living / 100_f64,
+            false => 1_f64,
+        };
+        
         // Calculate expense
         if self.dates.year_out.unwrap().contains(year) {
             // Calculate expense amount for fixed, fixed_with_inflation
-            result.expense = self.get_expense(year, &settings);
+            result.expense = self.get_expense(year, &settings) * col_scale;
         }
 
         // Update value table with expense value

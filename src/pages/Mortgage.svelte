@@ -25,7 +25,7 @@
 
 <div class="flex items-center">
 	<div class="text-lg pr-2">Mortgage</div>
-	<div on:click={()=>form_inputs.addAccount(AccountType.mortgage)} on:keypress={() => {}}>
+	<div on:click={()=>form_inputs.addAccount(AccountType.mortgage)} on:keypress={() => {}} role="button" tabindex="0">
 		<AddAlt />
 	</div>
 </div>
@@ -73,7 +73,7 @@
 				label="Payment Value"
 				step={1}
 				bind:value={$form_inputs.accounts[id].paymentValue}
-				questionText="How much money should be payed each year (either as a percentage or a fixed dollar amount) [in today's dollars]"
+				questionText="Total cost of loan per year including principal + interest + property taxes (escrow) + mortgage_insurance. How much money should be payed each year (either as a percentage or a fixed dollar amount) [in today's dollars]"
 				/>
 			</div>
 			<div class="col-span-5">
@@ -109,10 +109,10 @@
 			</div>
 			<div class="col-span-5">
 				<NumberInput
-				label="Escrow"
+				label="Property Taxes"
 				step={1}
 				bind:value={$form_inputs.accounts[id].escrowValue}
-				questionText="Amount of money going into escrow every year to pay for property tax.  This number is currently assumed to be constant (ie property taxes do not increase) [in today's dollars]"
+				questionText="Amount of money set aside to pay property taxes (could be going into escrow).  This number is currently assumed to be constant (ie property taxes do not increase) [in today's dollars]"
 				/>
 			</div>
 			<div class="col-span-5">

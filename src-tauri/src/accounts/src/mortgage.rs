@@ -219,6 +219,8 @@ impl Account for Mortgage<u32> {
             self.analysis.value.insert(year, 0_f64);
         }
 
+        // info!("{} {:?}", year, self.analysis);
+
         Ok(YearlyImpact {
             expense: result.payment,
             healthcare_expense: 0_f64,

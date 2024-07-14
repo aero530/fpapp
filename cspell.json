@@ -1,6 +1,8 @@
 {
     "words": [
+        "flexi",
         "fpapp",
+        "serde",
         "tailwindcss",
         "tauri",
         "unlisten"

@@ -16,9 +16,9 @@ pub struct Ssa {
     name: String,
     /// Base income from social security
     base: f64,
-    /// Calendar year when money starts being earned by this account
+    /// Calendar year when SSA benefits start
     start_in: YearInput,
-    /// Calendar year when money stops being earned by this account
+    /// Calendar year when SSA benefits end
     end_in: YearInput,
     /// General information to store with this account
     notes: Option<String>,
@@ -108,17 +108,27 @@ impl Account for Ssa {
         _settings: &Settings,
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let mut _result = WorkingValues::default();
+        let mut result = WorkingValues::default();
 
         self.analysis.add_year(year, false)?;
+
+        // info!("{} {:?}", year, self.analysis);
+
+        // Calculate earnings
+        if self.dates.year_in.unwrap().contains(year) {
+            result.earning = self.base;
+        }
+
+        // Add earnings to value tables
+        self.analysis.value.update(year, result.earning);
 
         Ok(YearlyImpact {
             expense: 0_f64,
             healthcare_expense: 0_f64,
             col: 0_f64,
             saving: 0_f64,
-            income_taxable: 0_f64,
-            income: 0_f64,
+            income_taxable: result.earning,
+            income: result.earning,
             hsa: 0_f64,
         })
     }

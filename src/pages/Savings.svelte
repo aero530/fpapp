@@ -28,7 +28,7 @@
 
 <div class="flex items-center">
 	<div class="text-lg pr-2">Savings</div>
-	<div on:click={()=>form_inputs.addAccount(AccountType.savings)} on:keypress={() => {}}>
+	<div on:click={()=>form_inputs.addAccount(AccountType.savings)} on:keypress={() => {}} role="button" tabindex="0">
 		<AddAlt />
 	</div>
 </div>
