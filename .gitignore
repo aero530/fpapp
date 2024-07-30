@@ -3,6 +3,8 @@
 
 /node_modules/
 /public/build/
+/build
+
 
 # Data
 data.json
