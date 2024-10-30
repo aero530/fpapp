@@ -227,7 +227,7 @@ mod tests {
         let settings = test_settings_values();
         account.init(None, &settings).unwrap();
         let year = 2010_u32;
-        let update = account.simulate(year, &yearly_totals, &settings).unwrap();
+        let update = account.simulate(year, &yearly_totals, &settings, None).unwrap();
 
         println!("{:?}", account.analysis.value.get(year));
         println!("{:?}", update);
