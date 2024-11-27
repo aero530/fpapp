@@ -1,7 +1,7 @@
 {
   "productName": "fpapp",
   "version": "4.0.0",
-  "identifier": "com.aero530.dev",
+  "identifier": "com.aero530.fpapp",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
