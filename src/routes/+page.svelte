@@ -38,6 +38,9 @@
      * @param {string} pathString
      */
 	function openFile(pathString) {
+		console.log("file open");
+		console.log(pathString);
+
 		invoke("file_open", {
 			path: pathString,
 		})
@@ -73,10 +76,8 @@
 				case 'file-open' :
 					open()
 					.then(function (pathString) {
-						console.log(pathString);
 						if (pathString) {
-							// @ts-ignore
-							path.set(pathString.path);
+							path.set(pathString);
 							openFile($path);
 						}
 					});
@@ -87,7 +88,6 @@
 				case 'file-save_as' :
 					save()
 					.then(function (pathString) {
-						console.log(pathString);
 						if (pathString) {
 							path.set(pathString);
 							saveFile($path, $form_inputs);

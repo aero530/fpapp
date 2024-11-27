@@ -42,7 +42,9 @@ fn my_custom_command() -> String {
 #[tauri::command]
 fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
     let json_file_str;
-    match read_to_string(std::path::Path::new(&path)) {
+    let a = std::path::Path::new(&path);
+    println!("{:?}", a);
+    match read_to_string(a) {
         Ok(data) => json_file_str = data,
         Err(e) => return Err(format!("Unable to open file {}",e)),
     }
