@@ -15,9 +15,16 @@
         .map((id) => {return {value: id, label: accounts[id].name}})
 
     let account_id = account;
+    // let account_id = (account) ? account : 0;
 	let id = uuidv4();
 
-    $:account = isOn ? account_id : null;
+    // override isOn if an account is specified
+    let enabled = (account) ? true : false;
+    if (enabled) {
+        isOn = true;
+    }
+
+    $:account = enabled ? account_id : null;
 </script>
 
 <QuestionField {label}>
