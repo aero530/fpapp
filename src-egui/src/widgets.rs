@@ -209,24 +209,31 @@ pub fn table_editor(ui: &mut egui::Ui, value: &mut Value, field: &str) -> bool {
     let mut add_row = false;
 
     ui.push_id(field, |ui| {
+        const YEAR_W: f32 = 80.0;
+        const AMOUNT_W: f32 = 140.0;
+        let row_h = ui.spacing().interact_size.y;
+
         egui::Grid::new("table_rows")
             .num_columns(3)
             .striped(true)
-            .min_col_width(60.0)
             .show(ui, |ui| {
-                ui.label("Year");
-                ui.label("Amount");
+                // Fixed-width header labels match the column widths below
+                ui.add_sized([YEAR_W, row_h], egui::Label::new("Year"));
+                ui.add_sized([AMOUNT_W, row_h], egui::Label::new("Amount"));
                 ui.label("");
                 ui.end_row();
 
                 for (i, (year, amount)) in rows.iter_mut().enumerate() {
                     let mut year_n = year.parse::<u32>().unwrap_or(0);
-                    if ui.add(egui::DragValue::new(&mut year_n).speed(1)).changed() {
+                    if ui
+                        .add_sized([YEAR_W, row_h], egui::DragValue::new(&mut year_n).speed(1))
+                        .changed()
+                    {
                         *year = year_n.to_string();
                         changed = true;
                     }
                     if ui
-                        .add(egui::DragValue::new(amount).speed(100.0))
+                        .add_sized([AMOUNT_W, row_h], egui::DragValue::new(amount).speed(100.0))
                         .changed()
                     {
                         changed = true;
