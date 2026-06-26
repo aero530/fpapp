@@ -31,6 +31,13 @@ const EXPENSE_OPTIONS: &[(&str, &str)] = &[
 
 const PAYMENT_OPTIONS: &[(&str, &str)] = &[("fixed", "Fixed")];
 
+fn form_grid(ui: &mut egui::Ui) -> egui::Grid {
+    egui::Grid::new(ui.next_auto_id())
+        .num_columns(2)
+        .spacing([12.0, 5.0])
+        .min_col_width(140.0)
+}
+
 pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
     let account = app.data["accounts"][uuid].clone();
     if account.is_null() {
@@ -41,7 +48,6 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
     let account_type = account["type"].as_str().unwrap_or("").to_string();
     let account_name = account["name"].as_str().unwrap_or("Unnamed").to_string();
 
-    // Header with delete button
     let mut deleted = false;
     ui.horizontal(|ui| {
         ui.heading(&account_name);
@@ -110,12 +116,20 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
 
 fn income_form(ui: &mut egui::Ui, a: &mut Value, _uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::f64_field(ui, "Base Pay ($):", a, "base", 500.0);
-    c |= widgets::year_input(ui, "Start Year:", &mut a["startIn"]);
-    c |= widgets::year_input(ui, "End Year:", &mut a["endIn"]);
-    c |= widgets::percent_input(ui, "Yearly Raise:", &mut a["raise"]);
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Base Pay ($):", a, "base", 500.0);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Start Year:", &mut a["startIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "End Year:", &mut a["endIn"]);
+        ui.end_row();
+        c |= widgets::percent_input(ui, "Yearly Raise:", &mut a["raise"]);
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -123,11 +137,18 @@ fn income_form(ui: &mut egui::Ui, a: &mut Value, _uuid: &str) -> bool {
 
 fn ssa_form(ui: &mut egui::Ui, a: &mut Value, _uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::f64_field(ui, "Base Benefit ($):", a, "base", 100.0);
-    c |= widgets::year_input(ui, "Start Year:", &mut a["startIn"]);
-    c |= widgets::year_input(ui, "End Year:", &mut a["endIn"]);
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Base Benefit ($):", a, "base", 100.0);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Start Year:", &mut a["startIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "End Year:", &mut a["endIn"]);
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -135,72 +156,75 @@ fn ssa_form(ui: &mut egui::Ui, a: &mut Value, _uuid: &str) -> bool {
 
 fn retirement_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
-    c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
-    c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Contribution Type:",
-        a,
-        "contributionType",
-        CONTRIBUTION_OPTIONS,
-        &format!("ret_ct_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 500.0);
-    c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
-    c |= widgets::combo_field(
-        ui,
-        "Withdrawal Type:",
-        a,
-        "withdrawalType",
-        WITHDRAWAL_OPTIONS,
-        &format!("ret_wt_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Withdrawal Value:", a, "withdrawalValue", 500.0);
-    c |= widgets::combo_field(
-        ui,
-        "Tax Status:",
-        a,
-        "taxStatus",
-        TAX_STATUS_OPTIONS,
-        &format!("ret_ts_{}", uuid),
-    );
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Contribution Type:", a, "contributionType",
+            CONTRIBUTION_OPTIONS, &format!("ret_ct_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 500.0);
+        ui.end_row();
+        c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Withdrawal Type:", a, "withdrawalType",
+            WITHDRAWAL_OPTIONS, &format!("ret_wt_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Withdrawal Value:", a, "withdrawalValue", 500.0);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Tax Status:", a, "taxStatus",
+            TAX_STATUS_OPTIONS, &format!("ret_ts_{}", uuid),
+        );
+        ui.end_row();
 
-    // Income link
-    ui.horizontal(|ui| {
+        // Income link (label | combo)
         ui.label("Income Link:");
         income_link_combo(ui, a, app, &format!("ret_il_{}", uuid));
+        ui.end_row();
+
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
     });
 
-    // Employer matching
+    // Employer matching — outside grid since it has a sub-section
     ui.add_space(4.0);
     let has_matching = !a["matching"].is_null();
     let mut enable_matching = has_matching;
     if ui.checkbox(&mut enable_matching, "Employer Matching").changed() {
-        if enable_matching {
-            a["matching"] = json!({
-                "limit": {"constantFloat": 6.0},
-                "amount": {"constantFloat": 50.0}
-            });
+        a["matching"] = if enable_matching {
+            json!({ "limit": {"constantFloat": 6.0}, "amount": {"constantFloat": 50.0} })
         } else {
-            a["matching"] = Value::Null;
-        }
+            Value::Null
+        };
         c = true;
     }
     if enable_matching && !a["matching"].is_null() {
-        ui.indent("matching_indent", |ui| {
-            if widgets::percent_input(ui, "Match Limit (% of income):", &mut a["matching"]["limit"]) {
-                c = true;
-            }
-            if widgets::percent_input(ui, "Match Amount (% of contribution):", &mut a["matching"]["amount"]) {
-                c = true;
-            }
+        ui.indent("matching", |ui| {
+            form_grid(ui).show(ui, |ui| {
+                if widgets::percent_input(ui, "Limit (% of income):", &mut a["matching"]["limit"]) {
+                    c = true;
+                }
+                ui.end_row();
+                if widgets::percent_input(ui, "Amount (% of contribution):", &mut a["matching"]["amount"]) {
+                    c = true;
+                }
+                ui.end_row();
+            });
         });
     }
 
-    c |= widgets::notes_field(ui, a);
     c
 }
 
@@ -208,31 +232,36 @@ fn retirement_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) ->
 
 fn hsa_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
-    c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
-    c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Contribution Type:",
-        a,
-        "contributionType",
-        CONTRIBUTION_OPTIONS,
-        &format!("hsa_ct_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 100.0);
-    c |= widgets::f64_field(ui, "Employer Contribution ($):", a, "employerContribution", 100.0);
-    c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
-    c |= widgets::combo_field(
-        ui,
-        "Tax Status:",
-        a,
-        "taxStatus",
-        TAX_STATUS_OPTIONS,
-        &format!("hsa_ts_{}", uuid),
-    );
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Contribution Type:", a, "contributionType",
+            CONTRIBUTION_OPTIONS, &format!("hsa_ct_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 100.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Employer Contribution ($):", a, "employerContribution", 100.0);
+        ui.end_row();
+        c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Tax Status:", a, "taxStatus",
+            TAX_STATUS_OPTIONS, &format!("hsa_ts_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -240,39 +269,41 @@ fn hsa_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
 
 fn college_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
-    c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
-    c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Contribution Type:",
-        a,
-        "contributionType",
-        CONTRIBUTION_OPTIONS,
-        &format!("col_ct_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 500.0);
-    c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
-    c |= widgets::combo_field(
-        ui,
-        "Withdrawal Type:",
-        a,
-        "withdrawalType",
-        WITHDRAWAL_OPTIONS,
-        &format!("col_wt_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Withdrawal Value:", a, "withdrawalValue", 500.0);
-    c |= widgets::combo_field(
-        ui,
-        "Tax Status:",
-        a,
-        "taxStatus",
-        TAX_STATUS_OPTIONS,
-        &format!("col_ts_{}", uuid),
-    );
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Contribution Type:", a, "contributionType",
+            CONTRIBUTION_OPTIONS, &format!("col_ct_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 500.0);
+        ui.end_row();
+        c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Withdrawal Type:", a, "withdrawalType",
+            WITHDRAWAL_OPTIONS, &format!("col_wt_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Withdrawal Value:", a, "withdrawalValue", 500.0);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Tax Status:", a, "taxStatus",
+            TAX_STATUS_OPTIONS, &format!("col_ts_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -280,37 +311,45 @@ fn college_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
 
 fn expense_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "End Year:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Expense Type:",
-        a,
-        "expenseType",
-        EXPENSE_OPTIONS,
-        &format!("exp_et_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Expense Value ($):", a, "expenseValue", 100.0);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "End Year:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Expense Type:", a, "expenseType",
+            EXPENSE_OPTIONS, &format!("exp_et_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Expense Value ($):", a, "expenseValue", 100.0);
+        ui.end_row();
 
-    let mut is_hc = a["isHealthcare"].as_bool().unwrap_or(false);
-    if ui.checkbox(&mut is_hc, "Healthcare expense").changed() {
-        a["isHealthcare"] = json!(is_hc);
-        c = true;
-    }
+        // Checkboxes: empty label col | checkbox col
+        ui.label("");
+        let mut is_hc = a["isHealthcare"].as_bool().unwrap_or(false);
+        if ui.checkbox(&mut is_hc, "Healthcare expense").changed() {
+            a["isHealthcare"] = json!(is_hc);
+            c = true;
+        }
+        ui.end_row();
 
-    let mut scales = a["scalesWithCol"].as_bool().unwrap_or(true);
-    if ui.checkbox(&mut scales, "Scales with retirement cost-of-living factor").changed() {
-        a["scalesWithCol"] = json!(scales);
-        c = true;
-    }
+        ui.label("");
+        let mut scales = a["scalesWithCol"].as_bool().unwrap_or(true);
+        if ui.checkbox(&mut scales, "Scales with retirement cost-of-living factor").changed() {
+            a["scalesWithCol"] = json!(scales);
+            c = true;
+        }
+        ui.end_row();
 
-    ui.horizontal(|ui| {
         ui.label("HSA Link:");
         hsa_link_combo(ui, a, app, &format!("exp_hl_{}", uuid));
-    });
+        ui.end_row();
 
-    c |= widgets::notes_field(ui, a);
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -318,20 +357,25 @@ fn expense_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) -> bo
 
 fn loan_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "End Year:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Payment Type:",
-        a,
-        "paymentType",
-        PAYMENT_OPTIONS,
-        &format!("loan_pt_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Monthly Payment ($):", a, "paymentValue", 50.0);
-    c |= widgets::f64_field(ui, "Interest Rate (%):", a, "rate", 0.1);
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "End Year:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Payment Type:", a, "paymentType",
+            PAYMENT_OPTIONS, &format!("loan_pt_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Monthly Payment ($):", a, "paymentValue", 50.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Interest Rate (%):", a, "rate", 0.1);
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -339,25 +383,35 @@ fn loan_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
 
 fn mortgage_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "End Year:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Payment Type:",
-        a,
-        "paymentType",
-        PAYMENT_OPTIONS,
-        &format!("mort_pt_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Monthly Payment ($):", a, "paymentValue", 50.0);
-    c |= widgets::f64_field(ui, "Interest Rate (%):", a, "rate", 0.05);
-    c |= widgets::f64_field(ui, "Compound Periods/Year:", a, "compoundTime", 1.0);
-    c |= widgets::f64_field(ui, "Mortgage Insurance ($):", a, "mortgageInsurance", 10.0);
-    c |= widgets::f64_field(ui, "LTV Limit (%):", a, "ltvLimit", 1.0);
-    c |= widgets::f64_field(ui, "Escrow ($/mo):", a, "escrowValue", 10.0);
-    c |= widgets::f64_field(ui, "Home Value ($):", a, "homeValue", 5000.0);
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "End Year:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Payment Type:", a, "paymentType",
+            PAYMENT_OPTIONS, &format!("mort_pt_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Monthly Payment ($):", a, "paymentValue", 50.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Interest Rate (%):", a, "rate", 0.05);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Compound Periods/Year:", a, "compoundTime", 1.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Mortgage Insurance ($):", a, "mortgageInsurance", 10.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "LTV Limit (%):", a, "ltvLimit", 1.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Escrow ($/mo):", a, "escrowValue", 10.0);
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Home Value ($):", a, "homeValue", 5000.0);
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
@@ -365,75 +419,76 @@ fn mortgage_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
 
 fn savings_form(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
-    c |= widgets::string_field(ui, "Name:", a, "name");
-    c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
-    c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
-    c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
-    c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
-    c |= widgets::combo_field(
-        ui,
-        "Contribution Type:",
-        a,
-        "contributionType",
-        CONTRIBUTION_OPTIONS,
-        &format!("sav_ct_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 500.0);
-    c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
-    c |= widgets::combo_field(
-        ui,
-        "Withdrawal Type:",
-        a,
-        "withdrawalType",
-        WITHDRAWAL_OPTIONS,
-        &format!("sav_wt_{}", uuid),
-    );
-    c |= widgets::f64_field(ui, "Withdrawal Value:", a, "withdrawalValue", 500.0);
-    c |= widgets::combo_field(
-        ui,
-        "Tax Status:",
-        a,
-        "taxStatus",
-        TAX_STATUS_OPTIONS,
-        &format!("sav_ts_{}", uuid),
-    );
-    c |= widgets::notes_field(ui, a);
+    form_grid(ui).show(ui, |ui| {
+        c |= widgets::string_field(ui, "Name:", a, "name");
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution Start:", &mut a["startIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Contribution End:", &mut a["endIn"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal Start:", &mut a["startOut"]);
+        ui.end_row();
+        c |= widgets::year_input(ui, "Withdrawal End:", &mut a["endOut"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Contribution Type:", a, "contributionType",
+            CONTRIBUTION_OPTIONS, &format!("sav_ct_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Contribution Value:", a, "contributionValue", 500.0);
+        ui.end_row();
+        c |= widgets::percent_input(ui, "Yearly Return (%):", &mut a["yearlyReturn"]);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Withdrawal Type:", a, "withdrawalType",
+            WITHDRAWAL_OPTIONS, &format!("sav_wt_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::f64_field(ui, "Withdrawal Value:", a, "withdrawalValue", 500.0);
+        ui.end_row();
+        c |= widgets::combo_field(
+            ui, "Tax Status:", a, "taxStatus",
+            TAX_STATUS_OPTIONS, &format!("sav_ts_{}", uuid),
+        );
+        ui.end_row();
+        c |= widgets::notes_field(ui, a);
+        ui.end_row();
+    });
     c
 }
 
-// ─── Helper widgets ──────────────────────────────────────────────────────────
+// ─── Link combo helpers ───────────────────────────────────────────────────────
 
 fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, id: &str) {
-    let current_link = a["incomeLink"].as_str().unwrap_or("").to_string();
-    let income_accounts: Vec<(String, String)> =
-        if let Some(accounts) = app.data["accounts"].as_object() {
-            accounts
-                .iter()
+    let current = a["incomeLink"].as_str().unwrap_or("").to_string();
+    let accounts: Vec<(String, String)> = app.data["accounts"]
+        .as_object()
+        .map(|map| {
+            map.iter()
                 .filter(|(_, v)| v["type"].as_str() == Some("income"))
                 .map(|(k, v)| (k.clone(), v["name"].as_str().unwrap_or("Unnamed").to_string()))
                 .collect()
-        } else {
-            vec![]
-        };
+        })
+        .unwrap_or_default();
 
-    let current_label = if current_link.is_empty() {
+    let label = if current.is_empty() {
         "None".to_string()
     } else {
-        income_accounts
-            .iter()
-            .find(|(uuid, _)| uuid == &current_link)
-            .map(|(_, name)| name.clone())
+        accounts.iter().find(|(k, _)| k == &current)
+            .map(|(_, n)| n.clone())
             .unwrap_or_else(|| "Unknown".to_string())
     };
 
+    let width = ui.available_width();
     egui::ComboBox::new(id, "")
-        .selected_text(&current_label)
+        .width(width)
+        .selected_text(&label)
         .show_ui(ui, |ui| {
-            if ui.selectable_label(current_link.is_empty(), "None").clicked() {
+            if ui.selectable_label(current.is_empty(), "None").clicked() {
                 a["incomeLink"] = Value::Null;
             }
-            for (uuid, name) in &income_accounts {
-                if ui.selectable_label(current_link == *uuid, name).clicked() {
+            for (uuid, name) in &accounts {
+                if ui.selectable_label(current == *uuid, name).clicked() {
                     a["incomeLink"] = json!(uuid);
                 }
             }
@@ -441,36 +496,35 @@ fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, id: &str) {
 }
 
 fn hsa_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, id: &str) {
-    let current_link = a["hsaLink"].as_str().unwrap_or("").to_string();
-    let hsa_accounts: Vec<(String, String)> =
-        if let Some(accounts) = app.data["accounts"].as_object() {
-            accounts
-                .iter()
+    let current = a["hsaLink"].as_str().unwrap_or("").to_string();
+    let accounts: Vec<(String, String)> = app.data["accounts"]
+        .as_object()
+        .map(|map| {
+            map.iter()
                 .filter(|(_, v)| v["type"].as_str() == Some("hsa"))
                 .map(|(k, v)| (k.clone(), v["name"].as_str().unwrap_or("Unnamed").to_string()))
                 .collect()
-        } else {
-            vec![]
-        };
+        })
+        .unwrap_or_default();
 
-    let current_label = if current_link.is_empty() {
+    let label = if current.is_empty() {
         "None".to_string()
     } else {
-        hsa_accounts
-            .iter()
-            .find(|(uuid, _)| uuid == &current_link)
-            .map(|(_, name)| name.clone())
+        accounts.iter().find(|(k, _)| k == &current)
+            .map(|(_, n)| n.clone())
             .unwrap_or_else(|| "Unknown".to_string())
     };
 
+    let width = ui.available_width();
     egui::ComboBox::new(id, "")
-        .selected_text(&current_label)
+        .width(width)
+        .selected_text(&label)
         .show_ui(ui, |ui| {
-            if ui.selectable_label(current_link.is_empty(), "None").clicked() {
+            if ui.selectable_label(current.is_empty(), "None").clicked() {
                 a["hsaLink"] = Value::Null;
             }
-            for (uuid, name) in &hsa_accounts {
-                if ui.selectable_label(current_link == *uuid, name).clicked() {
+            for (uuid, name) in &accounts {
+                if ui.selectable_label(current == *uuid, name).clicked() {
                     a["hsaLink"] = json!(uuid);
                 }
             }
