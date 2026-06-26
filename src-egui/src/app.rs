@@ -63,7 +63,12 @@ impl eframe::App for FpApp {
         crate::nav::show_nav(self, ctx);
 
         let page = self.selected.clone();
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::central_panel(&ctx.style())
+                    .inner_margin(egui::Margin { left: 8.0, right: 16.0, top: 8.0, bottom: 8.0 }),
+            )
+            .show(ctx, |ui| {
             if self.data.is_null() {
                 ui.vertical_centered(|ui| {
                     ui.add_space(120.0);
