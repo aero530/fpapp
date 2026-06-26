@@ -234,20 +234,32 @@ impl Account for Retirement<u32> {
 
             match &self.matching {
                 Some(employer_match) => {
-                    let link_income = linked_value.unwrap_or(0_f64);
-                    result.employer_contribution = match (result.contribution / link_income * 100_f64)
-                        >= employer_match.limit.value(settings)
-                    {
-                        true => { // Employer match is based on % of salary
+                    // A linked income account is required to calculate employer matching.
+                    // Without it, contribution_pct cannot be computed and the match is undefined.
+                    let link_income = linked_value.ok_or_else(|| {
+                        format!(
+                            "Account '{}': employer matching is configured but no income account is linked (set income_link)",
+                            self.name
+                        )
+                    })?;
+
+                    if link_income == 0_f64 {
+                        // Income account exists but is inactive this year (e.g. outside its date range).
+                        result.employer_contribution = 0_f64;
+                    } else {
+                        let contribution_pct = result.contribution / link_income * 100_f64;
+                        result.employer_contribution = if contribution_pct >= employer_match.limit.value(settings) {
+                            // Employee has contributed at or above the match cap; employer contributes
+                            // up to the limit percentage of income.
                             link_income
                                 * (employer_match.limit.value(settings) / 100_f64)
                                 * (employer_match.amount.value(settings) / 100_f64)
-                        }
-                        false => { // Employer match is based on your contribution
+                        } else {
+                            // Employee is below the cap; employer matches the full contribution.
                             result.contribution * (employer_match.amount.value(settings) / 100_f64)
-                        }
-                    };
-                    log::trace!("{} income {:.2} my cont {:.2} match {:.2} ({:.1}% up to {:.1}%)",self.name, link_income, result.contribution, result.employer_contribution, employer_match.amount.value(settings), employer_match.limit.value(settings));
+                        };
+                    }
+                    log::trace!("{} income {:.2} my cont {:.2} match {:.2} ({:.1}% up to {:.1}%)", self.name, link_income, result.contribution, result.employer_contribution, employer_match.amount.value(settings), employer_match.limit.value(settings));
                 }
                 None => {}
             }

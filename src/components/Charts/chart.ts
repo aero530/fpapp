@@ -55,6 +55,12 @@ export function maxStringLength<T,U>(data: PointArray<T,U>, format: AxisFormat) 
 
 // Data and padding must be in 'data' units (not px)
 export function getDataExtents(data: PointArray<Date|number, number>, format: AxisFormat, padding: PointLimit<number, number>) {
+    // d3.extent returns [undefined, undefined] for empty arrays, which propagates NaN
+    // into scale domains. Return a safe unit domain instead.
+    if (data.length === 0) {
+        return { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } };
+    }
+
     let [xMin, xMax] = d3.extent(data, (d:Point<Date|number, number>) => d.x);
     let [yMin, yMax] = d3.extent(data, (d:Point<Date|number, number>) => d.y);
 

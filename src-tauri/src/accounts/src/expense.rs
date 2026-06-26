@@ -10,6 +10,10 @@ use account_expense_derive::AccountExpense;
 
 use super::*;
 
+fn default_true() -> bool {
+    true
+}
+
 /// Account type to represent generic expense
 #[derive(TS, Debug, Clone, Deserialize, Serialize, AccountExpense)]
 #[ts(export)]
@@ -30,6 +34,11 @@ pub struct Expense<T: std::cmp::Ord> {
     /// This expense account is for healthcare costs.  If so it will pull first from HSA accounts.
     #[serde(default)] // default bool is false
     is_healthcare: bool,
+    /// When false, this expense is not scaled by the retirement cost-of-living factor.
+    /// Use this for fixed obligations (loan payments, insurance premiums) that do not
+    /// change with retirement lifestyle. Defaults to true.
+    #[serde(default = "default_true")]
+    scales_with_col: bool,
     /// Link this account to an income source
     hsa_link: Option<String>,
     /// General information to store with this account
@@ -53,6 +62,7 @@ impl From<Expense<String>> for Expense<u32> {
             expense_type: other.expense_type,
             expense_value: other.expense_value,
             is_healthcare: other.is_healthcare,
+            scales_with_col: other.scales_with_col,
             hsa_link: other.hsa_link,
             notes: other.notes,
             analysis: other.analysis,
@@ -139,10 +149,12 @@ impl Account for Expense<u32> {
         let mut result = WorkingValues::default();
         self.analysis.add_year(year, false)?;
 
-        // Cost of living scale to apply to the expense
-        let col_scale = match settings.is_retired(year) {
-            true => settings.retirement_cost_of_living / 100_f64,
-            false => 1_f64,
+        // Cost of living scale to apply to the expense. Only applied when the account
+        // is configured to scale with retirement cost-of-living (scales_with_col: true).
+        let col_scale = if settings.is_retired(year) && self.scales_with_col {
+            settings.retirement_cost_of_living / 100_f64
+        } else {
+            1_f64
         };
         
         // Calculate expense
@@ -218,6 +230,7 @@ mod tests {
             expense_type: ExpenseOptions::Fixed,
             expense_value: 500_f64,
             is_healthcare: false,
+            scales_with_col: true,
             hsa_link: None,
             notes: None,
             analysis: SingleTable::default(),

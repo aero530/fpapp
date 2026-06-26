@@ -79,9 +79,14 @@
     const colors = graphics;
 
     function makeChart() {
-        
+        // Guard against empty data — clear any stale chart and bail out
+        if (!data || data.length === 0) {
+            d3.select(el).selectAll("*").remove();
+            return;
+        }
+
         // If data was input as a single dataset then put into an array of DataSets
-        let dataSets: Array<DataSet> = ("x" in data[0])  
+        let dataSets: Array<DataSet> = ("x" in data[0])
             ? [{"data": data, "label": yLabel}] // incoming data is defined as a PointArray
             : data; // incoming data is defined as an Array<DataSet>
         

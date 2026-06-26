@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 mod log_config;
 
-use accounts::{Account, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
+use accounts::{Account, AccountType, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
@@ -35,7 +35,6 @@ struct MenuEvent {
 
 #[tauri::command]
 fn my_custom_command() -> String {
-    println!("I was invoked from JS!");
     String::from("This is some stuff")
 }
 
@@ -43,7 +42,6 @@ fn my_custom_command() -> String {
 fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
     let json_file_str;
     let a = std::path::Path::new(&path);
-    println!("{:?}", a);
     match read_to_string(a) {
         Ok(data) => json_file_str = data,
         Err(e) => return Err(format!("Unable to open file {}",e)),
@@ -72,19 +70,17 @@ fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, St
 }
 
 #[tauri::command]
-fn run_analysis(input: UserData<AccountWrapper>) -> (HashMap<String, Vec<PlotDataSet>>, YearlyTotals) {
+fn run_analysis(input: UserData<AccountWrapper>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), String> {
   let data : UserData<Box<dyn Account>> = input.into();
-  analyze(data)
+  analyze(data).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn do_a_thing(body: RequestBody) -> String {
-  println!("{:?}", body);
   format!("{:?}", body)
-  // "message response".into()
 }
 
-fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDataSet>>, YearlyTotals) {
+fn analyze(mut data: UserData<Box<dyn Account>>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), Box<dyn std::error::Error>> {
     // Loop through accounts to determine what order they should be processed in
     let mut account_order: Vec<String> = Vec::new();
 
@@ -153,38 +149,49 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
     log::info!("Main Loop");
 
     // Main loop to loop through each year
-    years.iter().copied().for_each(|year| {
-        // Add a new year to yearly_totals and pull some of the previous values forward
+    for year in years.iter().copied() {
+        // Add a new year to yearly_totals and pull some of the previous values forward.
         // If the year already exists (as it might if a user has historical data that
         // conflicts with this analysis year) then skip analysis and leave the yearly total
         // tables as they are.
         if yearly_totals.add_year(year, true).is_ok() {
             // Loop through accounts to make contributions and withdrawals
-            account_order.iter().for_each(|uuid| {
+            for uuid in account_order.iter() {
                 // Get the linked account uuid (if this account has a linked account)
                 let link_id = data.accounts.get(uuid).unwrap().link_id();
 
+                // Only use get_value from Income accounts — other account types (Savings,
+                // Retirement) return a running balance via get_value, not yearly income,
+                // which would produce incorrect PercentOfIncome contributions.
                 let link_value = match link_id {
-                    Some(id) => {
-                        match data.accounts.get(&id) {
-                            Some(linked_account) => {linked_account.get_value(year)},
-                            None => None
+                    Some(ref id) => {
+                        match data.accounts.get(id) {
+                            Some(linked_account) if linked_account.type_id() == AccountType::Income => {
+                                linked_account.get_value(year)
+                            }
+                            Some(linked_account) => {
+                                log::warn!(
+                                    "Account '{}': income_link points to a {:?} account, not Income; falling back to total income for PercentOfIncome contributions",
+                                    data.accounts.get(uuid).unwrap().name(),
+                                    linked_account.type_id()
+                                );
+                                None
+                            }
+                            None => None,
                         }
-                    },
+                    }
                     None => None,
                 };
 
                 let account = data.accounts.get_mut(uuid).unwrap();
 
-                // Simulate this year for the account with specified uuid
-                // let impact = 
-                    // .unwrap();
-                match account.simulate(year, &yearly_totals, &data.settings, link_value) {
-                    Ok(impact) => yearly_totals.update(year, impact), // Apply the impact for this account to yearly_totals
-                    Err(e) => eprintln!("Error {}",e)
-                }
-                // Apply the impact for this account to yearly_totals
-            });
+                // Simulate this year for the account. Propagate errors so the user sees
+                // a clear message rather than a silently corrupt simulation.
+                let impact = account
+                    .simulate(year, &yearly_totals, &data.settings, link_value)
+                    .map_err(|e| format!("Account '{}', year {}: {}", account.name(), year, e))?;
+                yearly_totals.update(year, impact);
+            }
 
             // Close out the year
             yearly_totals.deposit_income_in_net(year);
@@ -192,7 +199,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
             yearly_totals.pay_expenses_from_net(year);
             yearly_totals.pay_healthcare_expenses_from_net(year);
         }
-    });
+    }
 
     let mut plot_data : HashMap<String, Vec<PlotDataSet>> = HashMap::new();
 
@@ -217,7 +224,7 @@ fn analyze(mut data: UserData<Box<dyn Account>>) -> (HashMap<String, Vec<PlotDat
         plot_data.insert(uuid.to_string(), account.get_plot_data());
     }
 
-    (plot_data, yearly_totals)
+    Ok((plot_data, yearly_totals))
 }
 
 
@@ -269,7 +276,7 @@ fn main() {
                     };
                     app_handle.emit("rust-event", data).expect("failed to emit");
                 } else  {
-                    println!("{:?}", event.id());
+                    log::warn!("Unhandled menu event id: {:?}", event.id());
                 }
             });
             Ok(())
