@@ -175,7 +175,7 @@ impl Account for Loan<u32> {
         self.analysis.payments.update(year, result.payment);
         self.analysis.value.update(year, -result.payment);
         // Limit min value of the loan balance to account for floating point math rounding
-        if result.payment < 0.0001 {
+        if self.analysis.value.get(year).unwrap() < 0.0001 {
             self.analysis.value.insert(year, 0_f64);
         }
 

@@ -110,7 +110,9 @@ impl Account for Ssa {
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
 
-        self.analysis.add_year(year, false)?;
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, false)?;
+        }
 
         // Calculate earnings
         if self.dates.year_in.unwrap().contains(year) {
@@ -126,7 +128,7 @@ impl Account for Ssa {
         let other_income = totals.get_income(year);
         let combined_income = other_income + result.earning / 2.0;
         let taxable_fraction = if combined_income <= settings.ssa.breakpoints.low {
-            settings.ssa.taxable_income_percentage.low / 100.0
+            0.0 // Below the low threshold: no SSA benefits are taxable (IRS rule)
         } else if combined_income >= settings.ssa.breakpoints.high {
             settings.ssa.taxable_income_percentage.high / 100.0
         } else {

@@ -236,14 +236,18 @@ impl Account for Retirement<u32> {
 
             match &self.matching {
                 Some(employer_match) => {
-                    // A linked income account is required to calculate employer matching.
-                    // Without it, contribution_pct cannot be computed and the match is undefined.
-                    let link_income = linked_value.ok_or_else(|| {
-                        format!(
-                            "Account '{}': employer matching is configured but no income account is linked (set income_link)",
-                            self.name
-                        )
-                    })?;
+                    // Employer matching requires a linked income account to compute contribution%.
+                    // If no link is configured, skip matching for this year rather than aborting.
+                    let link_income = match linked_value {
+                        Some(v) => v,
+                        None => {
+                            log::warn!(
+                                "Account '{}': employer matching configured but no income account is linked — skipping match",
+                                self.name
+                            );
+                            0_f64
+                        }
+                    };
 
                     if link_income == 0_f64 {
                         // Income account exists but is inactive this year (e.g. outside its date range).

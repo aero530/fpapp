@@ -20,6 +20,8 @@ pub struct FpApp {
     pub plot_data: HashMap<String, Vec<PlotDataSet>>,
     pub yearly_totals: Option<YearlyTotals>,
     pub error: Option<String>,
+    /// UUID of account awaiting delete confirmation; None when no dialog is open.
+    pub confirm_delete: Option<String>,
 }
 
 impl FpApp {
@@ -32,6 +34,7 @@ impl FpApp {
             plot_data: HashMap::new(),
             yearly_totals: None,
             error: None,
+            confirm_delete: None,
         }
     }
 
@@ -58,6 +61,59 @@ impl eframe::App for FpApp {
                 self.run_analysis();
             }
             self.dirty = false;
+        }
+
+        // Delete confirmation modal — shown before panels so it overlays everything
+        if let Some(pending_uuid) = self.confirm_delete.clone() {
+            let pending_name = self.data["accounts"][pending_uuid.as_str()]["name"]
+                .as_str()
+                .unwrap_or("this account")
+                .to_string();
+            let mut confirmed = false;
+            let mut cancelled = false;
+            egui::Window::new("Delete Account")
+                .collapsible(false)
+                .resizable(false)
+                .movable(false)
+                .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
+                .show(ctx, |ui| {
+                    ui.set_min_width(280.0);
+                    ui.label(format!("Delete \"{}\"?", pending_name));
+                    ui.label("This cannot be undone.");
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        if ui
+                            .button(
+                                egui::RichText::new("Delete")
+                                    .color(egui::Color32::from_rgb(200, 60, 60)),
+                            )
+                            .clicked()
+                        {
+                            confirmed = true;
+                        }
+                        if ui.button("Cancel").clicked() {
+                            cancelled = true;
+                        }
+                    });
+                });
+            if cancelled {
+                self.confirm_delete = None;
+            } else if confirmed {
+                if let Some(accounts) = self.data["accounts"].as_object_mut() {
+                    accounts.remove(&pending_uuid);
+                    for (_, acct) in accounts.iter_mut() {
+                        if acct["incomeLink"].as_str() == Some(pending_uuid.as_str()) {
+                            acct["incomeLink"] = Value::Null;
+                        }
+                        if acct["hsaLink"].as_str() == Some(pending_uuid.as_str()) {
+                            acct["hsaLink"] = Value::Null;
+                        }
+                    }
+                }
+                self.confirm_delete = None;
+                self.selected = Page::Dashboard;
+                self.dirty = true;
+            }
         }
 
         crate::nav::show_nav(self, ctx);

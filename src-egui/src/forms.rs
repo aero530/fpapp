@@ -56,7 +56,6 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
     let account_type = account["type"].as_str().unwrap_or("").to_string();
     let account_name = account["name"].as_str().unwrap_or("Unnamed").to_string();
 
-    let mut deleted = false;
     ui.horizontal(|ui| {
         ui.heading(&account_name);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -64,27 +63,10 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
                 .button(egui::RichText::new("Delete").color(egui::Color32::from_rgb(200, 60, 60)))
                 .clicked()
             {
-                deleted = true;
+                app.confirm_delete = Some(uuid.to_string());
             }
         });
     });
-    if deleted {
-        if let Some(accounts) = app.data["accounts"].as_object_mut() {
-            accounts.remove(uuid);
-            // Clear any stale incomeLink / hsaLink references to the deleted account
-            for (_, acct) in accounts.iter_mut() {
-                if acct["incomeLink"].as_str() == Some(uuid) {
-                    acct["incomeLink"] = Value::Null;
-                }
-                if acct["hsaLink"].as_str() == Some(uuid) {
-                    acct["hsaLink"] = Value::Null;
-                }
-            }
-        }
-        app.selected = crate::app::Page::Dashboard;
-        app.dirty = true;
-        return;
-    }
 
     ui.add_space(6.0);
 

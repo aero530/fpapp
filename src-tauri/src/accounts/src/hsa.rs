@@ -244,7 +244,8 @@ impl Account for Hsa<u32> {
             expense: 0_f64,
             healthcare_expense: -result.withdrawal, // reduce this years healthcare expense by the amount paid for from this account
             col: 0_f64,
-            saving: 0_f64,
+            saving: result.contribution + result.employer_contribution + result.earning
+                - result.withdrawal,
             income_taxable: 0_f64,
             income: 0_f64,
             hsa: result.contribution + result.employer_contribution + result.earning
