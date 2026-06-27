@@ -166,26 +166,17 @@ impl Account for Mortgage<u32> {
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
-        self.analysis.add_year(year, true)?;
+
+        // Skip add_year for pre-seeded years; the table value is the starting balance
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, true)?;
+        }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("Mortgage account value is negative.").into());
         }
 
-        // Calculate insurance
-        let loan_to_value = self.analysis.value.get(year).unwrap() / self.home_value * 100_f64;
-        let insurance_payment = match loan_to_value > self.ltv_limit {
-            true => self.mortgage_insurance,
-            false => 0.0,
-        };
-        // Add insurance to table and pull out of payment
-        self.analysis.insurance.update(year, insurance_payment);
-
-        // Calculate escrow
-        // Pull escrow out of payment and add to escrow table
-        self.analysis.escrow.update(year, self.escrow_value);
-
-        // Calculate interest
+        // Calculate interest (accrues regardless of payment window)
         // The formula for compound interest is P (1 + r/n)^(nt)
         //  P is the initial principal balance
         //  r is the interest rate
@@ -201,22 +192,28 @@ impl Account for Mortgage<u32> {
         self.analysis.interest.update(year, result.interest);
         self.analysis.value.update(year, result.interest);
 
-        // Calculate payment available
-        result.payment = self.get_payment(year, settings);
+        // Insurance, escrow, and payment only apply within the configured payment window
+        if self.dates.year_out.unwrap().contains(year) {
+            let loan_to_value =
+                self.analysis.value.get(year).unwrap() / self.home_value * 100_f64;
+            let insurance_payment = match loan_to_value > self.ltv_limit {
+                true => self.mortgage_insurance,
+                false => 0.0,
+            };
+            self.analysis.insurance.update(year, insurance_payment);
 
-        // Add payment to payment and value tables
-        self.analysis.payments.update(year, result.payment);
+            self.analysis.escrow.update(year, self.escrow_value);
 
-        // Calculate how much of the payment will actually go toward the loan (principal & interest)
-        let mut remaining_payment = result.payment; // initial amount that is set to be paid to this loan
-        remaining_payment -= insurance_payment; // reduced by the insurance costs for the year
-        remaining_payment -= self.escrow_value; // reduced by escrow / property taxes for the year
+            result.payment = self.get_payment(year, settings);
+            self.analysis.payments.update(year, result.payment);
 
-        // Apply remaining payment to loan balance
-        self.analysis.value.update(year, -remaining_payment);
-        // Limit min value of the loan balance to account for floating point math rounding
-        if self.analysis.value.get(year).unwrap() < 0.0001 {
-            self.analysis.value.insert(year, 0_f64);
+            let mut remaining_payment = result.payment;
+            remaining_payment -= insurance_payment;
+            remaining_payment -= self.escrow_value;
+            self.analysis.value.update(year, -remaining_payment);
+            if self.analysis.value.get(year).unwrap() < 0.0001 {
+                self.analysis.value.insert(year, 0_f64);
+            }
         }
 
         // info!("{} {:?}", year, self.analysis);
@@ -238,6 +235,6 @@ impl Account for Mortgage<u32> {
 
 impl MortgagePlot for Mortgage<u32> {
     fn get_mortgage_plot_data(&self) -> Vec<PlotDataSet> {
-        self.analysis.get_plot_data()
+        self.analysis.get_mortgage_plot_data()
     }
 }

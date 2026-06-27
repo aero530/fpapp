@@ -189,8 +189,10 @@ impl Account for College<u32> {
         settings: &Settings,
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
-        // Init value table with previous year's value
-        self.analysis.add_year(year, true)?;
+        // Init value table with previous year's value; skip for pre-seeded years (table has the starting balance)
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, true)?;
+        }
         let mut result = WorkingValues::default();
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
@@ -232,7 +234,7 @@ impl Account for College<u32> {
                 expense: result.contribution,
                 healthcare_expense: 0_f64,
                 col: 0_f64,
-                saving: 0_f64,
+                saving: result.contribution + result.earning - result.withdrawal,
                 income_taxable: 0_f64,
                 income: 0_f64,
                 hsa: 0_f64,

@@ -43,6 +43,9 @@ pub fn show_nav(app: &mut FpApp, ctx: &egui::Context) {
                 .id_salt("nav_scroll")
                 .max_height(ui.available_height() - 48.0)
                 .show(ui, |ui| {
+                    egui::Frame::none()
+                        .inner_margin(egui::Margin { left: 0.0, right: 10.0, top: 0.0, bottom: 0.0 })
+                        .show(ui, |ui| {
                     if app.data.is_null() {
                         ui.weak("Open a file to see accounts");
                         return;
@@ -90,6 +93,7 @@ pub fn show_nav(app: &mut FpApp, ctx: &egui::Context) {
                                 }
                             });
                     }
+                    }); // Frame
                 });
 
             // Pinned footer with Open / Save
@@ -143,7 +147,7 @@ pub fn open_file(app: &mut FpApp) {
 
 pub fn save_file(app: &mut FpApp) {
     if let Some(path) = &app.file_path.clone() {
-        write_file(app, path.to_str().unwrap_or(""));
+        write_file(app, path.to_str().unwrap_or(""));  // file_path already set; no update needed
     } else {
         save_file_as(app);
     }
@@ -155,22 +159,26 @@ pub fn save_file_as(app: &mut FpApp) {
         .save_file()
     {
         let path_str = path.to_str().unwrap_or("").to_string();
-        write_file(app, &path_str);
-        app.file_path = Some(path);
+        if write_file(app, &path_str) {
+            app.file_path = Some(path);
+        }
     }
 }
 
-fn write_file(app: &mut FpApp, path: &str) {
+fn write_file(app: &mut FpApp, path: &str) -> bool {
     match serde_json::to_string_pretty(&app.data) {
         Ok(json) => {
             if let Err(e) = std::fs::write(path, json) {
                 app.error = Some(format!("Failed to save file: {}", e));
+                false
             } else {
                 app.error = None;
+                true
             }
         }
         Err(e) => {
             app.error = Some(format!("Failed to serialize data: {}", e));
+            false
         }
     }
 }
@@ -191,33 +199,35 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "type": "income",
             "name": "New Income",
             "table": {},
-            "startIn": {"constantInt": 2024},
-            "endIn": {"suggested": "yearRetire"},
-            "raise": {"constantFloat": 3.0},
+            "base": 0.0,
+            "startIn": "yearStart",
+            "endIn": "yearRetire",
+            "raise": 3.0,
             "notes": null
         }),
         "ssa" => json!({
             "type": "ssa",
             "name": "Social Security",
             "table": {},
-            "startIn": {"suggested": "yearRetire"},
-            "endIn": {"suggested": "yearDie"},
+            "base": 0.0,
+            "startIn": "yearRetire",
+            "endIn": "yearDie",
             "notes": null
         }),
         "retirement" => json!({
             "type": "retirement",
             "name": "New Retirement",
             "table": {},
-            "startIn": {"constantInt": 2024},
-            "endIn": {"suggested": "yearRetire"},
-            "startOut": {"suggested": "yearRetire"},
-            "endOut": {"suggested": "yearDie"},
+            "startIn": "yearStart",
+            "endIn": "yearRetire",
+            "startOut": "yearRetire",
+            "endOut": "yearDie",
             "contributionValue": 10000.0,
             "contributionType": "fixed",
-            "yearlyReturn": {"constantFloat": 6.0},
-            "withdrawalType": "fixed",
-            "withdrawalValue": 50000.0,
-            "taxStatus": "contributePretax",
+            "yearlyReturn": 6.0,
+            "withdrawalType": "end_at_zero",
+            "withdrawalValue": 0.0,
+            "taxStatus": "contribute_pretax_taxed_when_used",
             "incomeLink": null,
             "matching": null,
             "notes": null
@@ -226,40 +236,42 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "type": "hsa",
             "name": "New HSA",
             "table": {},
-            "startIn": {"constantInt": 2024},
-            "endIn": {"suggested": "yearRetire"},
-            "startOut": {"suggested": "yearRetire"},
-            "endOut": {"suggested": "yearDie"},
+            "startIn": "yearStart",
+            "endIn": "yearRetire",
+            "startOut": "yearStart",
+            "endOut": "yearDie",
             "contributionValue": 3000.0,
             "contributionType": "fixed",
             "employerContribution": 0.0,
-            "yearlyReturn": {"constantFloat": 5.0},
-            "taxStatus": "contributePretax",
+            "yearlyReturn": 5.0,
+            "withdrawalType": "end_at_zero",
+            "withdrawalValue": 0.0,
+            "taxStatus": "contribute_pretax_untaxed_when_used",
             "notes": null
         }),
         "college" => json!({
             "type": "college",
             "name": "New College Fund",
             "table": {},
-            "startIn": {"constantInt": 2024},
-            "endIn": {"constantInt": 2036},
-            "startOut": {"constantInt": 2036},
-            "endOut": {"constantInt": 2040},
+            "startIn": "yearStart",
+            "endIn": 2036,
+            "startOut": 2036,
+            "endOut": 2040,
             "contributionValue": 5000.0,
             "contributionType": "fixed",
-            "yearlyReturn": {"constantFloat": 5.0},
-            "withdrawalType": "fixed",
-            "withdrawalValue": 20000.0,
-            "taxStatus": "taxedNow",
+            "yearlyReturn": 5.0,
+            "withdrawalType": "end_at_zero",
+            "withdrawalValue": 0.0,
+            "taxStatus": "contribute_taxed_earnings_untaxed_when_used",
             "notes": null
         }),
         "expense" => json!({
             "type": "expense",
             "name": "New Expense",
             "table": {},
-            "startOut": {"constantInt": 2024},
-            "endOut": {"suggested": "yearDie"},
-            "expenseType": "fixedWithInflation",
+            "startOut": "yearStart",
+            "endOut": "yearDie",
+            "expenseType": "fixed_with_inflation",
             "expenseValue": 1000.0,
             "isHealthcare": false,
             "scalesWithCol": true,
@@ -270,8 +282,8 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "type": "loan",
             "name": "New Loan",
             "table": {},
-            "startOut": {"constantInt": 2024},
-            "endOut": {"constantInt": 2034},
+            "startOut": "yearStart",
+            "endOut": 2034,
             "paymentType": "fixed",
             "paymentValue": 500.0,
             "rate": 5.0,
@@ -281,12 +293,12 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "type": "mortgage",
             "name": "New Mortgage",
             "table": {},
-            "startOut": {"constantInt": 2024},
-            "endOut": {"constantInt": 2054},
+            "startOut": "yearStart",
+            "endOut": 2054,
             "paymentType": "fixed",
             "paymentValue": 2000.0,
             "rate": 6.5,
-            "compoundTime": 12,
+            "compoundTime": 12.0,
             "mortgageInsurance": 0.0,
             "ltvLimit": 80.0,
             "escrowValue": 300.0,
@@ -297,16 +309,16 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "type": "savings",
             "name": "New Savings",
             "table": {},
-            "startIn": {"constantInt": 2024},
-            "endIn": {"suggested": "yearRetire"},
-            "startOut": {"suggested": "yearRetire"},
-            "endOut": {"suggested": "yearDie"},
+            "startIn": "yearStart",
+            "endIn": "yearRetire",
+            "startOut": "yearRetire",
+            "endOut": "yearDie",
             "contributionValue": 5000.0,
             "contributionType": "fixed",
-            "yearlyReturn": {"constantFloat": 5.0},
-            "withdrawalType": "fixed",
-            "withdrawalValue": 30000.0,
-            "taxStatus": "taxedNow",
+            "yearlyReturn": 5.0,
+            "withdrawalType": "end_at_zero",
+            "withdrawalValue": 0.0,
+            "taxStatus": "contribute_taxed_earnings_taxed",
             "notes": null
         }),
         _ => json!({"type": account_type, "name": "New Account"}),

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Skill(code-review)",
-      "Skill(code-review:*)"
+      "Skill(code-review:*)",
+      "Bash(cargo check *)"
     ]
   }
 }

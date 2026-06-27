@@ -104,15 +104,13 @@ impl Account for Ssa {
     fn simulate(
         &mut self,
         year: u32,
-        _totals: &YearlyTotals,
-        _settings: &Settings,
+        totals: &YearlyTotals,
+        settings: &Settings,
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
 
         self.analysis.add_year(year, false)?;
-
-        // info!("{} {:?}", year, self.analysis);
 
         // Calculate earnings
         if self.dates.year_in.unwrap().contains(year) {
@@ -122,12 +120,30 @@ impl Account for Ssa {
         // Add earnings to value tables
         self.analysis.value.update(year, result.earning);
 
+        // Determine what fraction of SSA income is taxable based on combined income.
+        // Other income is already accumulated in totals by the time SSA is simulated
+        // (Income accounts run before Ssa in account_order).
+        let other_income = totals.get_income(year);
+        let combined_income = other_income + result.earning / 2.0;
+        let taxable_fraction = if combined_income <= settings.ssa.breakpoints.low {
+            settings.ssa.taxable_income_percentage.low / 100.0
+        } else if combined_income >= settings.ssa.breakpoints.high {
+            settings.ssa.taxable_income_percentage.high / 100.0
+        } else {
+            let t = (combined_income - settings.ssa.breakpoints.low)
+                / (settings.ssa.breakpoints.high - settings.ssa.breakpoints.low);
+            (settings.ssa.taxable_income_percentage.low
+                + t * (settings.ssa.taxable_income_percentage.high
+                    - settings.ssa.taxable_income_percentage.low))
+                / 100.0
+        };
+
         Ok(YearlyImpact {
             expense: 0_f64,
             healthcare_expense: 0_f64,
             col: 0_f64,
             saving: 0_f64,
-            income_taxable: result.earning,
+            income_taxable: result.earning * taxable_fraction,
             income: result.earning,
             hsa: 0_f64,
         })

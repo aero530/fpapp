@@ -191,7 +191,11 @@ impl Account for Savings<u32> {
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
-        self.analysis.add_year(year, true)?;
+
+        // Skip add_year for pre-seeded years; the table value is the starting balance
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, true)?;
+        }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("Savings account value is negative.").into());
@@ -225,12 +229,18 @@ impl Account for Savings<u32> {
         self.analysis.withdrawals.update(year, result.withdrawal);
         self.analysis.value.update(year, -result.withdrawal);
 
+        let income_taxable = match self.tax_status {
+            TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => 0_f64,
+            TaxStatus::ContributeTaxedEarningsTaxed => result.earning,
+            TaxStatus::ContributePretaxTaxedWhenUsed => result.withdrawal - result.contribution,
+            TaxStatus::ContributePretaxUntaxedWhenUsed => -result.contribution,
+        };
         Ok(YearlyImpact {
             expense: result.contribution,
             healthcare_expense: 0_f64,
             col: 0_f64,
-            saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
-            income_taxable: result.earning,
+            saving: result.contribution + result.earning - result.withdrawal,
+            income_taxable,
             income: result.withdrawal,
             hsa: 0_f64,
         })

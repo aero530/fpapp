@@ -62,7 +62,7 @@ impl TableGroup for SingleTable {
             true => Err(String::from("Year already exists.").into()),
             false => {
                 let prev_value = match pull_value_forward {
-                    true => self.value.most_recent_value().unwrap_or_default(),
+                    true => self.value.most_recent_populated_value().unwrap_or_default(),
                     false => 0_f64,
                 };
                 self.value.add(year, prev_value)
@@ -208,7 +208,7 @@ impl TableGroup for LoanTables {
             true => Err(String::from("Year already exists.").into()),
             false => {
                 let prev_value = match pull_value_forward {
-                    true => self.value.most_recent_value().unwrap_or_default(),
+                    true => self.value.most_recent_populated_value().unwrap_or_default(),
                     false => 0_f64,
                 };
                 self.value.add(year, prev_value)?;
@@ -383,7 +383,7 @@ impl TableGroup for SavingsTables {
             true => Err(String::from("Year already exists.").into()),
             false => {
                 let prev_value = match pull_value_forward {
-                    true => self.value.most_recent_value().unwrap_or_default(),
+                    true => self.value.most_recent_populated_value().unwrap_or_default(),
                     false => 0_f64,
                 };
                 self.value.add(year, prev_value)?;

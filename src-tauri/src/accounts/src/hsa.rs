@@ -185,7 +185,11 @@ impl Account for Hsa<u32> {
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
-        self.analysis.add_year(year, true)?;
+
+        // Skip add_year for pre-seeded years; the table value is the starting balance
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, true)?;
+        }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("HSA account value is negative.").into());
@@ -209,6 +213,9 @@ impl Account for Hsa<u32> {
         self.analysis
             .contributions
             .update(year, result.contribution + result.employer_contribution);
+        self.analysis
+            .employer_contributions
+            .update(year, result.employer_contribution);
         self.analysis
             .value
             .update(year, result.contribution + result.employer_contribution);

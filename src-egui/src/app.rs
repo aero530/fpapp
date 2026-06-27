@@ -66,7 +66,7 @@ impl eframe::App for FpApp {
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::central_panel(&ctx.style())
-                    .inner_margin(egui::Margin { left: 8.0, right: 16.0, top: 8.0, bottom: 8.0 }),
+                    .inner_margin(egui::Margin { left: 8.0, right: 0.0, top: 8.0, bottom: 8.0 }),
             )
             .show(ctx, |ui| {
             if self.data.is_null() {
@@ -84,14 +84,18 @@ impl eframe::App for FpApp {
             }
 
             egui::ScrollArea::vertical().show(ui, |ui| {
-                match &page {
-                    Page::Dashboard => crate::dashboard::show(self, ui),
-                    Page::Settings => crate::settings_view::show(self, ui),
-                    Page::Account(uuid) => {
-                        let uuid = uuid.clone();
-                        crate::forms::show_account(self, ui, &uuid);
-                    }
-                }
+                egui::Frame::none()
+                    .inner_margin(egui::Margin { left: 0.0, right: 16.0, top: 0.0, bottom: 0.0 })
+                    .show(ui, |ui| {
+                        match &page {
+                            Page::Dashboard => crate::dashboard::show(self, ui),
+                            Page::Settings => crate::settings_view::show(self, ui),
+                            Page::Account(uuid) => {
+                                let uuid = uuid.clone();
+                                crate::forms::show_account(self, ui, &uuid);
+                            }
+                        }
+                    });
             });
         });
     }

@@ -155,6 +155,20 @@ impl Account for Income<u32> {
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let start_in = self.dates.year_in.unwrap().start;
         let mut result = WorkingValues::default();
+
+        // If this year is pre-seeded from the historical table, use it as the actual income
+        if let Some(actual) = self.analysis.value.get(year) {
+            if self.dates.year_in.unwrap().contains(year) {
+                return Ok(YearlyImpact {
+                    income: actual,
+                    income_taxable: actual,
+                    ..Default::default()
+                });
+            }
+            // Pre-seeded but outside active date range — record zero income
+            return Ok(YearlyImpact::default());
+        }
+
         self.analysis.add_year(year, false)?;
 
         // Calculate earnings

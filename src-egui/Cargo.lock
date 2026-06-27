@@ -1536,6 +1536,7 @@ dependencies = [
  "eframe",
  "egui_plot",
  "env_logger",
+ "image 0.24.9",
  "log",
  "rfd",
  "serde",

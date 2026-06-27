@@ -59,9 +59,14 @@ impl Table<u32> {
             .copied()
             .max()
     }
-    /// Find the most recent year that has a non-zero value
+    /// Return the value of the last entry in the table (may be zero).
     pub fn most_recent_value(&self) -> Option<f64> {
         self.0.iter().last().map(|(_k, v)| *v)
+    }
+    /// Return the value of the most recent year with a non-zero balance,
+    /// skipping zero entries (e.g. leave-of-absence years or reset years).
+    pub fn most_recent_populated_value(&self) -> Option<f64> {
+        self.most_recent_populated_year().and_then(|y| self.get(y))
     }
     /// Move the most recent previous value forward if
     /// the most previous year is prior to the current year

@@ -148,7 +148,11 @@ impl Account for Loan<u32> {
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
-        self.analysis.add_year(year, true)?;
+
+        // Skip add_year for pre-seeded years; the table value is the starting balance
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, true)?;
+        }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("Loan account value is negative.").into());

@@ -213,8 +213,10 @@ impl Account for Retirement<u32> {
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
 
-        // Init value table with previous year's value
-        self.analysis.add_year(year, true)?;
+        // Init value table with previous year's value; skip for pre-seeded years (table has the starting balance)
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, true)?;
+        }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
             return Err(String::from("Retirement account value is negative.").into());
@@ -296,7 +298,7 @@ impl Account for Retirement<u32> {
                 expense: result.contribution,
                 healthcare_expense: 0_f64,
                 col: 0_f64,
-                saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
+                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: 0_f64,
                 income: result.withdrawal,
                 hsa: 0_f64,
@@ -310,7 +312,7 @@ impl Account for Retirement<u32> {
                 expense: result.contribution,
                 healthcare_expense: 0_f64,
                 col: 0_f64,
-                saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
+                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: result.earning,
                 // todo ! something different to account for earnings as cap gains
                 income: result.withdrawal,
@@ -325,7 +327,7 @@ impl Account for Retirement<u32> {
                 expense: result.contribution,
                 healthcare_expense: 0_f64,
                 col: 0_f64,
-                saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
+                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: result.withdrawal - result.contribution,
                 income: result.withdrawal,
                 hsa: 0_f64,
@@ -339,7 +341,7 @@ impl Account for Retirement<u32> {
                 expense: result.contribution,
                 healthcare_expense: 0_f64,
                 col: 0_f64,
-                saving: result.contribution + result.earning - result.withdrawal, // delta to savings total for the year
+                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
                 income_taxable: 0_f64 - result.contribution,
                 income: result.withdrawal,
                 hsa: 0_f64,
