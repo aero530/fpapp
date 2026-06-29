@@ -3,7 +3,8 @@
     "allow": [
       "Skill(code-review)",
       "Skill(code-review:*)",
-      "Bash(cargo check *)"
+      "Bash(cargo check *)",
+      "Read(//c/Users/phil/AppData/Local/Temp/**)"
     ]
   }
 }

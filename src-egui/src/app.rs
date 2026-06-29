@@ -63,6 +63,13 @@ impl eframe::App for FpApp {
             self.dirty = false;
         }
 
+        // If the user navigated away from the account pending deletion, cancel the dialog
+        if let Some(ref uuid) = self.confirm_delete.clone() {
+            if self.selected != Page::Account(uuid.clone()) {
+                self.confirm_delete = None;
+            }
+        }
+
         // Delete confirmation modal — shown before panels so it overlays everything
         if let Some(pending_uuid) = self.confirm_delete.clone() {
             let pending_name = self.data["accounts"][pending_uuid.as_str()]["name"]
@@ -109,10 +116,13 @@ impl eframe::App for FpApp {
                             acct["hsaLink"] = Value::Null;
                         }
                     }
+                    self.confirm_delete = None;
+                    self.selected = Page::Dashboard;
+                    self.dirty = true;
+                } else {
+                    self.confirm_delete = None;
+                    self.error = Some(String::from("Delete failed: account data is malformed."));
                 }
-                self.confirm_delete = None;
-                self.selected = Page::Dashboard;
-                self.dirty = true;
             }
         }
 
