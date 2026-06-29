@@ -147,7 +147,9 @@ impl Account for Expense<u32> {
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
-        self.analysis.add_year(year, false)?;
+        if self.analysis.value.get(year).is_none() {
+            self.analysis.add_year(year, false)?;
+        }
 
         // Cost of living scale to apply to the expense. Only applied when the account
         // is configured to scale with retirement cost-of-living (scales_with_col: true).

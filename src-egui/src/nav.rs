@@ -16,10 +16,10 @@ const ACCOUNT_TYPES: &[(&str, &str)] = &[
     ("savings", "Savings"),
 ];
 
-pub fn show_nav(app: &mut FpApp, ctx: &egui::Context) {
-    egui::SidePanel::left("nav_panel")
-        .exact_width(230.0)
-        .show(ctx, |ui| {
+pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
+    egui::Panel::left("nav_panel")
+        .exact_size(230.0)
+        .show(ui, |ui| {
             ui.add_space(4.0);
 
             // Top-level nav links
@@ -43,8 +43,8 @@ pub fn show_nav(app: &mut FpApp, ctx: &egui::Context) {
                 .id_salt("nav_scroll")
                 .max_height(ui.available_height() - 48.0)
                 .show(ui, |ui| {
-                    egui::Frame::none()
-                        .inner_margin(egui::Margin { left: 0.0, right: 10.0, top: 0.0, bottom: 0.0 })
+                    egui::Frame::new()
+                        .inner_margin(egui::Margin { left: 0, right: 10, top: 0, bottom: 0 })
                         .show(ui, |ui| {
                     if app.data.is_null() {
                         ui.weak("Open a file to see accounts");

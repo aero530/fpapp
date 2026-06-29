@@ -132,12 +132,12 @@ impl Account for Ssa {
         } else if combined_income >= settings.ssa.breakpoints.high {
             settings.ssa.taxable_income_percentage.high / 100.0
         } else {
+            // Interpolate from 0% at the low threshold to high% at the high threshold.
+            // This avoids a hard cliff at breakpoints.low (where 0% would otherwise
+            // jump immediately to low% on the next dollar of income).
             let t = (combined_income - settings.ssa.breakpoints.low)
                 / (settings.ssa.breakpoints.high - settings.ssa.breakpoints.low);
-            (settings.ssa.taxable_income_percentage.low
-                + t * (settings.ssa.taxable_income_percentage.high
-                    - settings.ssa.taxable_income_percentage.low))
-                / 100.0
+            t * (settings.ssa.taxable_income_percentage.high / 100.0)
         };
 
         Ok(YearlyImpact {

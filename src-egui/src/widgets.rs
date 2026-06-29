@@ -319,7 +319,7 @@ pub fn plot_datasets(
         .show(ui, |plot_ui| {
             for ds in datasets {
                 let points: egui_plot::PlotPoints = ds.data.iter().map(|p| [p.x as f64, p.y]).collect();
-                plot_ui.line(egui_plot::Line::new(points).name(&ds.label));
+                plot_ui.line(egui_plot::Line::new(&ds.label, points));
             }
         });
 }

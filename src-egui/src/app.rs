@@ -55,7 +55,7 @@ impl FpApp {
 }
 
 impl eframe::App for FpApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if self.dirty {
             if !self.data.is_null() {
                 self.run_analysis();
@@ -83,7 +83,7 @@ impl eframe::App for FpApp {
                 .resizable(false)
                 .movable(false)
                 .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
-                .show(ctx, |ui| {
+                .show(ui.ctx(), |ui| {
                     ui.set_min_width(280.0);
                     ui.label(format!("Delete \"{}\"?", pending_name));
                     ui.label("This cannot be undone.");
@@ -126,15 +126,16 @@ impl eframe::App for FpApp {
             }
         }
 
-        crate::nav::show_nav(self, ctx);
+        crate::nav::show_nav(self, ui);
 
         let page = self.selected.clone();
         egui::CentralPanel::default()
             .frame(
-                egui::Frame::central_panel(&ctx.style())
-                    .inner_margin(egui::Margin { left: 8.0, right: 0.0, top: 8.0, bottom: 8.0 }),
+                egui::Frame::new()
+                    .fill(ui.visuals().panel_fill)
+                    .inner_margin(egui::Margin { left: 8, right: 0, top: 8, bottom: 8 }),
             )
-            .show(ctx, |ui| {
+            .show(ui, |ui| {
             if self.data.is_null() {
                 ui.vertical_centered(|ui| {
                     ui.add_space(120.0);
@@ -150,8 +151,8 @@ impl eframe::App for FpApp {
             }
 
             egui::ScrollArea::vertical().show(ui, |ui| {
-                egui::Frame::none()
-                    .inner_margin(egui::Margin { left: 0.0, right: 16.0, top: 0.0, bottom: 0.0 })
+                egui::Frame::new()
+                    .inner_margin(egui::Margin { left: 0, right: 16, top: 0, bottom: 0 })
                     .show(ui, |ui| {
                         match &page {
                             Page::Dashboard => crate::dashboard::show(self, ui),

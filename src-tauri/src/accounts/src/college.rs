@@ -234,7 +234,7 @@ impl Account for College<u32> {
                 expense: result.contribution,
                 healthcare_expense: 0_f64,
                 col: 0_f64,
-                saving: result.contribution + result.earning - result.withdrawal,
+                saving: 0_f64, // college funds are not part of the general savings pool (ColFracOfSavings)
                 income_taxable: 0_f64,
                 income: 0_f64,
                 hsa: 0_f64,

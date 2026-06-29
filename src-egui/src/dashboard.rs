@@ -32,9 +32,9 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
             .height(440.0)
             .legend(Legend::default())
             .show(ui, |plot_ui| {
-                plot_ui.line(Line::new(make_points(&years_net, &vals_net)).name("Net"));
-                plot_ui.line(Line::new(make_points(&years_income, &vals_income)).name("Income"));
-                plot_ui.line(Line::new(make_points(&years_expense, &vals_expense)).name("Expense"));
+                plot_ui.line(Line::new("Net", make_points(&years_net, &vals_net)));
+                plot_ui.line(Line::new("Income", make_points(&years_income, &vals_income)));
+                plot_ui.line(Line::new("Expense", make_points(&years_expense, &vals_expense)));
             });
 
         ui.add_space(12.0);
@@ -43,7 +43,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
             .height(440.0)
             .legend(Legend::default())
             .show(ui, |plot_ui| {
-                plot_ui.line(Line::new(make_points(&years_saving, &vals_saving)).name("Savings"));
+                plot_ui.line(Line::new("Savings", make_points(&years_saving, &vals_saving)));
             });
 
         ui.add_space(12.0);
@@ -52,7 +52,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
             .height(440.0)
             .legend(Legend::default())
             .show(ui, |plot_ui| {
-                plot_ui.line(Line::new(make_points(&years_col, &vals_col)).name("Cost of Living"));
+                plot_ui.line(Line::new("Cost of Living", make_points(&years_col, &vals_col)));
             });
 
         ui.add_space(12.0);
@@ -61,8 +61,8 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
             .height(440.0)
             .legend(Legend::default())
             .show(ui, |plot_ui| {
-                plot_ui.line(Line::new(make_points(&years_hc, &vals_hc)).name("Healthcare"));
-                plot_ui.line(Line::new(make_points(&years_tax, &vals_tax)).name("Tax Burden"));
+                plot_ui.line(Line::new("Healthcare", make_points(&years_hc, &vals_hc)));
+                plot_ui.line(Line::new("Tax Burden", make_points(&years_tax, &vals_tax)));
             });
     } else if app.error.is_none() {
         ui.centered_and_justified(|ui| {
