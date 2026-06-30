@@ -1,11 +1,12 @@
-# financial planning app #
+# financial planning app
 
 A financial planning & simulation application.
 
-
 ![screenshot_loan](https://github.com/aero530/fpapp/raw/main/egui/screenshot.png "Retirement")
 
-## Features ##
+[User Manual](https://github.com/aero530/fpapp/raw/main/USER_MANUAL.md)
+
+## Features
 
 - Simulate income and expenses through retirement
 - Track historic account balances
@@ -23,7 +24,7 @@ A financial planning & simulation application.
 - Financial data saved locally as human readable json file
 
 
-## Computation Flow ##
+## Computation Flow
 
 - Build simulation order: collect UUIDs grouped by AccountType in fixed sequence
   (Income → SSA → Expense → HSA → Mortgage → Loan → College → Retirement → Savings)
@@ -48,6 +49,48 @@ A financial planning & simulation application.
       HSA already covered what it could during its simulate() call)
 - Collect per-account plot data
 - Return (plot_data, yearly_totals)
+
+## Data file format
+
+The app reads and writes a single JSON file. Top-level structure:
+
+```json
+{
+  "settings": {
+    "ageRetire": 65,
+    "ageDie": 90,
+    "yearBorn": 1975,
+    "yearStart": 2020,
+    "inflationBase": 3.0,
+    "taxIncome": 22.0,
+    "taxCapitalGains": 15.0,
+    "retirementCostOfLiving": 80.0,
+    "ssa": {
+      "breakpoints":             { "low": 25000, "high": 34000 },
+      "taxableIncomePercentage": { "low": 50,    "high": 85    }
+    }
+  },
+  "accounts": {
+    "<uuid>": {
+      "type": "retirement",
+      "name": "My 401k",
+      "startIn": "yearStart",
+      "endIn": { "base": "yearRetire", "delta": -1 },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "contributionValue": 19500,
+      "contributionType": "fixed",
+      "yearlyReturn": 6.0,
+      "withdrawalType": "end_at_zero",
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "table": { "2020": 85000 },
+      "incomeLink": "<uuid> | null"
+    }
+  }
+}
+```
+
+The UI holds this entire blob as a `serde_json::Value`. It is only deserialised into typed Rust structs when `analyze::run_analysis()` is called.
 
 
 ## To do
