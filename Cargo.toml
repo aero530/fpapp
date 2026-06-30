@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "accounts",
+    "egui",
+    "tauri/src-tauri",
+]
+resolver = "2"

@@ -2,9 +2,9 @@ import { writable } from 'svelte/store';
 import { invoke } from "@tauri-apps/api/core"
 import { v4 as uuid } from 'uuid';
 
-import type { AccountWrapperUI as Account } from "../src-tauri/src/accounts/bindings/AccountWrapperUI";
+import type { AccountWrapperUI as Account } from "../../accounts/bindings/AccountWrapperUI";
 
-import type {Settings} from "../src-tauri/src/accounts/bindings/Settings";
+import type {Settings} from "../../accounts/bindings/Settings";
 
 import {defaultCollege, defaultExpense, defaultHsa, defaultIncome, defaultLoan, defaultMortgage, defaultRetirement, defaultSavings, defaultSsa} from "./accountDefaults";
 

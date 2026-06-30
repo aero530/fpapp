@@ -52,7 +52,7 @@
 
 	/**
      * @param {string} pathString
-     * @param {{ accounts: { [id: string]: import("../../src-tauri/src/accounts/bindings/AccountWrapperUI").AccountWrapperUI; }; settings: import("../../src-tauri/src/accounts/bindings/Settings").Settings; }} data
+     * @param {{ accounts: { [id: string]: import("../../../accounts/bindings/AccountWrapperUI").AccountWrapperUI; }; settings: import("../../../accounts/bindings/Settings").Settings; }} data
      */
 	function saveFile(pathString, data) {
 		invoke("file_save", {

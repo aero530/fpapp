@@ -1,4 +1,4 @@
-import type { AccountWrapperUI as Account } from "../src-tauri/src/accounts/bindings/AccountWrapperUI";
+import type { AccountWrapperUI as Account } from "../../accounts/bindings/AccountWrapperUI";
 
 export let defaultCollege: Account ={
     type: "college",

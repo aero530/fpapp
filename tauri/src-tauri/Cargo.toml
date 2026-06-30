@@ -27,4 +27,4 @@ tauri-plugin-fs = "2.0.3"
 
 toml = "0.8.19"
 
-accounts = { path = "./src/accounts" }
+accounts = { path = "../../accounts" }
