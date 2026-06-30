@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use std::error::Error;
 // use ts_rs::TS;
+#[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
 
 mod inputs;
@@ -23,7 +24,9 @@ use simulation::{
 // re-exported for use outside this lib
 pub use simulation::{Dates, YearlyTotals, PlotDataSet, TableGroup};
 
+#[cfg(feature = "plotters-backend")]
 mod plot;
+#[cfg(feature = "plotters-backend")]
 use plot::{scatter_plot_buf, scatter_plot_file};
 
 mod college;
@@ -53,6 +56,8 @@ use savings::Savings;
 mod ssa;
 use ssa::Ssa;
 
+mod runner;
+pub use runner::run;
 
 /// Trait used to define what each account type must be able to provide
 pub trait Account: std::fmt::Debug {
@@ -97,10 +102,12 @@ pub trait Account: std::fmt::Debug {
     /// Save the account simulation results to a csv file
     fn write(&self, filepath: String);
 
-    /// Plot the account simulation results & save to a files
+    /// Plot the account simulation results & save to a file
+    #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32);
 
-    /// Plot the account and return it as a vec
+    /// Plot the account and return it as an image buffer
+    #[cfg(feature = "plotters-backend")]
     fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>;
 
     /// Get plot data for UI plotting

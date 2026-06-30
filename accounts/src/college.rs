@@ -2,6 +2,7 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use ts_rs::TS;
+#[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
 
 use crate::inputs::fixed_with_inflation;
@@ -152,6 +153,7 @@ impl Account for College<u32> {
     fn get_inputs(&self) -> String {
         String::from("Hello")
     }
+    #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
         scatter_plot_file(
             filepath,
@@ -166,6 +168,7 @@ impl Account for College<u32> {
             height,
         );
     }
+    #[cfg(feature = "plotters-backend")]
     fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         scatter_plot_buf(
             vec![

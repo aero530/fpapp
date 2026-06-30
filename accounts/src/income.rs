@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+#[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
 use serde_json::json;
 use ts_rs::TS;
@@ -126,6 +127,7 @@ impl Account for Income<u32> {
             notes: json!(self.notes).to_string(),
         }).to_string()
     }
+    #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
         scatter_plot_file(
             filepath,
@@ -135,6 +137,7 @@ impl Account for Income<u32> {
             height,
         );
     }
+    #[cfg(feature = "plotters-backend")]
     fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         scatter_plot_buf(
             vec![("Amount".into(), &self.analysis.value)],

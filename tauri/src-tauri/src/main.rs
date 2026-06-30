@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 mod log_config;
 
-use accounts::{Account, AccountType, AccountWrapper, Dates, UserData, YearlyTotals, PlotDataSet};
+use accounts::{Account, AccountWrapper, UserData, YearlyTotals, PlotDataSet};
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
@@ -71,8 +71,8 @@ fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, St
 
 #[tauri::command]
 fn run_analysis(input: UserData<AccountWrapper>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), String> {
-  let data : UserData<Box<dyn Account>> = input.into();
-  analyze(data).map_err(|e| e.to_string())
+    let data: UserData<Box<dyn Account>> = input.into();
+    accounts::run(data).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -80,159 +80,11 @@ fn do_a_thing(body: RequestBody) -> String {
   format!("{:?}", body)
 }
 
-fn analyze(mut data: UserData<Box<dyn Account>>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), Box<dyn std::error::Error>> {
-    // Loop through accounts to determine what order they should be processed in
-    let mut account_order: Vec<String> = Vec::new();
-
-    for type_id in AccountWrapper::order().iter() {
-        for (uuid, account) in data.accounts.iter() {
-            if account.type_id() == *type_id {
-                account_order.push(uuid.to_string());
-            }
-        }
-    }
-
-    // Initialize vector of year values
-    let years: Vec<u32> =
-        (data.settings.year_start()..data.settings.year_end()).collect::<Vec<u32>>();
-
-    // Initialize object to keep track of yearly totals across all accounts
-    let mut yearly_totals = YearlyTotals::new();
-
-    // Initialize accounts
-    account_order.iter().for_each(|uuid| {
-        // Get dates from the linked account if this account has a link ID
-        let linked_dates: Option<Dates> = match data.accounts.get(uuid).unwrap().link_id() {
-            Some(link_id) => {
-                log::trace!("Link ID {:?}",&link_id);
-                // This explicitly does not allow recursion in linked_dates
-                Some(Dates {
-                    year_in: data
-                        .accounts
-                        .get(&link_id)
-                        .expect("Unable to get linked account")
-                        .get_range_in(&data.settings, None),
-                    year_out: data
-                        .accounts
-                        .get(&link_id)
-                        .expect("Unable to get linked account")
-                        .get_range_out(&data.settings, None),
-                })
-            }
-            None => None,
-        };
-
-        // Initialize the account & get the impacts it has based on the tables of historical data the user has input
-        let impacts = data
-            .accounts
-            .get_mut(uuid)
-            .unwrap()
-            .init(linked_dates, &data.settings)
-            .unwrap();
-
-        // Apply the impacts to yearly totals
-        impacts.iter().for_each(|(year, impact)| {
-            if !yearly_totals.contains_year(*year) {
-                yearly_totals.add_year(*year, false).unwrap();
-            }
-            yearly_totals.update(*year, *impact);
-        });
-
-        log::trace!(
-            "{:?} {:?} {:?}",
-            data.accounts.get(uuid).unwrap().type_id(),
-            uuid,
-            data.accounts.get(uuid).unwrap().name(),
-        );
-    });
-
-    log::info!("Main Loop");
-
-    // Main loop to loop through each year
-    for year in years.iter().copied() {
-        // Add a new year to yearly_totals and pull some of the previous values forward.
-        // If the year already exists (as it might if a user has historical data that
-        // conflicts with this analysis year) then skip analysis and leave the yearly total
-        // tables as they are.
-        if yearly_totals.add_year(year, true).is_ok() {
-            // Loop through accounts to make contributions and withdrawals
-            for uuid in account_order.iter() {
-                // Get the linked account uuid (if this account has a linked account)
-                let link_id = data.accounts.get(uuid).unwrap().link_id();
-
-                // Only use get_value from Income accounts — other account types (Savings,
-                // Retirement) return a running balance via get_value, not yearly income,
-                // which would produce incorrect PercentOfIncome contributions.
-                let link_value = match link_id {
-                    Some(ref id) => {
-                        match data.accounts.get(id) {
-                            Some(linked_account) if linked_account.type_id() == AccountType::Income => {
-                                linked_account.get_value(year)
-                            }
-                            Some(linked_account) => {
-                                log::warn!(
-                                    "Account '{}': income_link points to a {:?} account, not Income; falling back to total income for PercentOfIncome contributions",
-                                    data.accounts.get(uuid).unwrap().name(),
-                                    linked_account.type_id()
-                                );
-                                None
-                            }
-                            None => None,
-                        }
-                    }
-                    None => None,
-                };
-
-                let account = data.accounts.get_mut(uuid).unwrap();
-
-                // Simulate this year for the account. Propagate errors so the user sees
-                // a clear message rather than a silently corrupt simulation.
-                let impact = account
-                    .simulate(year, &yearly_totals, &data.settings, link_value)
-                    .map_err(|e| format!("Account '{}', year {}: {}", account.name(), year, e))?;
-                yearly_totals.update(year, impact);
-            }
-
-            // Close out the year
-            yearly_totals.deposit_income_in_net(year);
-            yearly_totals.pay_income_tax_from_net(year, data.settings.tax_income);
-            yearly_totals.pay_expenses_from_net(year);
-            yearly_totals.pay_healthcare_expenses_from_net(year);
-        }
-    }
-
-    let mut plot_data : HashMap<String, Vec<PlotDataSet>> = HashMap::new();
-
-
-
-
-
-
-
-
-    // data.write_tables(&account_order, years, "out.csv".to_owned());
-    // data.accounts["c56b7430-c5bb-11e8-a00d-d173fe7faee3"].write("mort.csv".to_owned());
-
-
-
-
-
-
-
-
-    for (uuid, account) in data.accounts.iter() {
-        plot_data.insert(uuid.to_string(), account.get_plot_data());
-    }
-
-    Ok((plot_data, yearly_totals))
-}
-
-
 /// Main loop
 fn main() {
-    
+
     // Initialize and gather config
-    let log_config = log_config::LogConfig::new().expect("Unable to create config file.");    
+    let log_config = log_config::LogConfig::new().expect("Unable to create config file.");
     Logger::try_with_str(log_config.log_level).expect("Could not parse log level.").format(flexi_logger::colored_default_format).start().unwrap();
 
     tauri::Builder::default()
@@ -247,8 +99,8 @@ fn main() {
             let save = MenuItemBuilder::with_id("save", "Save").build(app)?;
             let save_as = MenuItemBuilder::with_id("save_as", "Save As").build(app)?;
             let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
-            
-            let submenu = SubmenuBuilder::new(handle, "File").items(&[ 
+
+            let submenu = SubmenuBuilder::new(handle, "File").items(&[
                 &open, &save, &save_as
              ]).build()?;
 
@@ -281,7 +133,7 @@ fn main() {
             });
             Ok(())
         })
-        
+
         .invoke_handler(tauri::generate_handler![
             my_custom_command,
             do_a_thing,

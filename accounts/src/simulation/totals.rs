@@ -4,9 +4,11 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::io::Write;
+#[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
 
 use super::Table;
+#[cfg(feature = "plotters-backend")]
 use crate::plot::{scatter_plot_file, scatter_plot_buf};
 
 /// How the results of the simulation of an account impact a YearlyTotal
@@ -167,6 +169,7 @@ impl YearlyTotals {
         });
     }
     /// Generate plot
+    #[cfg(feature = "plotters-backend")]
     pub fn plot_to_file(&self, filepath: String) {
         let net: Vec<f64> = self.net.values();
         let saving: Vec<f64> = self.saving.values();
@@ -203,6 +206,7 @@ impl YearlyTotals {
         );
     }
     /// Plot the account and return it as a vec
+    #[cfg(feature = "plotters-backend")]
     pub fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let net: Vec<f64> = self.net.values();
         let saving: Vec<f64> = self.saving.values();
