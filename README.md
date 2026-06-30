@@ -2,30 +2,8 @@
 
 A financial planning & simulation application.
 
----
 
-To do:
-
-- [ ] Cleanup / improve look & style of layout
-- [ ] Improve tests to verify calculations for all account types
-- [ ] Tooltips fall off edge of window on Settings page.  This is also why the Settings page ends up with a bottom scroll bar.
-- [x] Chart tooltip circle should match the color of the line
-- [x] Remove chart lines / legend value for types that are always zero / not used (such as employer contributions on college savings accounts). This goes back to how plot data is generated in `table_groups.rs`.  All `savings` account types use the same simulation result table type which has optional employer_match.  When plot data is generated if that option is `None` default values of `0` are inserted.
-- [x] Add menu link for Loans
-- [x] Add use tips to dashboard page if there is no data loaded
-- [x] Add employer matching to retirement account UI
-- [x] Add account link to retirement employer match
-- [x] Update chart domain on data change
-- [x] Make charts update on data change
-- [x] Convert backend from JS to Rust
-- [x] Convert UI from Electron to Tauri
-- [x] Convert web front end from React to Svelte
-- [X] Convert charts to D3
-- [X] Generate overall visualizations / charts for dashboard
-
----
-
-![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/retirement.png "Retirement")
+![screenshot_loan](https://github.com/aero530/fpapp/raw/main/egui/screenshot.png "Retirement")
 
 ## Features ##
 
@@ -44,89 +22,38 @@ To do:
 - Make pretty graphs
 - Financial data saved locally as human readable json file
 
----
 
 ## Computation Flow ##
 
-- Loop through accounts to determine what order they should be processed in
-- initialize tables to the correct sizes
-- Main loop to loop through each year
-  - Initialize this year
-  - Loop through accounts to make contributions and withdrawals
-    - Initialize the value of the account for this year
-    - Calculate earnings for savings, college, retirement, hsa, and income accounts
-    - Add earnings to the account table for the year
-    - Calculate interest for loan and mortgage
-    - Add interest to the account table for the year
-    - Calculate contribution amount if account has a yearlyContribution defined
-      - Calculate contribution amount based on contribution type (fixed_with_inflation, fixed, percent_of_income)
-      - Calculate the employer contribution
-    - Add contribution and employerMatch to the account table for the year
-    - Remove contribution from taxable income for the year based on taxStatus
-    - Calculate payment if paymentType is defined
-      - Calculate payment amount
-    - Add payment to the account table for the year
-    - Calculate withdrawal if withdrawalType is defined
-      - Calculate withdrawal amount for col_frac_of_savings, fixed, fixed_with_inflation, and end_at_zero
-      - Limit withdrawal amount to the current value of the account (do not allow an account to become overdrawn)
-    - Calculate expense amount
-      - Calculate expense amount for fixed and fixed_with_inflation
-    - Add earnings to incomeTotalTaxableTable and incomeTotalTable for the year
-    - Remove withdrawal from the account table for the year
-    - Add withdrawal to income table for the year (withdrawal came from another account and it added to the income tables)
-    - Add expense to the account table for the year
-    - Remove healthcare expenses from linked HSA account
-    - Add entry to expense total table
-    - Add entry to savings total
-  - Add Income to net account (subtract out paying for income tax)
-- Return Results
+- Build simulation order: collect UUIDs grouped by AccountType in fixed sequence
+  (Income → SSA → Expense → HSA → Mortgage → Loan → College → Retirement → Savings)
+- For each account, call init(linked_dates, settings):
+    - Seeds internal year tables from historical user data
+    - Returns pre-existing (year, impact) pairs; apply these to YearlyTotals
+      to set opening balances before the simulation loop
+- Main loop over each year y in [year_start, year_die]:
+  - Open year: initialize all accumulators; carry net, saving, hsa forward from y-1
+  - For each account (in type order):
+    - Resolve linked_value (income balance of the linked income account, if any)
+    - Call account.simulate(y, &totals, &settings, linked_value) → YearlyImpact
+      (all internal logic — earnings, contributions, withdrawals, payments,
+       expense amounts, tax treatment — is encapsulated here)
+    - Accumulate YearlyImpact into YearlyTotals immediately
+      (later accounts in the same year see the updated totals)
+  - End-of-year settlement:
+    - Add income → net
+    - Deduct income_taxable × tax_rate from net; record as tax_burden
+    - Deduct expense from net
+    - Deduct remaining healthcare_expense from net (zero it out;
+      HSA already covered what it could during its simulate() call)
+- Collect per-account plot data
+- Return (plot_data, yearly_totals)
 
----
 
-## Development Setup ##
+## To do
 
-### Clone the repo via git ###
+- [ ] Improve tests to verify calculations for all account types
 
-```cmd
-git clone https://github.com/aero530/fpapp.git fpapp
-```
-
-## Update TypeScript Bindings ##
-
-The accounts rust module uses ts-rs to automatically create TS bindings for use in the UI. Currently these
-need to manually generated if the accounts module changes.
-
-```cmd
-> cd src-tauri/src/accounts; cargo test; cd ../../../
-```
-
-## Dev ##
-
-Start app in dev mode:
-
-Note that vscode terminal is somehow broken in linux and this fails to run there.  Running it from a os terminal window works fine.
-
-```cmd
-> cargo tauri dev
-```
-
-## Packaging ##
-
-Create a package for macOS, Windows, or Linux using one of the following commands:
-
-```cmd
-> cargo tauri build
-```
-
-<!-- ```cmd
-> cargo build --release
-``` -->
-
-## Tests ##
-
-```cmd
-> cargo test
-```
 
 ## Revision History ##
 
@@ -218,3 +145,8 @@ Create a package for macOS, Windows, or Linux using one of the following command
 ### v4.0.0 - ________ ###
 
 - Update to Tauri 2.0
+
+### v5.0.0 - 6/30/26 ###
+
+- Convert to egui
+- Leave depricated tauri version in place for now

@@ -6,19 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-flexi_logger = "0.24.2"
-float-cmp = "0.9.0"
+flexi_logger = "0.31.9"
+float-cmp = "0.10.0"
 image = "0.25"
 log = "0.4.17"
 plotters = "0.3.4"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
-toml = "0.5.11"
-ts-rs = "6.1.2"
+toml = "1.1.2+spec-1.1.0"
+ts-rs = "12.0.1"
 
 account_savings_derive = { path = "./src/account_savings_derive" }
 account_expense_derive = { path = "./src/account_expense_derive" }
 account_payment_derive = { path = "./src/account_payment_derive" }
 
 [dev-dependencies]
-float-cmp = "0.9.0"
+float-cmp = "0.10.0"

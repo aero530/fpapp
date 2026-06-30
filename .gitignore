@@ -1,7 +1,6 @@
 # Data
 data.json
 dataSimple.json
-/archive
 
 # Tauri/Svelte artifacts (inside tauri/)
 /node_modules/
@@ -14,3 +13,5 @@ dataSimple.json
 /accounts/target/
 /egui/target/
 /tauri/src-tauri/target/
+
+/target
