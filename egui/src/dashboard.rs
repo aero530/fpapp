@@ -1,6 +1,7 @@
-use egui_plot::{Legend, Line, Plot, PlotPoints};
+use egui_plot::{Line, PlotPoints};
 
 use crate::app::FpApp;
+use crate::widgets::dollar_plot;
 
 pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
     ui.heading("Dashboard");
@@ -28,9 +29,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         };
 
         ui.label("Net / Income / Expense");
-        Plot::new("chart_nie")
-            .height(440.0)
-            .legend(Legend::default())
+        dollar_plot("chart_nie", 440.0)
             .show(ui, |plot_ui| {
                 plot_ui.line(Line::new("Net", make_points(&years_net, &vals_net)));
                 plot_ui.line(Line::new("Income", make_points(&years_income, &vals_income)));
@@ -39,27 +38,21 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
 
         ui.add_space(12.0);
         ui.label("Savings");
-        Plot::new("chart_saving")
-            .height(440.0)
-            .legend(Legend::default())
+        dollar_plot("chart_saving", 440.0)
             .show(ui, |plot_ui| {
                 plot_ui.line(Line::new("Savings", make_points(&years_saving, &vals_saving)));
             });
 
         ui.add_space(12.0);
         ui.label("Cost of Living");
-        Plot::new("chart_col")
-            .height(440.0)
-            .legend(Legend::default())
+        dollar_plot("chart_col", 440.0)
             .show(ui, |plot_ui| {
                 plot_ui.line(Line::new("Cost of Living", make_points(&years_col, &vals_col)));
             });
 
         ui.add_space(12.0);
         ui.label("Healthcare & Tax");
-        Plot::new("chart_hc_tax")
-            .height(440.0)
-            .legend(Legend::default())
+        dollar_plot("chart_hc_tax", 440.0)
             .show(ui, |plot_ui| {
                 plot_ui.line(Line::new("Healthcare", make_points(&years_hc, &vals_hc)));
                 plot_ui.line(Line::new("Tax Burden", make_points(&years_tax, &vals_tax)));

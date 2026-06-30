@@ -304,6 +304,40 @@ pub fn table_editor(ui: &mut egui::Ui, value: &mut Value, field: &str) -> bool {
     changed
 }
 
+/// Format a dollar value with thousands separators: "$1,234,567" or "-$42".
+pub(crate) fn fmt_dollars(v: f64) -> String {
+    let sign = if v < 0.0 { "-" } else { "" };
+    let s = (v.abs() as i64).to_string();
+    let with_commas = s
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(|b| std::str::from_utf8(b).unwrap())
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("{sign}${with_commas}")
+}
+
+/// Build a Plot pre-configured with a dollar-value hover label showing
+/// "Series Name\n2035: $123,456" when the cursor is near a line.
+pub(crate) fn dollar_plot(id: impl std::hash::Hash + std::fmt::Debug, height: f32) -> egui_plot::Plot<'static> {
+    egui_plot::Plot::new(id)
+        .height(height)
+        .legend(egui_plot::Legend::default())
+        .label_formatter(|pos| match pos {
+            egui_plot::HoverPosition::NearDataPoint { plot_name, position, .. } => {
+                let year = position.x as u32;
+                let dollars = fmt_dollars(position.y);
+                if plot_name.is_empty() {
+                    Some(format!("{year}: {dollars}"))
+                } else {
+                    Some(format!("{plot_name}\n{year}: {dollars}"))
+                }
+            }
+            egui_plot::HoverPosition::Elsewhere { .. } => None,
+        })
+}
+
 /// Plot one or more PlotDataSet series in a line chart.
 pub fn plot_datasets(
     ui: &mut egui::Ui,
@@ -313,9 +347,7 @@ pub fn plot_datasets(
     height: f32,
 ) {
     ui.label(title);
-    egui_plot::Plot::new(id)
-        .height(height)
-        .legend(egui_plot::Legend::default())
+    dollar_plot(id, height)
         .show(ui, |plot_ui| {
             for ds in datasets {
                 let points: egui_plot::PlotPoints = ds.data.iter().map(|p| [p.x as f64, p.y]).collect();
