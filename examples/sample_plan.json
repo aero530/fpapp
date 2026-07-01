@@ -1,0 +1,235 @@
+{
+  "settings": {
+    "ageRetire": 65,
+    "ageDie": 90,
+    "yearBorn": 1985,
+    "yearStart": 2025,
+    "inflationBase": 3.0,
+    "taxIncome": 22.0,
+    "taxCapitalGains": 15.0,
+    "retirementCostOfLiving": 80.0,
+    "ssa": {
+      "breakpoints": {
+        "low": 25000.0,
+        "high": 34000.0
+      },
+      "taxableIncomePercentage": {
+        "low": 50.0,
+        "high": 85.0
+      }
+    }
+  },
+  "accounts": {
+    "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1": {
+      "type": "income",
+      "name": "Alex's Salary",
+      "table": {
+        "2023": 92000.0,
+        "2024": 95000.0
+      },
+      "base": 100000.0,
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "raise": 3.0,
+      "notes": "Software engineer — merit raises tracked historically, 3% modeled going forward"
+    },
+    "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2": {
+      "type": "income",
+      "name": "Jordan's Salary",
+      "table": {},
+      "base": 78000.0,
+      "startIn": 2025,
+      "endIn": { "base": "yearRetire", "delta": -2 },
+      "raise": "inflationBase",
+      "notes": "Plans to stop working two years before Alex"
+    },
+    "c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3": {
+      "type": "ssa",
+      "name": "Alex's Social Security",
+      "base": 24000.0,
+      "startIn": "yearRetire",
+      "endIn": "yearDie",
+      "notes": "Based on estimated SSA benefit at full retirement age"
+    },
+    "d4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4": {
+      "type": "retirement",
+      "name": "401(k) — Roth",
+      "table": {
+        "2024": 125000.0
+      },
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "contributionValue": 5.0,
+      "contributionType": "percent_of_income",
+      "yearlyReturn": 7.0,
+      "withdrawalType": "col_frac_of_savings",
+      "withdrawalValue": 0.0,
+      "taxStatus": "contribute_taxed_earnings_untaxed_when_used",
+      "incomeLink": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
+      "matching": {
+        "amount": 50.0,
+        "limit": 6.0
+      },
+      "notes": "Employer matches 50% of contributions up to 6% of salary"
+    },
+    "e5e5e5e5-e5e5-e5e5-e5e5-e5e5e5e5e5e5": {
+      "type": "retirement",
+      "name": "Traditional IRA",
+      "table": {},
+      "startIn": "yearStart",
+      "endIn": { "base": "yearRetire", "delta": -1 },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "contributionValue": 7000.0,
+      "contributionType": "fixed_with_inflation",
+      "yearlyReturn": 6.5,
+      "withdrawalType": "end_at_zero",
+      "withdrawalValue": 0.0,
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "notes": "Max annual contribution adjusted for inflation; draw to zero by end of life"
+    },
+    "f6f6f6f6-f6f6-f6f6-f6f6-f6f6f6f6f6f6": {
+      "type": "hsa",
+      "name": "Health Savings Account",
+      "table": {
+        "2024": 8000.0
+      },
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "contributionValue": 4150.0,
+      "contributionType": "fixed",
+      "employerContribution": 500.0,
+      "yearlyReturn": 5.0,
+      "withdrawalType": "other",
+      "withdrawalValue": 0.0,
+      "taxStatus": "contribute_pretax_untaxed_when_used",
+      "notes": "Withdrawals driven automatically by linked healthcare expense accounts"
+    },
+    "a7a7a7a7-a7a7-a7a7-a7a7-a7a7a7a7a7a7": {
+      "type": "college",
+      "name": "529 College Fund",
+      "table": {
+        "2025": 18000.0
+      },
+      "startIn": 2025,
+      "endIn": 2035,
+      "startOut": 2035,
+      "endOut": 2039,
+      "contributionValue": 6000.0,
+      "contributionType": "fixed",
+      "yearlyReturn": 6.0,
+      "withdrawalType": "end_at_zero",
+      "withdrawalValue": 0.0,
+      "taxStatus": "contribute_taxed_earnings_untaxed_when_used",
+      "notes": "Four-year college draw-down 2035–2038"
+    },
+    "b8b8b8b8-b8b8-b8b8-b8b8-b8b8b8b8b8b8": {
+      "type": "expense",
+      "name": "Medical Costs",
+      "table": {},
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed",
+      "expenseValue": 3000.0,
+      "isHealthcare": true,
+      "scalesWithCol": false,
+      "hsaLink": "f6f6f6f6-f6f6-f6f6-f6f6-f6f6f6f6f6f6",
+      "notes": "Out-of-pocket medical expenses drawn from HSA first"
+    },
+    "c9c9c9c9-c9c9-c9c9-c9c9-c9c9c9c9c9c9": {
+      "type": "expense",
+      "name": "General Living Expenses",
+      "table": {},
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "expenseType": "fixed_with_inflation",
+      "expenseValue": 55000.0,
+      "isHealthcare": false,
+      "scalesWithCol": true,
+      "notes": "Food, utilities, clothing, travel — scales to 80% in retirement"
+    },
+    "d0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0": {
+      "type": "expense",
+      "name": "Life Insurance Premium",
+      "table": {},
+      "startOut": "yearStart",
+      "endOut": "yearRetire",
+      "expenseType": "fixed",
+      "expenseValue": 2400.0,
+      "isHealthcare": false,
+      "scalesWithCol": false,
+      "notes": "Term life policy; expires at retirement"
+    },
+    "e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1": {
+      "type": "loan",
+      "name": "Car Loan",
+      "table": {
+        "2025": 18000.0
+      },
+      "startOut": "yearStart",
+      "endOut": 2029,
+      "paymentType": "fixed",
+      "paymentValue": 4800.0,
+      "rate": 4.5,
+      "notes": "48-month auto loan; paid off in 2029"
+    },
+    "f2f2f2f2-f2f2-f2f2-f2f2-f2f2f2f2f2f2": {
+      "type": "mortgage",
+      "name": "Home Mortgage",
+      "table": {
+        "2025": 285000.0
+      },
+      "startOut": "yearStart",
+      "endOut": 2051,
+      "paymentType": "fixed",
+      "paymentValue": 21600.0,
+      "rate": 3.25,
+      "compoundTime": 12.0,
+      "mortgageInsurance": 1500.0,
+      "ltvLimit": 80.0,
+      "escrowValue": 4200.0,
+      "homeValue": 420000.0,
+      "notes": "30-year fixed; PMI drops once balance falls below 80% LTV"
+    },
+    "a3a3a3a3-a3a3-a3a3-a3a3-a3a3a3a3a3a3": {
+      "type": "savings",
+      "name": "Emergency Fund",
+      "table": {
+        "2025": 25000.0
+      },
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "startOut": "yearStart",
+      "endOut": "yearDie",
+      "contributionValue": 3000.0,
+      "contributionType": "fixed",
+      "yearlyReturn": 2.5,
+      "withdrawalType": "fixed",
+      "withdrawalValue": 5000.0,
+      "taxStatus": "contribute_taxed_earnings_untaxed_when_used",
+      "notes": "6-month expense cushion; small annual top-up, minimal draws modeled"
+    },
+    "b4b4b4b4-b4b4-b4b4-b4b4-b4b4b4b4b4b4": {
+      "type": "savings",
+      "name": "Taxable Brokerage",
+      "table": {
+        "2025": 45000.0
+      },
+      "startIn": "yearStart",
+      "endIn": "yearRetire",
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "contributionValue": 10000.0,
+      "contributionType": "fixed",
+      "yearlyReturn": 7.0,
+      "withdrawalType": "fixed_with_inflation",
+      "withdrawalValue": 15000.0,
+      "taxStatus": "contribute_taxed_earnings_taxed",
+      "notes": "After-tax brokerage; earnings taxed as capital gains each year"
+    }
+  }
+}

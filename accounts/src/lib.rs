@@ -271,3 +271,19 @@ pub struct WorkingValues {
     pub withdrawal: f64,
     pub expense: f64,
 }
+
+#[cfg(test)]
+mod sample_plan_tests {
+    use super::*;
+    use crate::inputs::UserData;
+
+    #[test]
+    fn sample_plan_deserializes() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/sample_plan.json");
+        let json = std::fs::read_to_string(path)
+            .expect("could not read examples/sample_plan.json");
+        let data: UserData<AccountWrapper> = serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("sample_plan.json failed to deserialize: {e}"));
+        assert_eq!(data.accounts.len(), 14);
+    }
+}
