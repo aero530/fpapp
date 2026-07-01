@@ -13,7 +13,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         let years_expense = totals.expense.years();
         let years_saving = totals.saving.years();
         let years_col = totals.col.years();
-        let years_hc = totals.healthcare_expense.years();
+        let years_hc = totals.healthcare_expense_total.years();
         let years_tax = totals.tax_burden.years();
 
         let vals_net = totals.net.values();
@@ -21,7 +21,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         let vals_expense = totals.expense.values();
         let vals_saving = totals.saving.values();
         let vals_col = totals.col.values();
-        let vals_hc = totals.healthcare_expense.values();
+        let vals_hc = totals.healthcare_expense_total.values();
         let vals_tax = totals.tax_burden.values();
 
         let make_points = |years: &[u32], vals: &[f64]| -> PlotPoints {

@@ -37,8 +37,10 @@ pub struct YearlyTotals {
     pub net: Table<u32>,
     /// total expenses for a year
     pub expense: Table<u32>,
-    /// total healthcare costs that have not been paid (these are paid for with HSA dollars first)
+    /// outstanding healthcare costs not yet paid (zeroed each year after HSA + net settlement)
     pub healthcare_expense: Table<u32>,
+    /// gross healthcare costs for the year before HSA/net settlement — use this for reporting
+    pub healthcare_expense_total: Table<u32>,
     /// cost of living
     pub col: Table<u32>,
     /// total value of all savings accounts (the value of this account rolls over from year to year)
@@ -70,6 +72,7 @@ impl YearlyTotals {
                 self.net.insert(year, 0_f64);
                 self.expense.insert(year, 0_f64);
                 self.healthcare_expense.insert(year, 0_f64);
+                self.healthcare_expense_total.insert(year, 0_f64);
                 self.col.insert(year, 0_f64);
                 self.saving.insert(year, 0_f64);
                 self.hsa.insert(year, 0_f64);
@@ -103,6 +106,10 @@ impl YearlyTotals {
                 self.expense.update(year, update.expense);
                 self.healthcare_expense
                     .update(year, update.healthcare_expense);
+                if update.healthcare_expense > 0.0 {
+                    self.healthcare_expense_total
+                        .update(year, update.healthcare_expense);
+                }
                 self.col.update(year, update.col);
                 self.saving.update(year, update.saving);
                 self.hsa.update(year, update.hsa);
