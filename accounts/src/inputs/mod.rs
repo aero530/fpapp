@@ -1,12 +1,10 @@
 //! Interpret user input from UI / data files
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use std::collections::HashMap;
-use std::io::Write;
+use std::error::Error;
 
 use super::{Account, AccountWrapper};
-
 
 mod contribution;
 mod expense;
@@ -25,8 +23,7 @@ pub use withdrawal::*;
 pub use year::*;
 
 /// Represents the user data file
-#[derive(TS, Debug, Clone, Serialize, Deserialize)]
-#[ts(export)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserData<T> {
     /// The system level configuration
     pub settings: Settings,
@@ -34,55 +31,54 @@ pub struct UserData<T> {
     pub accounts: HashMap<String, T>,
 }
 
-impl From<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
-    fn from(other: UserData<AccountWrapper>) -> Self {
-        Self {
+impl TryFrom<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
+    type Error = Box<dyn Error>;
+    fn try_from(other: UserData<AccountWrapper>) -> Result<Self, Self::Error> {
+        Ok(Self {
             settings: other.settings,
             accounts: other
                 .accounts
                 .into_iter()
-                .map(|(k, v)| (k, v.to_account_object()))
-                .collect(),
+                .map(|(k, v)| match v.to_account_object() {
+                    Ok(account) => Ok((k, account)),
+                    Err(e) => Err(format!("account {}: {}", k, e).into()),
+                })
+                .collect::<Result<HashMap<String, Box<dyn Account>>, Self::Error>>()?,
+        })
+    }
+}
+
+/// Increase the value by inflation from year_start to year
+pub fn fixed_with_inflation(initial_value: f64, year: u32, settings: &Settings) -> f64 {
+    let years_elapsed = year.saturating_sub(settings.year_start) as f64;
+    initial_value * f64::powf(1_f64 + settings.inflation_base / 100_f64, years_elapsed)
+}
+
+/// Shared settings fixture for unit tests across the inputs / account modules
+#[cfg(test)]
+pub mod test_fixtures {
+    use super::settings::{Settings, Span, SsaSettings};
+
+    pub fn test_settings_values() -> Settings {
+        Settings {
+            age_retire: 50,
+            age_die: 100,
+            year_born: 1980,
+            year_start: 2000,
+            inflation_base: 5.0,
+            tax_income: 20.0,
+            tax_capital_gains: 10.0,
+            retirement_cost_of_living: 80.0,
+            ssa: SsaSettings {
+                breakpoints: Span {
+                    low: 30000_f64,
+                    high: 40000_f64,
+                },
+                taxable_income_percentage: Span {
+                    low: 50_f64,
+                    high: 80_f64,
+                },
+            },
         }
     }
-}
-
-impl UserData<Box<dyn Account>> {
-    // pub fn new() -> Self {
-    //     UserData {
-    //         settings: Settings::new(),
-    //         accounts: HashMap::new(),
-    //     }
-    // }
-
-    /// Write all account values to a single csv
-    pub fn write_tables(&self, order: &[String], years: Vec<u32>, filepath: String) {
-        let mut file = std::fs::File::create(filepath).unwrap();
-        file.write_all("year".as_bytes()).unwrap();
-        order.iter().for_each(|uuid| {
-            file.write_all(format!(",\t{}", self.accounts[uuid].name()).as_bytes())
-                .unwrap();
-        });
-        file.write_all("\n".as_bytes()).unwrap();
-
-        years.iter().for_each(|year| {
-            file.write_all(format!("{}", year).as_bytes()).unwrap();
-            order.iter().for_each(|uuid| {
-                file.write_all(
-                    format!(
-                        ",\t{:.2}",
-                        self.accounts[uuid].get_value(*year).unwrap_or_default()
-                    )
-                    .as_bytes(),
-                )
-                .unwrap();
-            });
-            file.write_all("\n".as_bytes()).unwrap();
-        });
-    }
-}
-
-
-pub fn fixed_with_inflation(initial_value: f64, year: u32, settings: &Settings) -> f64 {
-    initial_value * f64::powf(1_f64 + settings.inflation_base / 100_f64, (year - settings.year_start) as f64)
 }

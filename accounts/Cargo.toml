@@ -1,25 +1,17 @@
 [package]
 name = "accounts"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [features]
 plotters-backend = ["dep:plotters", "dep:image"]
 
 [dependencies]
-flexi_logger = "0.31.9"
-float-cmp = "0.10.0"
-image = { version = "0.25", optional = true }
-log = "0.4.17"
+image = { workspace = true, optional = true }
+log.workspace = true
 plotters = { version = "0.3.4", optional = true }
-serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.91"
-toml = "1.1.2+spec-1.1.0"
-ts-rs = "12.0.1"
-
-account_savings_derive = { path = "./src/account_savings_derive" }
-account_expense_derive = { path = "./src/account_expense_derive" }
-account_payment_derive = { path = "./src/account_payment_derive" }
+serde.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 float-cmp = "0.10.0"

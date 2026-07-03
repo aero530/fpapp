@@ -1,23 +1,31 @@
 use std::collections::HashMap;
 use std::error::Error;
-use crate::{Account, AccountType, AccountWrapper, Dates, PlotDataSet, UserData, YearlyTotals};
+use crate::{Account, AccountType, Dates, PlotDataSet, UserData, YearlyTotals};
 
-pub fn run(
-    mut data: UserData<Box<dyn Account>>,
-) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), Box<dyn Error>> {
+/// Per-account plot series keyed by account uuid, plus the aggregate totals
+pub type AnalysisOutput = (HashMap<String, Vec<PlotDataSet>>, YearlyTotals);
+
+pub fn run(mut data: UserData<Box<dyn Account>>) -> Result<AnalysisOutput, Box<dyn Error>> {
+    // Build a deterministic simulation order: the fixed type sequence, then by
+    // account name and uuid within a type (HashMap iteration order must never
+    // influence the results)
     let mut account_order: Vec<String> = Vec::new();
-    for type_id in AccountWrapper::order().iter() {
-        for (uuid, account) in data.accounts.iter() {
-            if account.type_id() == *type_id {
-                account_order.push(uuid.clone());
-            }
-        }
+    for type_id in AccountType::order().iter() {
+        let mut group: Vec<(String, String)> = data
+            .accounts
+            .iter()
+            .filter(|(_, account)| account.type_id() == *type_id)
+            .map(|(uuid, account)| (account.name(), uuid.clone()))
+            .collect();
+        group.sort();
+        account_order.extend(group.into_iter().map(|(_, uuid)| uuid));
     }
 
     // Inclusive range: year_end() is the user's final year of life, not a past-the-end sentinel
     let years: Vec<u32> = (data.settings.year_start()..=data.settings.year_end()).collect();
     let mut yearly_totals = YearlyTotals::new();
 
+    // Init pass: resolve linked dates and seed analysis tables from historical data
     for uuid in &account_order {
         let linked_dates: Option<Dates> = match data.accounts
             .get(uuid)
@@ -39,37 +47,29 @@ pub fn run(
             None => None,
         };
 
-        let impacts = data.accounts
-            .get_mut(uuid)
-            .ok_or_else(|| format!("account {} missing from map", uuid))?
-            .init(linked_dates, &data.settings)?;
-
-        let sim_start = data.settings.year_start();
-        let sim_end = data.settings.year_end();
-        for (year, impact) in &impacts {
-            if *year < sim_start || *year > sim_end {
-                continue;
-            }
-            if !yearly_totals.contains_year(*year) {
-                yearly_totals.add_year(*year, false).ok();
-            }
-            yearly_totals.update(*year, *impact);
-        }
+        let account = data.accounts.get_mut(uuid).unwrap();
+        account
+            .init(linked_dates, &data.settings)
+            .map_err(|e| format!("Account '{}': {}", account.name(), e))?;
     }
 
+    // Resolve link ids once instead of cloning them for every account-year
+    let link_ids: HashMap<String, Option<String>> = account_order
+        .iter()
+        .map(|uuid| (uuid.clone(), data.accounts[uuid].link_id()))
+        .collect();
+
     for year in years {
-        if !yearly_totals.contains_year(year) {
-            yearly_totals.add_year(year, true).ok();
-        }
+        yearly_totals.add_year(year, true)?;
+
         for uuid in account_order.iter() {
-            let link_id = data.accounts.get(uuid).unwrap().link_id();
-            let link_value = match link_id {
-                Some(ref id) => match data.accounts.get(id) {
+            let link_value = match &link_ids[uuid] {
+                Some(id) => match data.accounts.get(id) {
                     Some(la) if la.type_id() == AccountType::Income => la.get_value(year),
                     Some(la) => {
                         log::warn!(
                             "income_link on '{}' points to {:?}, not Income",
-                            data.accounts.get(uuid).unwrap().name(),
+                            data.accounts[uuid].name(),
                             la.type_id()
                         );
                         None
@@ -88,8 +88,34 @@ pub fn run(
             yearly_totals.update(year, impact);
         }
 
+        // The savings and hsa totals are the sum of the relevant account
+        // balances.  Recomputing them from balances (rather than accumulating
+        // per-account deltas) keeps them exact when historical table entries
+        // override computed balances mid-simulation.  College accounts are
+        // deliberately excluded from the savings pool: their balances are
+        // earmarked for education, not retirement cost of living.
+        let mut saving_total = 0_f64;
+        let mut hsa_total = 0_f64;
+        for account in data.accounts.values() {
+            match account.type_id() {
+                AccountType::Savings | AccountType::Retirement => {
+                    saving_total += account.get_value(year).unwrap_or_default();
+                }
+                AccountType::Hsa => {
+                    hsa_total += account.get_value(year).unwrap_or_default();
+                }
+                _ => {}
+            }
+        }
+        yearly_totals.set_saving(year, saving_total);
+        yearly_totals.set_hsa(year, hsa_total);
+
         yearly_totals.deposit_income_in_net(year);
-        yearly_totals.pay_income_tax_from_net(year, data.settings.tax_income);
+        yearly_totals.pay_income_tax_from_net(
+            year,
+            data.settings.tax_income,
+            data.settings.tax_capital_gains,
+        );
         yearly_totals.pay_expenses_from_net(year);
         yearly_totals.pay_healthcare_expenses_from_net(year);
     }
@@ -100,4 +126,236 @@ pub fn run(
     }
 
     Ok((plot_data, yearly_totals))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Account, AccountWrapper, UserData, YearlyTotals};
+    use float_cmp::assert_approx_eq;
+
+    /// Build UserData from a JSON accounts fragment using compact settings:
+    /// simulation 2020..=2030, no inflation, 20% income tax, 10% capital gains tax
+    fn user_data(accounts_json: &str) -> UserData<Box<dyn Account>> {
+        let json = format!(
+            r#"{{
+                "settings": {{
+                    "ageRetire": 45,
+                    "ageDie": 50,
+                    "yearBorn": 1980,
+                    "yearStart": 2020,
+                    "inflationBase": 0.0,
+                    "taxIncome": 20.0,
+                    "taxCapitalGains": 10.0,
+                    "retirementCostOfLiving": 100.0,
+                    "ssa": {{
+                        "breakpoints": {{ "low": 30000, "high": 40000 }},
+                        "taxableIncomePercentage": {{ "low": 50, "high": 85 }}
+                    }}
+                }},
+                "accounts": {{ {} }}
+            }}"#,
+            accounts_json
+        );
+        let wrapped: UserData<AccountWrapper> = serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("test json failed to deserialize: {e}"));
+        wrapped.try_into().unwrap()
+    }
+
+    fn income_json(name: &str, base: f64) -> String {
+        format!(
+            r#""{name}": {{
+                "type": "income", "name": "{name}", "base": {base},
+                "startIn": 2020, "endIn": 2030, "raise": 0.0, "notes": null, "table": {{}}
+            }}"#
+        )
+    }
+
+    fn expense_json(name: &str, value: f64) -> String {
+        format!(
+            r#""{name}": {{
+                "type": "expense", "name": "{name}", "table": {{}},
+                "startOut": 2020, "endOut": 2030,
+                "expenseType": "fixed", "expenseValue": {value},
+                "isHealthcare": false, "notes": null
+            }}"#
+        )
+    }
+
+    fn run_totals(accounts_json: &str) -> YearlyTotals {
+        crate::run(user_data(accounts_json)).unwrap().1
+    }
+
+    #[test]
+    fn net_carries_debt_forward() {
+        // Regression test for A1: expenses exceed income, so net must go
+        // negative and keep sinking — not snap back to an earlier positive value.
+        let accounts = format!(
+            "{},{}",
+            income_json("job", 10000.0),
+            expense_json("rent", 15000.0)
+        );
+        let totals = run_totals(&accounts);
+        // per year: net += 10000 - 2000 tax - 15000 = -7000
+        assert_approx_eq!(f64, totals.net.get(2020).unwrap(), -7000.0);
+        assert_approx_eq!(f64, totals.net.get(2021).unwrap(), -14000.0);
+        assert_approx_eq!(f64, totals.net.get(2025).unwrap(), -42000.0);
+    }
+
+    #[test]
+    fn historical_entry_mid_simulation_preserves_net_continuity() {
+        // Regression test for A2: a historical balance entry mid-simulation must
+        // not reset accumulated net for that year.
+        let accounts = format!(
+            "{},{}",
+            income_json("job", 10000.0),
+            r#""sav": {
+                "type": "savings", "name": "sav",
+                "table": { "2020": 1000, "2025": 1000 },
+                "contributions": null, "earnings": null, "withdrawals": null,
+                "startIn": 2020, "endIn": 2030, "startOut": 2031, "endOut": 2031,
+                "contributionValue": 0.0, "contributionType": "fixed",
+                "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+                "taxStatus": "contribute_taxed_earnings_untaxed_when_used", "notes": null
+            }"#
+        );
+        let totals = run_totals(&accounts);
+        // net accumulates 8000/year (10000 income - 20% tax) with no gaps
+        for (i, year) in (2020..=2030).enumerate() {
+            assert_approx_eq!(
+                f64,
+                totals.net.get(year).unwrap(),
+                8000.0 * (i + 1) as f64
+            );
+        }
+    }
+
+    #[test]
+    fn account_rollforward_ignores_future_table_entries() {
+        // Regression test for A3: the 2025 historical entry must not leak into 2021-2024.
+        let accounts = r#""sav": {
+            "type": "savings", "name": "sav",
+            "table": { "2020": 100, "2025": 500 },
+            "contributions": null, "earnings": null, "withdrawals": null,
+            "startIn": 2020, "endIn": 2030, "startOut": 2031, "endOut": 2031,
+            "contributionValue": 0.0, "contributionType": "fixed",
+            "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+            "taxStatus": "contribute_taxed_earnings_untaxed_when_used", "notes": null
+        }"#;
+        let totals = run_totals(accounts);
+        // savings total is the account balance: 100 until the 2025 override
+        assert_approx_eq!(f64, totals.saving.get(2021).unwrap(), 100.0);
+        assert_approx_eq!(f64, totals.saving.get(2024).unwrap(), 100.0);
+        assert_approx_eq!(f64, totals.saving.get(2025).unwrap(), 500.0);
+        assert_approx_eq!(f64, totals.saving.get(2026).unwrap(), 500.0);
+    }
+
+    #[test]
+    fn hsa_contribution_debits_net_and_reduces_tax() {
+        // Regression test for A5 at the runner level.
+        let accounts = format!(
+            "{},{}",
+            income_json("job", 50000.0),
+            r#""hsa": {
+                "type": "hsa", "name": "hsa", "table": { "2020": 0 },
+                "startIn": 2020, "endIn": 2030, "startOut": 2020, "endOut": 2030,
+                "contributionValue": 1000.0, "contributionType": "fixed",
+                "employerContribution": 0.0, "yearlyReturn": 0.0,
+                "taxStatus": "contribute_pretax_untaxed_when_used", "notes": null
+            }"#
+        );
+        let totals = run_totals(&accounts);
+        // taxable = 50000 - 1000 = 49000; tax = 9800; net = 50000 - 9800 - 1000 = 39200
+        assert_approx_eq!(f64, totals.tax_burden.get(2020).unwrap(), 9800.0);
+        assert_approx_eq!(f64, totals.net.get(2020).unwrap(), 39200.0);
+        assert_approx_eq!(f64, totals.hsa.get(2020).unwrap(), 1000.0);
+    }
+
+    #[test]
+    fn ssa_taxability_sees_retirement_withdrawals() {
+        // Regression test for A6 (ordering): SSA benefits must be taxed against
+        // income that includes retirement withdrawals from the same year.
+        let accounts = r#"
+            "ret": {
+                "type": "retirement", "name": "ret", "table": { "2020": 500000 },
+                "contributions": null, "earnings": null, "withdrawals": null,
+                "employerContributions": null,
+                "startIn": 2020, "endIn": 2020, "startOut": 2020, "endOut": 2030,
+                "contributionValue": 0.0, "contributionType": "fixed",
+                "yearlyReturn": 0.0, "withdrawalType": "fixed", "withdrawalValue": 50000.0,
+                "taxStatus": "contribute_taxed_earnings_untaxed_when_used",
+                "incomeLink": null, "matching": null, "notes": null
+            },
+            "ssa": {
+                "type": "ssa", "name": "ssa", "base": 10000.0,
+                "startIn": 2020, "endIn": 2030, "notes": null
+            }"#;
+        let totals = run_totals(accounts);
+        // combined income = 50000 withdrawal + 5000 (half benefit) = 55000 > 40000
+        // taxable benefit = min(0.85*(55000-40000) + min(0.5*10000, 0.5*10000), 0.85*10000) = 8500
+        assert_approx_eq!(f64, totals.income_taxable.get(2020).unwrap(), 8500.0);
+    }
+
+    #[test]
+    fn college_balance_stays_out_of_savings_pool() {
+        // Regression test for A7.
+        let accounts = r#""529": {
+            "type": "college", "name": "529", "table": { "2020": 20000 },
+            "contributions": null, "earnings": null, "withdrawals": null,
+            "startIn": 2020, "endIn": 2030, "startOut": 2031, "endOut": 2031,
+            "contributionValue": 0.0, "contributionType": "fixed",
+            "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+            "taxStatus": "contribute_taxed_earnings_untaxed_when_used", "notes": null
+        }"#;
+        let totals = run_totals(accounts);
+        for year in 2020..=2030 {
+            assert_approx_eq!(f64, totals.saving.get(year).unwrap(), 0.0);
+        }
+    }
+
+    #[test]
+    fn mortgage_pays_off_and_payments_stop() {
+        // Regression test for A4 at the runner level.
+        let accounts = r#""mort": {
+            "type": "mortgage", "name": "mort", "table": { "2020": 1000 },
+            "startOut": 2020, "endOut": 2030,
+            "paymentType": "fixed", "paymentValue": 600.0,
+            "rate": 0.0, "compoundTime": 12.0,
+            "mortgageInsurance": 50.0, "ltvLimit": 0.0,
+            "escrowValue": 50.0, "homeValue": 100000.0, "notes": null
+        }"#;
+        let totals = run_totals(accounts);
+        assert_approx_eq!(f64, totals.expense.get(2020).unwrap(), 600.0);
+        assert_approx_eq!(f64, totals.expense.get(2021).unwrap(), 600.0);
+        // paid off after two years — no phantom payments
+        for year in 2022..=2030 {
+            assert_approx_eq!(f64, totals.expense.get(year).unwrap(), 0.0);
+        }
+    }
+
+    #[test]
+    fn malformed_table_year_is_an_error_not_a_panic() {
+        // Regression test for the C-class crash vector.
+        let json = r#"{
+            "settings": {
+                "ageRetire": 45, "ageDie": 50, "yearBorn": 1980, "yearStart": 2020,
+                "inflationBase": 0.0, "taxIncome": 20.0, "taxCapitalGains": 10.0,
+                "retirementCostOfLiving": 100.0,
+                "ssa": {
+                    "breakpoints": { "low": 30000, "high": 40000 },
+                    "taxableIncomePercentage": { "low": 50, "high": 85 }
+                }
+            },
+            "accounts": {
+                "bad": {
+                    "type": "income", "name": "bad", "base": 100.0,
+                    "startIn": 2020, "endIn": 2030, "raise": 0.0, "notes": null,
+                    "table": { "20x0": 5.0 }
+                }
+            }
+        }"#;
+        let wrapped: UserData<AccountWrapper> = serde_json::from_str(json).unwrap();
+        let converted: Result<UserData<Box<dyn Account>>, _> = wrapped.try_into();
+        assert!(converted.is_err());
+        assert!(converted.err().unwrap().to_string().contains("20x0"));
+    }
 }

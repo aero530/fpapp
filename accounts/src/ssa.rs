@@ -2,15 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use ts_rs::TS;
 #[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
 
 use super::*;
 
 /// Social Security Account
-#[derive(TS, Debug, Clone, Deserialize, Serialize)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ssa {
     /// String describing this account
@@ -46,7 +44,7 @@ impl Account for Ssa {
         &mut self,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
@@ -55,7 +53,7 @@ impl Account for Ssa {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(Vec::new())
+        Ok(())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
@@ -77,9 +75,6 @@ impl Account for Ssa {
     ) -> Option<YearRange> {
         None
     }
-    fn get_inputs(&self) -> String {
-        String::from("Hello")
-    }
     #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
         scatter_plot_file(
@@ -93,9 +88,7 @@ impl Account for Ssa {
     #[cfg(feature = "plotters-backend")]
     fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value)
-            ],
+            vec![("Balance".into(), &self.analysis.value)],
             self.name(),
             width,
             height,
@@ -125,35 +118,118 @@ impl Account for Ssa {
         // Add earnings to value tables
         self.analysis.value.update(year, result.earning);
 
-        // Determine what fraction of SSA income is taxable based on combined income.
-        // Other income is already accumulated in totals by the time SSA is simulated
-        // (Income accounts run before Ssa in account_order).
-        let other_income = totals.get_income(year);
-        let combined_income = other_income + result.earning / 2.0;
-        let taxable_fraction = if combined_income <= settings.ssa.breakpoints.low {
-            0.0 // Below the low threshold: no SSA benefits are taxable (IRS rule)
-        } else if combined_income >= settings.ssa.breakpoints.high {
-            settings.ssa.taxable_income_percentage.high / 100.0
+        // Determine how much of the SSA benefit is taxable based on combined
+        // income.  Ssa accounts are simulated last within a year, so income
+        // already includes wages plus retirement/savings withdrawals for this
+        // year (another Ssa account simulated earlier contributes its full
+        // benefit rather than half — an accepted approximation).
+        //
+        // This follows the IRS worksheet structure using the configured
+        // breakpoints and percentage tiers (federal defaults: breakpoints
+        // 25k/34k single, percentages 50%/85%):
+        //   combined <= low:          nothing is taxable
+        //   low < combined <= high:   pct_low of the excess over low,
+        //                             capped at pct_low of the benefit
+        //   combined > high:          pct_high of the excess over high plus the
+        //                             middle-tier amount, capped at pct_high
+        //                             of the benefit
+        let benefit = result.earning;
+        let combined_income = totals.get_income(year) + benefit / 2.0;
+        let low = settings.ssa.breakpoints.low;
+        let high = settings.ssa.breakpoints.high;
+        let pct_low = settings.ssa.taxable_income_percentage.low / 100_f64;
+        let pct_high = settings.ssa.taxable_income_percentage.high / 100_f64;
+
+        let taxable_benefit = if combined_income <= low {
+            0_f64
+        } else if combined_income <= high {
+            (pct_low * (combined_income - low)).min(pct_low * benefit)
         } else {
-            // Interpolate from 0% at the low threshold to high% at the high threshold.
-            // This avoids a hard cliff at breakpoints.low (where 0% would otherwise
-            // jump immediately to low% on the next dollar of income).
-            let t = (combined_income - settings.ssa.breakpoints.low)
-                / (settings.ssa.breakpoints.high - settings.ssa.breakpoints.low);
-            t * (settings.ssa.taxable_income_percentage.high / 100.0)
+            (pct_high * (combined_income - high)
+                + (pct_low * (high - low)).min(pct_low * benefit))
+            .min(pct_high * benefit)
         };
 
         Ok(YearlyImpact {
-            expense: 0_f64,
-            healthcare_expense: 0_f64,
-            col: 0_f64,
-            saving: 0_f64,
-            income_taxable: result.earning * taxable_fraction,
+            income_taxable: taxable_benefit,
             income: result.earning,
-            hsa: 0_f64,
+            ..Default::default()
         })
     }
     fn write(&self, filepath: String) {
         self.analysis.write(filepath);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inputs::test_fixtures::test_settings_values;
+    use float_cmp::assert_approx_eq;
+
+    fn test_account() -> Ssa {
+        Ssa {
+            name: "SSA".into(),
+            base: 10000.0,
+            start_in: YearInput::ConstantInt(2000),
+            end_in: YearInput::ConstantInt(2080),
+            notes: None,
+            analysis: SingleTable::default(),
+            dates: Dates::default(),
+        }
+    }
+
+    fn totals_with_income(year: u32, income: f64) -> YearlyTotals {
+        let mut totals = YearlyTotals::new();
+        totals.add_year(year, false).unwrap();
+        totals.update(
+            year,
+            YearlyImpact {
+                income,
+                ..Default::default()
+            },
+        );
+        totals
+    }
+
+    #[test]
+    fn ssa_untaxed_below_low_breakpoint() {
+        // combined = 20000 + 5000 = 25000 <= 30000
+        let mut account = test_account();
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let impact = account
+            .simulate(2010, &totals_with_income(2010, 20000.0), &settings, None)
+            .unwrap();
+        assert_approx_eq!(f64, impact.income_taxable, 0.0);
+        assert_approx_eq!(f64, impact.income, 10000.0);
+    }
+
+    #[test]
+    fn ssa_middle_tier_uses_low_percentage() {
+        // Regression test for A6: the low tier percentage must be used.
+        // combined = 27000 + 5000 = 32000; excess over low = 2000
+        // taxable = min(50% * 2000, 50% * 10000) = 1000
+        let mut account = test_account();
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let impact = account
+            .simulate(2010, &totals_with_income(2010, 27000.0), &settings, None)
+            .unwrap();
+        assert_approx_eq!(f64, impact.income_taxable, 1000.0);
+    }
+
+    #[test]
+    fn ssa_top_tier_capped_at_high_percentage_of_benefit() {
+        // combined = 50000 + 5000 = 55000 > 40000
+        // taxable = min(80% * 15000 + min(50% * 10000, 50% * 10000), 80% * 10000)
+        //         = min(12000 + 5000, 8000) = 8000
+        let mut account = test_account();
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let impact = account
+            .simulate(2010, &totals_with_income(2010, 50000.0), &settings, None)
+            .unwrap();
+        assert_approx_eq!(f64, impact.income_taxable, 8000.0);
     }
 }

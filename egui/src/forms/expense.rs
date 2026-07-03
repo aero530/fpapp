@@ -1,11 +1,10 @@
 use eframe::egui;
 use serde_json::{json, Value};
 
-use crate::app::FpApp;
 use crate::widgets;
-use super::{form_grid, hsa_link_combo, EXPENSE_OPTIONS};
+use super::{form_grid, EXPENSE_OPTIONS};
 
-pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) -> bool {
+pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
     form_grid(ui).show(ui, |ui| {
         c |= widgets::string_field(ui, "Name:", a, "name",
@@ -32,7 +31,7 @@ pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) ->
         ui.label("");
         let mut is_hc = a["isHealthcare"].as_bool().unwrap_or(false);
         if ui.checkbox(&mut is_hc, "Healthcare expense")
-            .on_hover_text("Is this a healthcare cost that should be paid out of an HSA account?")
+            .on_hover_text("Is this a healthcare cost? Healthcare costs are paid out of HSA accounts first; any remainder comes out of net.")
             .changed()
         {
             a["isHealthcare"] = json!(is_hc);
@@ -49,11 +48,6 @@ pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) ->
             a["scalesWithCol"] = json!(scales);
             c = true;
         }
-        ui.end_row();
-
-        ui.label("HSA Link:")
-            .on_hover_text("Link to an HSA account that will pay for this healthcare expense");
-        c |= hsa_link_combo(ui, a, app, &format!("exp_hl_{}", uuid));
         ui.end_row();
 
         c |= widgets::notes_field(ui, a);

@@ -1,11 +1,9 @@
 //! Generic settings that impact the simulation / analysis results
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 /// Generic span (something that has a min and max value)
-#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Span<T> {
     /// Minimum value
     pub low: T,
@@ -14,8 +12,7 @@ pub struct Span<T> {
 }
 
 /// Social Security span settings
-#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SsaSettings {
     /// SSA breakpoints to interpolate between
@@ -25,8 +22,7 @@ pub struct SsaSettings {
 }
 
 /// Analysis user settings
-#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// Age you plan to retire at
@@ -50,31 +46,6 @@ pub struct Settings {
 }
 
 impl Settings {
-    // pub fn new() -> Self {
-    //     let bp = Span {
-    //         low: 10.0,
-    //         high: 50.0,
-    //     };
-    //     let tip = Span {
-    //         low: 10000.0,
-    //         high: 50000.0,
-    //     };
-    //     let ssa_values = SsaSettings {
-    //         breakpoints: bp,
-    //         taxable_income_percentage: tip,
-    //     };
-    //     Settings {
-    //         age_retire: 65,
-    //         age_die: 100,
-    //         year_born: 1950,
-    //         year_start: 2000,
-    //         inflation_base: 3.0,
-    //         tax_income: 20.0,
-    //         tax_capital_gains: 20.0,
-    //         retirement_cost_of_living: 100.0,
-    //         ssa: ssa_values,
-    //     }
-    // }
     pub fn year_start(&self) -> u32 {
         self.year_start
     }
@@ -94,30 +65,7 @@ impl Settings {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    fn test_settings_values() -> Settings {
-        Settings {
-            age_retire: 50,
-            age_die: 100,
-            year_born: 1980,
-            year_start: 2000,
-            inflation_base: 5.0,
-            tax_income: 20.0,
-            tax_capital_gains: 10.0,
-            retirement_cost_of_living: 80.0,
-            ssa: SsaSettings {
-                breakpoints: Span {
-                    low: 30000_f64,
-                    high: 40000_f64,
-                },
-                taxable_income_percentage: Span {
-                    low: 50_f64,
-                    high: 80_f64,
-                },
-            },
-        }
-    }
+    use super::super::test_fixtures::test_settings_values;
 
     #[test]
     fn years() {
@@ -131,8 +79,8 @@ mod tests {
     #[test]
     fn retirement() {
         let settings = test_settings_values();
-        assert_eq!(settings.is_retired(2010), false);
-        assert_eq!(settings.is_retired(2090), true);
-        assert_eq!(settings.is_retired(2040), true);
+        assert!(!settings.is_retired(2010));
+        assert!(settings.is_retired(2090));
+        assert!(settings.is_retired(2040));
     }
 }

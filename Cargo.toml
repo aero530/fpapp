@@ -2,6 +2,20 @@
 members = [
     "accounts",
     "egui",
+]
+# The deprecated tauri app is intentionally NOT a workspace member so normal
+# builds do not compile the entire tauri/webview dependency tree.  It can
+# still be built from within tauri/src-tauri if needed.
+exclude = [
     "tauri/src-tauri",
 ]
 resolver = "2"
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+image = { version = "0.25", default-features = false }

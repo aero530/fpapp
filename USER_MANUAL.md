@@ -90,7 +90,7 @@ For 2024 the IRS thresholds are $25,000 / $34,000 for single filers and $32,000 
 
 Accounts are listed in the sidebar under their type. Click the **▸** arrow next to a type to expand it and see the accounts in that group. Click **+ Add** inside any group to create a new account of that type with default values.
 
-To delete an account, open it in the main panel and click the red **Delete** button in the top right. A confirmation dialog appears before anything is removed. Any other accounts that reference the deleted account via an Income Link or HSA Link will have that link cleared automatically.
+To delete an account, open it in the main panel and click the red **Delete** button in the top right. A confirmation dialog appears before anything is removed. Any other accounts that reference the deleted account via an Income Link will have that link cleared automatically.
 
 ### Date fields — year input format
 
@@ -186,7 +186,7 @@ Tax-advantaged savings accounts: 401(k), IRA, Roth IRA, etc.
 
 ### HSA (Health Savings Account)
 
-Funds contributed pre-tax and used to pay healthcare expenses tax-free. HSA accounts are automatically applied against any healthcare expenses you have linked to them.
+Funds contributed pre-tax and used to pay healthcare expenses tax-free. HSA accounts are automatically applied against the year's healthcare expenses (any Expense account with *Healthcare expense* checked); whatever the HSAs cannot cover is paid from your cash balance.
 
 | Field | Description |
 |---|---|
@@ -200,7 +200,7 @@ Funds contributed pre-tax and used to pay healthcare expenses tax-free. HSA acco
 | **Tax Status** | Normally *Tax-Free (HSA/529)*. |
 | **Notes** | Free text for your own reference. |
 
-To connect an HSA to a healthcare expense, open the Expense account and set its **HSA Link** to this account.
+To have an HSA pay for a cost, open the Expense account and check **Healthcare expense** — all HSA accounts are drawn from automatically.
 
 ---
 
@@ -236,9 +236,8 @@ Any recurring cost: utilities, insurance, subscriptions, groceries, etc.
 | **End Year** | Last year the expense occurs (inclusive). |
 | **Expense Type** | Fixed Amount or Fixed + Inflation. |
 | **Expense Value ($)** | Annual cost in today's dollars. |
-| **Healthcare expense** | Check if this is a medical cost that should be covered by an HSA account first. |
+| **Healthcare expense** | Check if this is a medical cost that should be covered by HSA accounts first; any remainder is paid from your cash balance. |
 | **Scales with retirement cost-of-living factor** | If checked, the expense is reduced in retirement by the cost-of-living percentage set in Settings. |
-| **HSA Link** | The HSA account that will pay for this expense (only relevant when Healthcare expense is checked). |
 | **Notes** | Free text for your own reference. |
 
 ---
@@ -334,7 +333,7 @@ Each account's own chart is shown at the bottom of its form page under **Project
 
 **Use "Draw Down to Zero" for retirement accounts.** When you don't know your exact withdrawal amount, this option calculates equal annual withdrawals that exhaust the balance precisely by the Withdrawal End year.
 
-**Set up HSA linking for healthcare costs.** Create your HSA account, then open each healthcare Expense, check *Healthcare expense*, and set the HSA Link. The simulation will draw from the HSA first and charge any remainder to your cash balance.
+**Mark medical costs as healthcare expenses.** Create your HSA account, then open each medical Expense and check *Healthcare expense*. The simulation will draw from your HSA accounts first and charge any remainder to your cash balance.
 
 **Hover over any field label for a tooltip** explaining what the field does and what units it expects.
 

@@ -244,8 +244,6 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "contributionType": "fixed",
             "employerContribution": 0.0,
             "yearlyReturn": 5.0,
-            "withdrawalType": "end_at_zero",
-            "withdrawalValue": 0.0,
             "taxStatus": "contribute_pretax_untaxed_when_used",
             "notes": null
         }),
@@ -275,7 +273,6 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "expenseValue": 1000.0,
             "isHealthcare": false,
             "scalesWithCol": true,
-            "hsaLink": null,
             "notes": null
         }),
         "loan" => json!({

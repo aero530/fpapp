@@ -23,7 +23,7 @@ fn main() -> eframe::Result {
 }
 
 fn load_icon() -> eframe::egui::IconData {
-    let bytes = include_bytes!("../../tauri/resources/icons/256x256.png");
+    let bytes = include_bytes!("../assets/icon-256.png");
     let image = image::load_from_memory(bytes)
         .expect("failed to decode app icon")
         .into_rgba8();

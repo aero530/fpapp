@@ -2,12 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use ts_rs::TS;
 #[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
-
-use crate::inputs::fixed_with_inflation;
-use account_expense_derive::AccountExpense;
 
 use super::*;
 
@@ -16,8 +12,7 @@ fn default_true() -> bool {
 }
 
 /// Account type to represent generic expense
-#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountExpense)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Expense<T: std::cmp::Ord> {
     /// String describing this account
@@ -40,8 +35,6 @@ pub struct Expense<T: std::cmp::Ord> {
     /// change with retirement lifestyle. Defaults to true.
     #[serde(default = "default_true")]
     scales_with_col: bool,
-    /// Link this account to an income source
-    hsa_link: Option<String>,
     /// General information to store with this account
     notes: Option<String>,
     // The following items are used when running the program and are not stored with the user data
@@ -53,22 +46,22 @@ pub struct Expense<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl From<Expense<String>> for Expense<u32> {
-    fn from(other: Expense<String>) -> Self {
-        Self {
+impl TryFrom<Expense<String>> for Expense<u32> {
+    type Error = Box<dyn Error>;
+    fn try_from(other: Expense<String>) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: other.name,
-            table: other.table.into(),
+            table: other.table.try_into()?,
             start_out: other.start_out,
             end_out: other.end_out,
             expense_type: other.expense_type,
             expense_value: other.expense_value,
             is_healthcare: other.is_healthcare,
             scales_with_col: other.scales_with_col,
-            hsa_link: other.hsa_link,
             notes: other.notes,
             analysis: other.analysis,
             dates: other.dates,
-        }
+        })
     }
 }
 
@@ -86,16 +79,18 @@ impl Account for Expense<u32> {
         &mut self,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
         }
-        self.analysis = SingleTable::default();
+        // Seed the analysis with historical expense values so recorded actuals
+        // are used (and plotted) instead of being discarded
+        self.analysis = SingleTable::new(&self.table);
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(Vec::new())
+        Ok(())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
@@ -116,9 +111,6 @@ impl Account for Expense<u32> {
                 .end_out
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
-    }
-    fn get_inputs(&self) -> String {
-        String::from("Hello")
     }
     #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
@@ -150,45 +142,42 @@ impl Account for Expense<u32> {
         _linked_value: Option<f64>,
     ) -> Result<YearlyImpact, Box<dyn Error>> {
         let mut result = WorkingValues::default();
-        if self.analysis.value.get(year).is_none() {
-            self.analysis.add_year(year, false)?;
-        }
 
-        // Cost of living scale to apply to the expense. Only applied when the account
-        // is configured to scale with retirement cost-of-living (scales_with_col: true).
-        let col_scale = if settings.is_retired(year) && self.scales_with_col {
-            settings.retirement_cost_of_living / 100_f64
+        // If this year is pre-seeded from the historical table, treat the
+        // recorded amount as the actual expense for the year
+        if let Some(actual) = self.analysis.value.get(year) {
+            result.expense = actual;
         } else {
-            1_f64
-        };
-        
-        // Calculate expense
-        if self.dates.year_out.unwrap().contains(year) {
-            // Calculate expense amount for fixed, fixed_with_inflation
-            result.expense = self.get_expense(year, &settings) * col_scale;
-        }
+            self.analysis.add_year(year, false)?;
 
-        // Update value table with expense value
-        self.analysis.value.update(year, result.expense);
+            // Cost of living scale to apply to the expense. Only applied when the account
+            // is configured to scale with retirement cost-of-living (scales_with_col: true).
+            let col_scale = if settings.is_retired(year) && self.scales_with_col {
+                settings.retirement_cost_of_living / 100_f64
+            } else {
+                1_f64
+            };
+
+            // Calculate expense
+            if self.dates.year_out.unwrap().contains(year) {
+                result.expense = self.expense_type.value(self.expense_value, year, settings)
+                    * col_scale;
+            }
+
+            // Update value table with expense value
+            self.analysis.value.update(year, result.expense);
+        }
 
         match self.is_healthcare {
             true => Ok(YearlyImpact {
-                expense: 0_f64,
                 healthcare_expense: result.expense, // positive is outstanding (unpaid) expenses
                 col: result.expense,
-                saving: 0_f64,
-                income_taxable: 0_f64,
-                income: 0_f64,
-                hsa: 0_f64,
+                ..Default::default()
             }),
             false => Ok(YearlyImpact {
                 expense: result.expense,
-                healthcare_expense: 0_f64,
                 col: result.expense,
-                saving: 0_f64,
-                income_taxable: 0_f64,
-                income: 0_f64,
-                hsa: 0_f64,
+                ..Default::default()
             }),
         }
     }
@@ -200,59 +189,53 @@ impl Account for Expense<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::inputs::{Settings, Span, SsaSettings};
+    use crate::inputs::test_fixtures::test_settings_values;
 
-    fn test_settings_values() -> Settings {
-        Settings {
-            age_retire: 50,
-            age_die: 100,
-            year_born: 1980,
-            year_start: 2000,
-            inflation_base: 5.0,
-            tax_income: 20.0,
-            tax_capital_gains: 10.0,
-            retirement_cost_of_living: 80.0,
-            ssa: SsaSettings {
-                breakpoints: Span {
-                    low: 30000_f64,
-                    high: 40000_f64,
-                },
-                taxable_income_percentage: Span {
-                    low: 50_f64,
-                    high: 80_f64,
-                },
-            },
-        }
-    }
-
-    #[test]
-    fn expense_simulation() {
-        let mut account = Expense {
+    fn test_account(table: Table<u32>) -> Expense<u32> {
+        Expense {
             name: "Expense Account".into(),
-            table: Table::default(),
+            table,
             start_out: YearInput::ConstantInt(2000),
             end_out: YearInput::ConstantInt(2020),
             expense_type: ExpenseOptions::Fixed,
             expense_value: 500_f64,
             is_healthcare: false,
             scales_with_col: true,
-            hsa_link: None,
             notes: None,
             analysis: SingleTable::default(),
             dates: Dates::default(),
-        };
+        }
+    }
+
+    #[test]
+    fn expense_simulation() {
+        let mut account = test_account(Table::default());
         let yearly_totals = YearlyTotals::new();
         let settings = test_settings_values();
         account.init(None, &settings).unwrap();
         let year = 2010_u32;
-        let update = account.simulate(year, &yearly_totals, &settings, None).unwrap();
-
-        println!("{:?}", account.analysis.value.get(year));
-        println!("{:?}", update);
+        let update = account
+            .simulate(year, &yearly_totals, &settings, None)
+            .unwrap();
 
         assert_eq!(
             account.analysis.value.get(year).unwrap(),
             account.expense_value
         );
+        assert_eq!(update.expense, account.expense_value);
+        assert_eq!(update.col, account.expense_value);
+    }
+
+    #[test]
+    fn expense_uses_historical_actuals() {
+        // Regression test for B3: recorded actual expenses override computed values.
+        let mut account = test_account(Table([(2010, 750.0)].into_iter().collect()));
+        let yearly_totals = YearlyTotals::new();
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let update = account
+            .simulate(2010, &yearly_totals, &settings, None)
+            .unwrap();
+        assert_eq!(update.expense, 750.0);
     }
 }

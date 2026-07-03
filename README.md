@@ -27,13 +27,16 @@ A financial planning & simulation application.
 ## Computation Flow
 
 - Build simulation order: collect UUIDs grouped by AccountType in fixed sequence
-  (Income → SSA → Expense → HSA → Mortgage → Loan → College → Retirement → Savings)
+  (Income → Expense → HSA → Mortgage → Loan → College → Retirement → Savings → SSA),
+  sorted by account name within each type so results are deterministic.
+  SSA runs last so its taxable-benefit calculation sees all other income for
+  the year, including retirement/savings withdrawals.
 - For each account, call init(linked_dates, settings):
     - Seeds internal year tables from historical user data
-    - Returns pre-existing (year, impact) pairs; apply these to YearlyTotals
-      to set opening balances before the simulation loop
+    - Resolves the account's active date ranges
 - Main loop over each year y in [year_start, year_die]:
-  - Open year: initialize all accumulators; carry net, saving, hsa forward from y-1
+  - Open year: initialize all accumulators; carry net forward from y-1
+    (zero, negative, and positive balances all roll forward)
   - For each account (in type order):
     - Resolve linked_value (income balance of the linked income account, if any)
     - Call account.simulate(y, &totals, &settings, linked_value) → YearlyImpact
@@ -41,9 +44,13 @@ A financial planning & simulation application.
        expense amounts, tax treatment — is encapsulated here)
     - Accumulate YearlyImpact into YearlyTotals immediately
       (later accounts in the same year see the updated totals)
+  - Set totals.saving = Σ balances of Savings + Retirement accounts and
+    totals.hsa = Σ balances of HSA accounts (College balances are excluded
+    from the savings pool — they are earmarked for education)
   - End-of-year settlement:
     - Add income → net
-    - Deduct income_taxable × tax_rate from net; record as tax_burden
+    - Deduct max(0, income_taxable) × tax_income
+      + max(0, capital_gains) × tax_capital_gains from net; record as tax_burden
     - Deduct expense from net
     - Deduct remaining healthcare_expense from net (zero it out;
       HSA already covered what it could during its simulate() call)

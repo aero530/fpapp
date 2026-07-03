@@ -14,28 +14,16 @@ use flexi_logger::Logger;
 use tauri::{menu::{Menu, MenuItemBuilder, SubmenuBuilder}, Emitter};
 
 use std::fs::read_to_string;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 
 mod log_config;
 
 use accounts::{Account, AccountWrapper, UserData, YearlyTotals, PlotDataSet};
 
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-pub struct RequestBody {
-  id: i32,
-  name: String,
-}
-
 #[derive(Debug, Clone, Serialize)]
 struct MenuEvent {
   name: String,
-}
-
-#[tauri::command]
-fn my_custom_command() -> String {
-    String::from("This is some stuff")
 }
 
 #[tauri::command]
@@ -71,13 +59,8 @@ fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, St
 
 #[tauri::command]
 fn run_analysis(input: UserData<AccountWrapper>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), String> {
-    let data: UserData<Box<dyn Account>> = input.into();
+    let data: UserData<Box<dyn Account>> = input.try_into().map_err(|e: Box<dyn std::error::Error>| e.to_string())?;
     accounts::run(data).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn do_a_thing(body: RequestBody) -> String {
-  format!("{:?}", body)
 }
 
 /// Main loop
@@ -135,8 +118,6 @@ fn main() {
         })
 
         .invoke_handler(tauri::generate_handler![
-            my_custom_command,
-            do_a_thing,
             file_open,
             file_save,
             run_analysis,

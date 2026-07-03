@@ -2,18 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use ts_rs::TS;
 #[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
-
-use crate::inputs::fixed_with_inflation;
-use account_savings_derive::AccountSavings;
 
 use super::*;
 
 /// Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
-#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountSavings)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Retirement<T: std::cmp::Ord> {
     /// String describing this account
@@ -63,15 +58,19 @@ pub struct Retirement<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl From<Retirement<String>> for Retirement<u32> {
-    fn from(other: Retirement<String>) -> Self {
-        Self {
+impl TryFrom<Retirement<String>> for Retirement<u32> {
+    type Error = Box<dyn Error>;
+    fn try_from(other: Retirement<String>) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: other.name,
-            table: other.table.into(),
-            contributions: other.contributions.map(|v| v.into()),
-            earnings: other.earnings.map(|v| v.into()),
-            withdrawals: other.withdrawals.map(|v| v.into()),
-            employer_contributions: other.employer_contributions.map(|v| v.into()),
+            table: other.table.try_into()?,
+            contributions: other.contributions.map(|v| v.try_into()).transpose()?,
+            earnings: other.earnings.map(|v| v.try_into()).transpose()?,
+            withdrawals: other.withdrawals.map(|v| v.try_into()).transpose()?,
+            employer_contributions: other
+                .employer_contributions
+                .map(|v| v.try_into())
+                .transpose()?,
             start_in: other.start_in,
             end_in: other.end_in,
             start_out: other.start_out,
@@ -87,7 +86,7 @@ impl From<Retirement<String>> for Retirement<u32> {
             notes: other.notes,
             analysis: other.analysis,
             dates: other.dates,
-        }
+        })
     }
 }
 
@@ -96,7 +95,6 @@ impl Account for Retirement<u32> {
         AccountType::Retirement
     }
     fn link_id(&self) -> Option<String> {
-        log::trace!("Link ID - {:?}", self.income_link);
         self.income_link.clone()
     }
     fn name(&self) -> String {
@@ -106,7 +104,7 @@ impl Account for Retirement<u32> {
         &mut self,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         self.analysis = SavingsTables::new(
             &self.table,
             &self.contributions,
@@ -118,21 +116,7 @@ impl Account for Retirement<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-
-        Ok(self
-            .table
-            .0
-            .iter()
-            .map(|(year, value)| {
-                (
-                    *year,
-                    YearlyImpact {
-                        saving: *value,
-                        ..Default::default()
-                    },
-                )
-            })
-            .collect())
+        Ok(())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
@@ -156,9 +140,6 @@ impl Account for Retirement<u32> {
                 .end_out
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
-    }
-    fn get_inputs(&self) -> String {
-        String::from("Hello")
     }
     #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
@@ -199,12 +180,8 @@ impl Account for Retirement<u32> {
     }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         match &self.matching {
-            Some(_) => {
-                self.analysis.get_matching_plot_data()
-            }
-            None => {
-                self.analysis.get_plot_data()
-            }
+            Some(_) => self.analysis.get_matching_plot_data(),
+            None => self.analysis.get_plot_data(),
         }
     }
     fn simulate(
@@ -235,29 +212,33 @@ impl Account for Retirement<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.get_contribution(year, totals, settings, linked_value);
+            result.contribution = self.contribution_type.value(
+                self.contribution_value,
+                linked_value.unwrap_or_else(|| totals.get_income(year)),
+                year,
+                settings,
+            );
 
-            match &self.matching {
-                Some(employer_match) => {
-                    // Employer matching requires a linked income account to compute contribution%.
-                    // If no link is configured, skip matching for this year rather than aborting.
-                    let link_income = match linked_value {
-                        Some(v) => v,
-                        None => {
-                            log::warn!(
-                                "Account '{}': employer matching configured but no income account is linked — skipping match",
-                                self.name
-                            );
-                            0_f64
-                        }
-                    };
+            if let Some(employer_match) = &self.matching {
+                // Employer matching requires a linked income account to compute contribution%.
+                // If no link is configured, skip matching for this year rather than aborting.
+                let link_income = match linked_value {
+                    Some(v) => v,
+                    None => {
+                        log::warn!(
+                            "Account '{}': employer matching configured but no income account is linked — skipping match",
+                            self.name
+                        );
+                        0_f64
+                    }
+                };
 
-                    if link_income == 0_f64 {
-                        // Income account exists but is inactive this year (e.g. outside its date range).
-                        result.employer_contribution = 0_f64;
-                    } else {
-                        let contribution_pct = result.contribution / link_income * 100_f64;
-                        result.employer_contribution = if contribution_pct >= employer_match.limit.value(settings) {
+                // Income account absent or inactive this year (e.g. outside its
+                // date range): no income means no match
+                if link_income > 0_f64 {
+                    let contribution_pct = result.contribution / link_income * 100_f64;
+                    result.employer_contribution =
+                        if contribution_pct >= employer_match.limit.value(settings) {
                             // Employee has contributed at or above the match cap; employer contributes
                             // up to the limit percentage of income.
                             link_income
@@ -267,13 +248,10 @@ impl Account for Retirement<u32> {
                             // Employee is below the cap; employer matches the full contribution.
                             result.contribution * (employer_match.amount.value(settings) / 100_f64)
                         };
-                    }
-                    log::trace!("{} income {:.2} my cont {:.2} match {:.2} ({:.1}% up to {:.1}%)", self.name, link_income, result.contribution, result.employer_contribution, employer_match.amount.value(settings), employer_match.limit.value(settings));
                 }
-                None => {}
             }
         }
-        
+
         // Add contribution to contribution and value tables
         self.analysis
             .contributions
@@ -287,73 +265,45 @@ impl Account for Retirement<u32> {
 
         // Calculate withdrawal
         if self.dates.year_out.unwrap().contains(year) {
-            result.withdrawal = self.get_withdrawal(year, &totals, &settings);
-            // result.limit_withdrawal(self.analysis.value.get(year).unwrap());
+            result.withdrawal = self.withdrawal_type.value(
+                self.withdrawal_value,
+                year,
+                settings,
+                self.dates.year_out,
+                &self.analysis.value,
+                totals,
+                self.tax_status,
+            );
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
         self.analysis.withdrawals.update(year, result.withdrawal);
         self.analysis.value.update(year, -result.withdrawal);
 
-        match self.tax_status {
-            // Paid with taxed income, earnings are not taxed, withdrawals are not taxed
-            //
-            // Contributions count as an expense (will be subtracted from net for the year)
-            // Contributions do not impact taxable income (as they are made with dollars that have already been taxed)
-            // Withdrawals count as income but do not to taxable income
-            TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => Ok(YearlyImpact {
-                expense: result.contribution,
-                healthcare_expense: 0_f64,
-                col: 0_f64,
-                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
-                income_taxable: 0_f64,
-                income: result.withdrawal,
-                hsa: 0_f64,
-            }),
-            // Paid with taxed income, earnings are taxed in year earned as capital gains, withdrawals are not taxed (tax free as long as used for intended purpose)
-            //
-            // Contributions count as an expense (will be subtracted from net for the year)
-            // Contributions do not impact taxable income (as they are made with dollars that have already been taxed)
-            // Withdrawals count as income but do not to taxable income
-            TaxStatus::ContributeTaxedEarningsTaxed => Ok(YearlyImpact {
-                expense: result.contribution,
-                healthcare_expense: 0_f64,
-                col: 0_f64,
-                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
-                income_taxable: result.earning,
-                // todo ! something different to account for earnings as cap gains
-                income: result.withdrawal,
-                hsa: 0_f64,
-            }),
-            // Paid with pretax income and taxed in year of use as income
-            //
-            // Contributions count as an expense (will be subtracted from net for the year)
-            // Contributions reduce taxable income (they are a deduction)
-            // Withdrawals count as income and add to taxable income
-            TaxStatus::ContributePretaxTaxedWhenUsed => Ok(YearlyImpact {
-                expense: result.contribution,
-                healthcare_expense: 0_f64,
-                col: 0_f64,
-                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
-                income_taxable: result.withdrawal - result.contribution,
-                income: result.withdrawal,
-                hsa: 0_f64,
-            }),
+        // Contributions always count as an expense (they are subtracted from
+        // net for the year); the tax status determines how contributions,
+        // earnings, and withdrawals hit taxable income
+        let (income_taxable, capital_gains) = match self.tax_status {
+            // Paid with taxed income, earnings are not taxed, withdrawals are not taxed (Roth)
+            TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => (0_f64, 0_f64),
+            // Paid with taxed income, earnings are taxed in the year earned as capital gains
+            TaxStatus::ContributeTaxedEarningsTaxed => (0_f64, result.earning),
+            // Paid with pretax income (a deduction) and taxed in year of use as income (401k/IRA)
+            TaxStatus::ContributePretaxTaxedWhenUsed => {
+                (result.withdrawal - result.contribution, 0_f64)
+            }
             // Paid with pretax income and not taxed as income (use with HSA)
-            //
-            // Contributions count as an expense (will be subtracted from net for the year)
-            // Contributions reduce taxable income (they are a deduction)
-            // Withdrawals count as income but do not add to taxable income
-            TaxStatus::ContributePretaxUntaxedWhenUsed => Ok(YearlyImpact {
-                expense: result.contribution,
-                healthcare_expense: 0_f64,
-                col: 0_f64,
-                saving: result.contribution + result.employer_contribution + result.earning - result.withdrawal, // delta to savings total for the year
-                income_taxable: 0_f64 - result.contribution,
-                income: result.withdrawal,
-                hsa: 0_f64,
-            }),
-        }
+            TaxStatus::ContributePretaxUntaxedWhenUsed => (0_f64 - result.contribution, 0_f64),
+        };
+
+        Ok(YearlyImpact {
+            expense: result.contribution,
+            healthcare_expense: 0_f64,
+            col: 0_f64,
+            income_taxable,
+            capital_gains,
+            income: result.withdrawal,
+        })
     }
     fn write(&self, filepath: String) {
         match &self.matching {
@@ -364,5 +314,115 @@ impl Account for Retirement<u32> {
                 self.analysis.write(filepath);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inputs::test_fixtures::test_settings_values;
+    use float_cmp::assert_approx_eq;
+
+    fn test_account(matching: Option<EmployerMatch>) -> Retirement<u32> {
+        Retirement {
+            name: "401k".into(),
+            table: Table([(2000, 10000.0)].into_iter().collect()),
+            contributions: None,
+            earnings: None,
+            withdrawals: None,
+            employer_contributions: None,
+            start_in: YearInput::ConstantInt(2000),
+            end_in: YearInput::ConstantInt(2029),
+            start_out: YearInput::ConstantInt(2030),
+            end_out: YearInput::ConstantInt(2080),
+            contribution_value: 5.0,
+            contribution_type: ContributionOptions::PercentOfIncome,
+            yearly_return: PercentInput::ConstantFloat(0.0),
+            withdrawal_type: WithdrawalOptions::Other,
+            withdrawal_value: 0.0,
+            tax_status: TaxStatus::ContributePretaxTaxedWhenUsed,
+            income_link: Some("income-uuid".into()),
+            matching,
+            notes: None,
+            analysis: SavingsTables::default(),
+            dates: Dates::default(),
+        }
+    }
+
+    #[test]
+    fn employer_match_below_cap_matches_full_contribution() {
+        let mut account = test_account(Some(EmployerMatch {
+            amount: PercentInput::ConstantFloat(50.0),
+            limit: PercentInput::ConstantFloat(6.0),
+        }));
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2000, false).unwrap();
+        let impact = account
+            .simulate(2000, &totals, &settings, Some(100000.0))
+            .unwrap();
+        // contribution = 5% of 100k = 5000; below the 6% cap so employer matches 50%
+        assert_approx_eq!(f64, impact.expense, 5000.0);
+        let employer = account.analysis.employer_contributions.get(2000).unwrap();
+        assert_approx_eq!(f64, employer, 2500.0);
+        // pretax: contribution is a deduction
+        assert_approx_eq!(f64, impact.income_taxable, -5000.0);
+    }
+
+    #[test]
+    fn employer_match_at_cap_is_limited() {
+        let mut account = test_account(Some(EmployerMatch {
+            amount: PercentInput::ConstantFloat(50.0),
+            limit: PercentInput::ConstantFloat(3.0),
+        }));
+        account.contribution_value = 10.0; // contribute 10%, above the 3% cap
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2000, false).unwrap();
+        account
+            .simulate(2000, &totals, &settings, Some(100000.0))
+            .unwrap();
+        // employer match = income * 3% * 50% = 1500
+        let employer = account.analysis.employer_contributions.get(2000).unwrap();
+        assert_approx_eq!(f64, employer, 1500.0);
+    }
+
+    #[test]
+    fn employer_match_without_income_is_skipped() {
+        // Regression test for B8: inactive/absent income means no match (and no
+        // divide-by-zero), rather than relying on exact float equality.
+        let mut account = test_account(Some(EmployerMatch {
+            amount: PercentInput::ConstantFloat(50.0),
+            limit: PercentInput::ConstantFloat(6.0),
+        }));
+        account.contribution_type = ContributionOptions::Fixed;
+        account.contribution_value = 1000.0;
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2000, false).unwrap();
+        account.simulate(2000, &totals, &settings, None).unwrap();
+        let employer = account.analysis.employer_contributions.get(2000).unwrap();
+        assert_approx_eq!(f64, employer, 0.0);
+    }
+
+    #[test]
+    fn earnings_taxed_as_capital_gains() {
+        // Regression test for B4: ContributeTaxedEarningsTaxed earnings are
+        // reported as capital gains, not ordinary income.
+        let mut account = test_account(None);
+        account.tax_status = TaxStatus::ContributeTaxedEarningsTaxed;
+        account.yearly_return = PercentInput::ConstantFloat(10.0);
+        account.contribution_type = ContributionOptions::Fixed;
+        account.contribution_value = 0.0;
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2000, false).unwrap();
+        let impact = account.simulate(2000, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.capital_gains, 1000.0);
+        assert_approx_eq!(f64, impact.income_taxable, 0.0);
     }
 }

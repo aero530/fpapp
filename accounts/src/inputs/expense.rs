@@ -1,13 +1,11 @@
 //! User input expense values
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
-// use super::fixed_with_inflation;
+use super::{fixed_with_inflation, Settings};
 
 /// used to populate account dropdown for expense type selection
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpenseOptions {
     /// fixed dollar amount
@@ -16,18 +14,14 @@ pub enum ExpenseOptions {
     FixedWithInflation,
 }
 
-// impl ExpenseOptions {
-//     pub fn value(
-//         self,
-//         expense: f64,
-//         inflation: f64,
-//         duration: u32,
-//     ) -> f64 {
-//         match self {
-//             ExpenseOptions::Fixed => expense,
-//             ExpenseOptions::FixedWithInflation => {
-//                 fixed_with_inflation(expense, inflation, duration)
-//             }
-//         }
-//     }
-// }
+impl ExpenseOptions {
+    /// The expense amount for the year
+    pub fn value(&self, expense_value: f64, year: u32, settings: &Settings) -> f64 {
+        match self {
+            ExpenseOptions::Fixed => expense_value,
+            ExpenseOptions::FixedWithInflation => {
+                fixed_with_inflation(expense_value, year, settings)
+            }
+        }
+    }
+}

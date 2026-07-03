@@ -12,6 +12,10 @@ use super::Table;
 use crate::plot::{scatter_plot_file, scatter_plot_buf};
 
 /// How the results of the simulation of an account impact a YearlyTotal
+///
+/// Savings and HSA balances are not part of this delta: the runner recomputes
+/// those totals each year as the sum of the relevant account balances, which
+/// keeps them consistent with historical (pre-seeded) balance overrides.
 #[derive(Debug, Default, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub struct YearlyImpact {
     /// Expenses get pulled out of net (dollars we already paid tax on)
@@ -20,12 +24,10 @@ pub struct YearlyImpact {
     pub healthcare_expense: f64,
     /// Impact to cost of living (tracks to total of the 'expense' account type)
     pub col: f64,
-    /// Change in total savings accounts dollars
-    pub saving: f64,
-    /// Change in total hsa dollars
-    pub hsa: f64,
-    /// Taxable income
+    /// Taxable income (taxed at the income tax rate)
     pub income_taxable: f64,
+    /// Earnings taxed as capital gains (taxed at the capital gains rate)
+    pub capital_gains: f64,
     /// Total income (taxable + non-taxable)
     pub income: f64,
 }
@@ -43,18 +45,18 @@ pub struct YearlyTotals {
     pub healthcare_expense_total: Table<u32>,
     /// cost of living
     pub col: Table<u32>,
-    /// total value of all savings accounts (the value of this account rolls over from year to year)
+    /// total value of all savings & retirement accounts (set by the runner from account balances each year)
     pub saving: Table<u32>,
-    /// total value of all hsa accounts (the value of this account rolls over from year to year)
+    /// total value of all hsa accounts (set by the runner from account balances each year)
     pub hsa: Table<u32>,
     /// total taxable income for a year
     pub income_taxable: Table<u32>,
+    /// total earnings taxed as capital gains for a year
+    pub capital_gains: Table<u32>,
     /// total income for a year
     pub income: Table<u32>,
     /// amount of income tax paid for a year
     pub tax_burden: Table<u32>,
-    /// currently unused
-    pub income_during_retirement: Table<u32>,
 }
 
 impl YearlyTotals {
@@ -62,10 +64,8 @@ impl YearlyTotals {
     pub fn new() -> YearlyTotals {
         YearlyTotals::default()
     }
-    /// Initialize a new year and pull forward net, savings, and hsa when told to
+    /// Initialize a new year and pull forward net when told to
     pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
-        // need to only update if there is not a value in this year yet.  in year 1 i init somewhere else
-
         match self.net.0.contains_key(&year) {
             true => Err(String::from("Year already exists.").into()),
             false => {
@@ -77,24 +77,16 @@ impl YearlyTotals {
                 self.saving.insert(year, 0_f64);
                 self.hsa.insert(year, 0_f64);
                 self.income_taxable.insert(year, 0_f64);
+                self.capital_gains.insert(year, 0_f64);
                 self.income.insert(year, 0_f64);
                 self.tax_burden.insert(year, 0_f64);
-                self.income_during_retirement.insert(year, 0_f64);
                 if pull_value_forward {
-                    self.pull_value_forward(year);
+                    // net rolls over year to year (savings & hsa totals are
+                    // recomputed from account balances by the runner instead)
+                    self.net.pull_value_forward(year);
                 }
                 Ok(())
             }
-        }
-    }
-    /// If there is a prev year then pull forward that value
-    fn pull_value_forward(&mut self, year: u32) {
-        if self.net.0.contains_key(&year) {
-            self.net.pull_value_forward(year);
-            self.saving.pull_value_forward(year);
-            self.hsa.pull_value_forward(year);
-        } else {
-            error!("Year must be added to YearlyTotals before pulling previous values forward.");
         }
     }
     /// Update the data for a specified year
@@ -111,42 +103,56 @@ impl YearlyTotals {
                         .update(year, update.healthcare_expense);
                 }
                 self.col.update(year, update.col);
-                self.saving.update(year, update.saving);
-                self.hsa.update(year, update.hsa);
                 self.income_taxable.update(year, update.income_taxable);
+                self.capital_gains.update(year, update.capital_gains);
                 self.income.update(year, update.income);
             }
             false => {
                 error!("Updating a year that does not exist.  Previous values not pulled forward");
-                self.add_year(year, false).unwrap();
-                self.update(year, update);
+                if self.add_year(year, false).is_ok() {
+                    self.update(year, update);
+                }
             }
         }
     }
+    /// Record the total savings & retirement balance for the year
+    pub fn set_saving(&mut self, year: u32, value: f64) {
+        self.saving.insert(year, value);
+    }
+    /// Record the total hsa balance for the year
+    pub fn set_hsa(&mut self, year: u32, value: f64) {
+        self.hsa.insert(year, value);
+    }
     /// Add income to net
     pub fn deposit_income_in_net(&mut self, year: u32) {
-        //self.net += self.income;
-        self.net.update(year, self.income.get(year).unwrap());
+        self.net.update(year, self.income.get(year).unwrap_or_default());
     }
-    /// Pay income tax for the year
-    pub fn pay_income_tax_from_net(&mut self, year: u32, tax_rate: f64) {
-        let tax_burden = self.income_taxable.get(year).unwrap() * (tax_rate / 100_f64);
+    /// Pay income and capital gains tax for the year
+    ///
+    /// Taxable totals are floored at zero: deductions (negative taxable income
+    /// from pretax contributions) can offset other income for the year but a
+    /// negative total does not produce a refund.
+    pub fn pay_income_tax_from_net(&mut self, year: u32, tax_rate: f64, capital_gains_rate: f64) {
+        let taxable_income = self.income_taxable.get(year).unwrap_or_default().max(0_f64);
+        let taxable_gains = self.capital_gains.get(year).unwrap_or_default().max(0_f64);
+        let tax_burden =
+            taxable_income * (tax_rate / 100_f64) + taxable_gains * (capital_gains_rate / 100_f64);
         // log what income was after paying taxes
         self.tax_burden.insert(year, tax_burden);
 
         // take income tax payment out of net
-        self.net.update(year, -1_f64 * tax_burden);
+        self.net.update(year, -tax_burden);
     }
     /// Pay for expenses for the year
     pub fn pay_expenses_from_net(&mut self, year: u32) {
         self.net
-            .update(year, -1_f64 * self.expense.get(year).unwrap());
+            .update(year, -self.expense.get(year).unwrap_or_default());
     }
     /// Remove healthcare expenses from net (these could also be covered by HSA accounts)
     pub fn pay_healthcare_expenses_from_net(&mut self, year: u32) {
-        if self.healthcare_expense.get(year).unwrap() > 0_f64 {
+        if self.healthcare_expense.get(year).unwrap_or_default() > 0_f64 {
             self.net
-                .update(year, -1_f64 * self.healthcare_expense.get(year).unwrap());
+                .update(year, -self.healthcare_expense.get(year).unwrap_or_default());
             self.healthcare_expense.insert(year, 0_f64);
         }
     }
@@ -247,7 +253,6 @@ impl YearlyTotals {
             height,
         )
     }
-    
 
     /// Get the cost of living for the specified year
     ///
@@ -283,5 +288,55 @@ impl YearlyTotals {
     /// Check if this year already exists
     pub fn contains_year(&self, year: u32) -> bool {
         self.net.0.contains_key(&year)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn net_rolls_forward_including_debt() {
+        // Regression test for A1 at the totals level.
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2020, true).unwrap();
+        totals.net.insert(2020, -500.0);
+        totals.add_year(2021, true).unwrap();
+        assert_eq!(totals.net.get(2021), Some(-500.0));
+    }
+
+    #[test]
+    fn negative_taxable_income_is_not_a_refund() {
+        // Regression test for B5: deductions floor at zero total tax.
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2020, true).unwrap();
+        totals.update(
+            2020,
+            YearlyImpact {
+                income_taxable: -5000.0,
+                ..Default::default()
+            },
+        );
+        totals.pay_income_tax_from_net(2020, 20.0, 10.0);
+        assert_eq!(totals.tax_burden.get(2020), Some(0.0));
+        assert_eq!(totals.net.get(2020), Some(0.0));
+    }
+
+    #[test]
+    fn capital_gains_taxed_at_capital_gains_rate() {
+        // Regression test for B4: capital gains use their own rate.
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2020, true).unwrap();
+        totals.update(
+            2020,
+            YearlyImpact {
+                income_taxable: 1000.0,
+                capital_gains: 2000.0,
+                ..Default::default()
+            },
+        );
+        totals.pay_income_tax_from_net(2020, 20.0, 10.0);
+        // 1000 * 20% + 2000 * 10% = 400
+        assert_eq!(totals.tax_burden.get(2020), Some(400.0));
     }
 }

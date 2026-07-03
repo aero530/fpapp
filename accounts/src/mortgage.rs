@@ -2,18 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use ts_rs::TS;
 #[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
-
-use crate::inputs::fixed_with_inflation;
-use account_payment_derive::AccountPayment;
 
 use super::*;
 
 /// Loan type specifically tailored for mortgages
-#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountPayment)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Mortgage<T: std::cmp::Ord> {
     /// String describing this account
@@ -51,11 +46,12 @@ pub struct Mortgage<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl From<Mortgage<String>> for Mortgage<u32> {
-    fn from(other: Mortgage<String>) -> Self {
-        Self {
+impl TryFrom<Mortgage<String>> for Mortgage<u32> {
+    type Error = Box<dyn Error>;
+    fn try_from(other: Mortgage<String>) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: other.name,
-            table: other.table.into(),
+            table: other.table.try_into()?,
             start_out: other.start_out,
             end_out: other.end_out,
             payment_type: other.payment_type,
@@ -69,7 +65,7 @@ impl From<Mortgage<String>> for Mortgage<u32> {
             notes: other.notes,
             analysis: other.analysis,
             dates: other.dates,
-        }
+        })
     }
 }
 
@@ -87,9 +83,17 @@ impl Account for Mortgage<u32> {
         &mut self,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
+        }
+        // Fail fast on inputs that would otherwise produce NaN in the interest math
+        if self.compound_time <= 0_f64 {
+            return Err(format!(
+                "Mortgage '{}': compound_time must be greater than zero (got {})",
+                self.name, self.compound_time
+            )
+            .into());
         }
         self.analysis = LoanTables::new(
             &self.table,
@@ -102,7 +106,7 @@ impl Account for Mortgage<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(Vec::new())
+        Ok(())
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
@@ -123,9 +127,6 @@ impl Account for Mortgage<u32> {
                 .end_out
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
-    }
-    fn get_inputs(&self) -> String {
-        String::from("Hello")
     }
     #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
@@ -195,40 +196,51 @@ impl Account for Mortgage<u32> {
         self.analysis.interest.update(year, result.interest);
         self.analysis.value.update(year, result.interest);
 
-        // Insurance, escrow, and payment only apply within the configured payment window
-        if self.dates.year_out.unwrap().contains(year) {
-            let loan_to_value =
-                self.analysis.value.get(year).unwrap() / self.home_value * 100_f64;
-            let insurance_payment = match loan_to_value > self.ltv_limit {
-                true => self.mortgage_insurance,
-                false => 0.0,
+        // Insurance, escrow, and payment only apply within the configured payment
+        // window and while a balance remains (once the mortgage is paid off,
+        // escrow and insurance are no longer collected through the payment)
+        let balance = self.analysis.value.get(year).unwrap();
+        if self.dates.year_out.unwrap().contains(year) && balance > 0_f64 {
+
+            // Mortgage insurance applies while the loan-to-value ratio is above the
+            // configured limit.  A home value of zero means LTV can't be computed;
+            // treat it as no insurance rather than dividing by zero.
+            let insurance_payment = if self.home_value > 0_f64 {
+                let loan_to_value = balance / self.home_value * 100_f64;
+                if loan_to_value > self.ltv_limit {
+                    self.mortgage_insurance
+                } else {
+                    0_f64
+                }
+            } else {
+                0_f64
             };
             self.analysis.insurance.update(year, insurance_payment);
 
             self.analysis.escrow.update(year, self.escrow_value);
 
-            result.payment = self.get_payment(year, settings);
+            // The scheduled payment covers insurance and escrow first; the rest
+            // pays down principal.  In the payoff year the payment is capped at
+            // the remaining balance PLUS insurance and escrow, so the principal
+            // actually reaches zero instead of leaving a residual balance.
+            let scheduled = self
+                .payment_type
+                .value(self.payment_value, year, settings);
+            result.payment = scheduled.min(balance + insurance_payment + self.escrow_value);
             self.analysis.payments.update(year, result.payment);
 
-            let mut remaining_payment = result.payment;
-            remaining_payment -= insurance_payment;
-            remaining_payment -= self.escrow_value;
-            self.analysis.value.update(year, -remaining_payment);
+            let principal_payment =
+                (result.payment - insurance_payment - self.escrow_value).max(0_f64);
+            self.analysis.value.update(year, -principal_payment);
+            // Zero out floating point dust left over from the final payment
             if self.analysis.value.get(year).unwrap() < 0.0001 {
                 self.analysis.value.insert(year, 0_f64);
             }
         }
 
-        // info!("{} {:?}", year, self.analysis);
-
         Ok(YearlyImpact {
             expense: result.payment,
-            healthcare_expense: 0_f64,
-            col: 0_f64,
-            saving: 0_f64,
-            income_taxable: 0_f64,
-            income: 0_f64,
-            hsa: 0_f64,
+            ..Default::default()
         })
     }
     fn write(&self, filepath: String) {
@@ -236,8 +248,77 @@ impl Account for Mortgage<u32> {
     }
 }
 
-impl MortgagePlot for Mortgage<u32> {
-    fn get_mortgage_plot_data(&self) -> Vec<PlotDataSet> {
-        self.analysis.get_mortgage_plot_data()
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inputs::test_fixtures::test_settings_values;
+    use float_cmp::assert_approx_eq;
+
+    fn test_account(balance: f64) -> Mortgage<u32> {
+        Mortgage {
+            name: "Mortgage".into(),
+            table: Table([(2000, balance)].into_iter().collect()),
+            start_out: YearInput::ConstantInt(2000),
+            end_out: YearInput::ConstantInt(2030),
+            payment_type: PaymentOptions::Fixed,
+            payment_value: 600.0,
+            rate: PercentInput::ConstantFloat(0.0),
+            compound_time: 12.0,
+            mortgage_insurance: 50.0,
+            ltv_limit: 0.0, // insurance always applies while a balance remains
+            escrow_value: 50.0,
+            home_value: 100000.0,
+            notes: None,
+            analysis: LoanTables::default(),
+            dates: Dates::default(),
+        }
+    }
+
+    #[test]
+    fn mortgage_payoff_reaches_zero() {
+        // Regression test for A4: the final payment must retire the balance even
+        // though part of each payment goes to insurance and escrow.
+        let mut account = test_account(1000.0);
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let totals = YearlyTotals::new();
+
+        // Year 1: 600 payment - 50 insurance - 50 escrow = 500 principal
+        let impact = account.simulate(2000, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.expense, 600.0);
+        assert_approx_eq!(f64, account.get_value(2000).unwrap(), 500.0);
+
+        // Year 2: payment capped at 500 + 100 fees = 600; principal reaches zero
+        let impact = account.simulate(2001, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.expense, 600.0);
+        assert_approx_eq!(f64, account.get_value(2001).unwrap(), 0.0);
+
+        // Year 3: nothing left to pay
+        let impact = account.simulate(2002, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.expense, 0.0);
+        assert_approx_eq!(f64, account.get_value(2002).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn mortgage_rejects_zero_compound_time() {
+        // Regression test for B7: fail fast instead of producing NaN.
+        let mut account = test_account(1000.0);
+        account.compound_time = 0.0;
+        let settings = test_settings_values();
+        assert!(account.init(None, &settings).is_err());
+    }
+
+    #[test]
+    fn mortgage_zero_home_value_means_no_insurance() {
+        // Regression test for B7: no divide-by-zero on LTV.
+        let mut account = test_account(1000.0);
+        account.home_value = 0.0;
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let totals = YearlyTotals::new();
+        account.simulate(2000, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, account.analysis.insurance.get(2000).unwrap(), 0.0);
+        // full payment minus escrow goes to principal
+        assert_approx_eq!(f64, account.get_value(2000).unwrap(), 1000.0 - 550.0);
     }
 }

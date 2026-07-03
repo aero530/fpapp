@@ -17,12 +17,18 @@ pub struct FpApp {
     pub file_path: Option<PathBuf>,
     pub selected: Page,
     pub dirty: bool,
+    /// egui time at which `dirty` was last set; used to debounce analysis runs.
+    dirty_since: Option<f64>,
     pub plot_data: HashMap<String, Vec<PlotDataSet>>,
     pub yearly_totals: Option<YearlyTotals>,
     pub error: Option<String>,
     /// UUID of account awaiting delete confirmation; None when no dialog is open.
     pub confirm_delete: Option<String>,
 }
+
+/// How long an edit must sit idle before the simulation re-runs.  Keeps a
+/// slider drag or fast typing from re-running the full analysis every frame.
+const ANALYSIS_DEBOUNCE_SECS: f64 = 0.25;
 
 impl FpApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
@@ -31,6 +37,7 @@ impl FpApp {
             file_path: None,
             selected: Page::Dashboard,
             dirty: false,
+            dirty_since: None,
             plot_data: HashMap::new(),
             yearly_totals: None,
             error: None,
@@ -56,18 +63,34 @@ impl FpApp {
 
 impl eframe::App for FpApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // Debounced analysis: run once the edit has settled and no drag is in
+        // progress, rather than on every frame of a slider drag (each run
+        // clones + reparses the whole data blob and re-simulates every year).
         if self.dirty {
-            if !self.data.is_null() {
-                self.run_analysis();
+            let now = ui.ctx().input(|i| i.time);
+            let since = *self.dirty_since.get_or_insert(now);
+            let dragging = ui.ctx().input(|i| i.pointer.any_down());
+            if !dragging && now - since >= ANALYSIS_DEBOUNCE_SECS {
+                if !self.data.is_null() {
+                    self.run_analysis();
+                }
+                self.dirty = false;
+                self.dirty_since = None;
+            } else {
+                // make sure a frame arrives to fire the debounced run even if
+                // the user stops interacting
+                ui.ctx()
+                    .request_repaint_after(std::time::Duration::from_millis(100));
             }
-            self.dirty = false;
+        } else {
+            self.dirty_since = None;
         }
 
         // If the user navigated away from the account pending deletion, cancel the dialog
-        if let Some(ref uuid) = self.confirm_delete.clone() {
-            if self.selected != Page::Account(uuid.clone()) {
-                self.confirm_delete = None;
-            }
+        if let Some(uuid) = &self.confirm_delete
+            && self.selected != Page::Account(uuid.clone())
+        {
+            self.confirm_delete = None;
         }
 
         // Delete confirmation modal — shown before panels so it overlays everything
@@ -111,9 +134,6 @@ impl eframe::App for FpApp {
                     for (_, acct) in accounts.iter_mut() {
                         if acct["incomeLink"].as_str() == Some(pending_uuid.as_str()) {
                             acct["incomeLink"] = Value::Null;
-                        }
-                        if acct["hsaLink"].as_str() == Some(pending_uuid.as_str()) {
-                            acct["hsaLink"] = Value::Null;
                         }
                     }
                     self.confirm_delete = None;

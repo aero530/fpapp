@@ -16,6 +16,34 @@ pub trait TableGroup {
     fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>>;
 }
 
+/// Build a plot series from a table
+fn plot_set(label: &str, table: &Table<u32>) -> PlotDataSet {
+    PlotDataSet {
+        label: String::from(label),
+        data: table
+            .0
+            .iter()
+            .map(|(year, value)| PlotDataPoint { x: *year, y: *value })
+            .collect(),
+    }
+}
+
+/// The starting balance for a new year: the most recent balance prior to
+/// `year` when rolling forward (never a future pre-seeded value), otherwise zero
+fn new_year_value(value: &Table<u32>, year: u32, pull_value_forward: bool) -> f64 {
+    match pull_value_forward {
+        true => value.most_recent_value_before(year).unwrap_or_default(),
+        false => 0_f64,
+    }
+}
+
+/// Insert a zero for the year if the table does not already have a value
+/// (pre-seeded historical values are kept)
+fn ensure_year(table: &mut Table<u32>, year: u32) {
+    if table.get(year).is_none() {
+        table.insert(year, 0_f64);
+    }
+}
 
 /// A single [table](Table) of values for simple account types
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -34,44 +62,27 @@ impl SingleTable {
 
 impl TableGroup for SingleTable {
     fn write(&self, filename: String) {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
-
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all("year, value\n".as_bytes()).unwrap();
 
-        years.iter().for_each(|year| {
-            file.write_all(
-                format!("{}, {:.2}\n", year, self.value.get(*year).unwrap_or(0_f64),).as_bytes(),
-            )
-            .unwrap();
+        self.value.0.iter().for_each(|(year, value)| {
+            file.write_all(format!("{}, {:.2}\n", year, value).as_bytes())
+                .unwrap();
         });
     }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataSet> = Vec::new();
-
-        output.push(PlotDataSet{
-            label: String::from("Value"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
-        });
-
-        output
+        vec![plot_set("Value", &self.value)]
     }
     fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
         match self.value.0.contains_key(&year) {
             true => Err(String::from("Year already exists.").into()),
             false => {
-                let prev_value = match pull_value_forward {
-                    true => self.value.most_recent_value().unwrap_or_default(),
-                    false => 0_f64,
-                };
+                let prev_value = new_year_value(&self.value, year, pull_value_forward);
                 self.value.add(year, prev_value)
             }
         }
     }
 }
-
-
 
 /// A set of [tables](Table) for use with loan and mortgage accounts
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -108,40 +119,21 @@ impl LoanTables {
     }
     /// Return analysis data to use in UI plotting
     pub fn get_mortgage_plot_data(&self) -> Vec<PlotDataSet> {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataSet> = Vec::new();
-
-        output.push(PlotDataSet{
-            label: String::from("Value"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Interest"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.interest.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Payments"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.payments.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Escrow"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.escrow.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Insurance"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.insurance.get(*year).unwrap_or(0_f64)}).collect()
-        });
-
-        output
+        vec![
+            plot_set("Value", &self.value),
+            plot_set("Interest", &self.interest),
+            plot_set("Payments", &self.payments),
+            plot_set("Escrow", &self.escrow),
+            plot_set("Insurance", &self.insurance),
+        ]
     }
     /// Write account values out to csv file
     pub fn write_mortgage(&self, filename: String) {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all("year, value, interest, payments, escrow, insurance\n".as_bytes())
             .unwrap();
 
-        years.iter().for_each(|year| {
+        self.value.years().iter().for_each(|year| {
             file.write_all(
                 format!(
                     "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
@@ -162,12 +154,11 @@ impl LoanTables {
 impl TableGroup for LoanTables {
     /// Write account values out to csv file
     fn write(&self, filename: String) {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all("year, value, interest, payments\n".as_bytes())
             .unwrap();
 
-        years.iter().for_each(|year| {
+        self.value.years().iter().for_each(|year| {
             file.write_all(
                 format!(
                     "{}, {:.2}, {:.2}, {:.2}\n",
@@ -183,46 +174,29 @@ impl TableGroup for LoanTables {
     }
     /// Return analysis data to use in UI plotting
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataSet> = Vec::new();
-
-        output.push(PlotDataSet{
-            label: String::from("Value"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Interest"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.interest.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Payments"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.payments.get(*year).unwrap_or(0_f64)}).collect()
-        });
-
-        output
+        vec![
+            plot_set("Value", &self.value),
+            plot_set("Interest", &self.interest),
+            plot_set("Payments", &self.payments),
+        ]
     }
-    
+
     /// Initialize a new year
     fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
         match self.value.0.contains_key(&year) {
             true => Err(String::from("Year already exists.").into()),
             false => {
-                let prev_value = match pull_value_forward {
-                    true => self.value.most_recent_value().unwrap_or_default(),
-                    false => 0_f64,
-                };
+                let prev_value = new_year_value(&self.value, year, pull_value_forward);
                 self.value.add(year, prev_value)?;
-                self.interest.add(year, 0_f64)?;
-                self.payments.add(year, 0_f64)?;
-                self.escrow.add(year, 0_f64)?;
-                self.insurance.add(year, 0_f64)?;
+                ensure_year(&mut self.interest, year);
+                ensure_year(&mut self.payments, year);
+                ensure_year(&mut self.escrow, year);
+                ensure_year(&mut self.insurance, year);
                 Ok(())
             }
         }
     }
 }
-
-
 
 /// A set of [tables](Table) for use with savings types of accounts
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -249,29 +223,14 @@ impl SavingsTables {
     ) -> SavingsTables {
         SavingsTables {
             value: value.clone(),
-            contributions: match contributions {
-                Some(table) => table.clone(),
-                None => Table::default(),
-            },
-            employer_contributions: match employer_contributions {
-                Some(table) => table.clone(),
-                None => Table::default(),
-            },
-            earnings: match earnings {
-                Some(table) => table.clone(),
-                None => Table::default(),
-            },
-            withdrawals: match withdrawals {
-                Some(table) => table.clone(),
-                None => Table::default(),
-            },
+            contributions: contributions.clone().unwrap_or_default(),
+            employer_contributions: employer_contributions.clone().unwrap_or_default(),
+            earnings: earnings.clone().unwrap_or_default(),
+            withdrawals: withdrawals.clone().unwrap_or_default(),
         }
     }
     /// Write account values out to csv file
     pub fn write_matching(&self, filename: String) {
-        let mut years: Vec<u32> = self.value.years();
-        years.sort_unstable();
-
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all(
             "year, value, contributions, employer_contributions, earnings, withdrawals\n"
@@ -279,7 +238,7 @@ impl SavingsTables {
         )
         .unwrap();
 
-        years.iter().for_each(|year| {
+        self.value.years().iter().for_each(|year| {
             file.write_all(
                 format!(
                     "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
@@ -297,48 +256,24 @@ impl SavingsTables {
     }
     /// Return analysis data to use in UI plotting
     pub fn get_matching_plot_data(&self) -> Vec<PlotDataSet> {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataSet> = Vec::new();
-
-        output.push(PlotDataSet{
-            label: String::from("Value"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Contributions"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.contributions.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Employer Contributions"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.employer_contributions.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Earnings"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.earnings.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Withdrawals"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.withdrawals.get(*year).unwrap_or(0_f64)}).collect()
-        });
-
-        output
+        vec![
+            plot_set("Value", &self.value),
+            plot_set("Contributions", &self.contributions),
+            plot_set("Employer Contributions", &self.employer_contributions),
+            plot_set("Earnings", &self.earnings),
+            plot_set("Withdrawals", &self.withdrawals),
+        ]
     }
 }
 
 impl TableGroup for SavingsTables {
     /// Write account values out to csv file
     fn write(&self, filename: String) {
-        let mut years: Vec<u32> = self.value.years();
-        years.sort_unstable();
-
         let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all(
-            "year, value, contributions, earnings, withdrawals\n"
-                .as_bytes(),
-        )
-        .unwrap();
+        file.write_all("year, value, contributions, earnings, withdrawals\n".as_bytes())
+            .unwrap();
 
-        years.iter().for_each(|year| {
+        self.value.years().iter().for_each(|year| {
             file.write_all(
                 format!(
                     "{}, {:.2}, {:.2}, {:.2}, {:.2}\n",
@@ -355,45 +290,63 @@ impl TableGroup for SavingsTables {
     }
     /// Return analysis data to use in UI plotting
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
-        let years: Vec<u32> = self.value.0.keys().copied().collect();
-        let mut output : Vec<PlotDataSet> = Vec::new();
-
-        output.push(PlotDataSet{
-            label: String::from("Value"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.value.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Contributions"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.contributions.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Earnings"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.earnings.get(*year).unwrap_or(0_f64)}).collect()
-        });
-        output.push(PlotDataSet{
-            label: String::from("Withdrawals"),
-            data: years.iter().map(|year| PlotDataPoint{x:*year, y:self.withdrawals.get(*year).unwrap_or(0_f64)}).collect()
-        });
-
-        output
+        vec![
+            plot_set("Value", &self.value),
+            plot_set("Contributions", &self.contributions),
+            plot_set("Earnings", &self.earnings),
+            plot_set("Withdrawals", &self.withdrawals),
+        ]
     }
     /// Initialize a new year
     fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
         match self.value.0.contains_key(&year) {
             true => Err(String::from("Year already exists.").into()),
             false => {
-                let prev_value = match pull_value_forward {
-                    true => self.value.most_recent_value().unwrap_or_default(),
-                    false => 0_f64,
-                };
+                let prev_value = new_year_value(&self.value, year, pull_value_forward);
                 self.value.add(year, prev_value)?;
-                self.contributions.add(year, 0_f64)?;
-                self.employer_contributions.add(year, 0_f64)?;
-                self.earnings.add(year, 0_f64)?;
-                self.withdrawals.add(year, 0_f64)?;
+                ensure_year(&mut self.contributions, year);
+                ensure_year(&mut self.employer_contributions, year);
+                ensure_year(&mut self.earnings, year);
+                ensure_year(&mut self.withdrawals, year);
                 Ok(())
             }
         }
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_year_pulls_forward_prior_value_not_future_value() {
+        // Regression test for A3: a pre-seeded future year must not become the
+        // starting balance for an earlier year.
+        let mut tables = SavingsTables::new(
+            &Table([(2020, 100.0), (2025, 500.0)].into_iter().collect()),
+            &None,
+            &None,
+            &None,
+            &None,
+        );
+        tables.add_year(2021, true).unwrap();
+        assert_eq!(tables.value.get(2021), Some(100.0));
+        // and the future year is untouched
+        assert_eq!(tables.value.get(2025), Some(500.0));
+    }
+
+    #[test]
+    fn add_year_keeps_seeded_subtable_values() {
+        // A historical contributions entry for a year without a balance entry
+        // must not abort the run.
+        let mut tables = SavingsTables::new(
+            &Table([(2020, 100.0)].into_iter().collect()),
+            &Some(Table([(2021, 42.0)].into_iter().collect())),
+            &None,
+            &None,
+            &None,
+        );
+        tables.add_year(2021, true).unwrap();
+        assert_eq!(tables.contributions.get(2021), Some(42.0));
+    }
+}

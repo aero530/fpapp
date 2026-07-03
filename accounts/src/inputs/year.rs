@@ -1,14 +1,12 @@
 //! User input year (date) values
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use super::settings;
 use crate::Dates;
 
 /// Options for strings on year inputs
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum YearEvalType {
     StartIn,
@@ -18,16 +16,14 @@ pub enum YearEvalType {
 }
 
 /// Struct to hold info about computed year values
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub struct YearComputation {
     base: YearSuggestion,
     delta: i32,
 }
 
 /// These values can be input as constants or as computed values (strings)
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum YearInput {
     /// Calculated value based on suggested options
@@ -47,7 +43,20 @@ impl YearInput {
     ) -> u32 {
         match self {
             Self::Calculate(input) => {
-                (input.base.value(settings, linked_dates, eval_type) as i32 + input.delta) as u32
+                // do the math in i64 so a large negative delta clamps to zero
+                // instead of wrapping around to a huge year
+                let year =
+                    input.base.value(settings, linked_dates, eval_type) as i64 + input.delta as i64;
+                if year < 0 {
+                    log::warn!(
+                        "year computation {:?} produced negative year {} — clamping to 0",
+                        input,
+                        year
+                    );
+                    0
+                } else {
+                    year as u32
+                }
             }
             Self::Suggested(input) => input.value(settings, linked_dates, eval_type),
             Self::ConstantInt(input) => *input,
@@ -56,21 +65,16 @@ impl YearInput {
 }
 
 /// Options for strings on year inputs
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum YearSuggestion {
     /// Start of simulation
-    //#[serde(rename(deserialize="yearStart"))]
     YearStart,
     /// When you plan to retire
-    //#[serde(rename="yearRetire")]
     YearRetire,
     /// When you plan to die
-    //#[serde(rename="yearDie")]
     YearDie,
     /// Last year of the simulation
-    //#[serde(rename="yearEnd")]
     YearEnd,
     /// Pull date from linked account
     IncomeLink,
@@ -88,43 +92,43 @@ impl YearSuggestion {
             Self::YearRetire => settings.year_retire(),
             Self::YearDie => settings.year_die(),
             Self::YearEnd => settings.year_end(),
-            Self::IncomeLink => match eval_type {
-                YearEvalType::StartIn => linked_dates.unwrap_or_default().year_in.unwrap_or_default().start,
-                YearEvalType::EndIn => linked_dates.unwrap_or_default().year_in.unwrap_or_default().end,
-                YearEvalType::StartOut => linked_dates.unwrap_or_default().year_out.unwrap_or_default().start,
-                YearEvalType::EndOut => linked_dates.unwrap_or_default().year_out.unwrap_or_default().end,
-            },
+            Self::IncomeLink => {
+                let range = match eval_type {
+                    YearEvalType::StartIn | YearEvalType::EndIn => {
+                        linked_dates.and_then(|d| d.year_in)
+                    }
+                    YearEvalType::StartOut | YearEvalType::EndOut => {
+                        linked_dates.and_then(|d| d.year_out)
+                    }
+                };
+                match (range, eval_type) {
+                    (Some(r), YearEvalType::StartIn | YearEvalType::StartOut) => r.start,
+                    (Some(r), YearEvalType::EndIn | YearEvalType::EndOut) => r.end,
+                    // A missing link used to silently resolve to year 0, hiding
+                    // the misconfiguration; fall back to the simulation bounds instead
+                    (None, YearEvalType::StartIn | YearEvalType::StartOut) => {
+                        log::warn!(
+                            "incomeLink year used but no linked account dates available — using year_start"
+                        );
+                        settings.year_start()
+                    }
+                    (None, YearEvalType::EndIn | YearEvalType::EndOut) => {
+                        log::warn!(
+                            "incomeLink year used but no linked account dates available — using year_end"
+                        );
+                        settings.year_end()
+                    }
+                }
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::simulation::YearRange;
+    use super::super::test_fixtures::test_settings_values;
     use super::*;
-
-    fn test_settings_values() -> settings::Settings {
-        settings::Settings {
-            age_retire: 50,
-            age_die: 100,
-            year_born: 1980,
-            year_start: 2000,
-            inflation_base: 5.0,
-            tax_income: 20.0,
-            tax_capital_gains: 10.0,
-            retirement_cost_of_living: 80.0,
-            ssa: settings::SsaSettings {
-                breakpoints: settings::Span {
-                    low: 30000_f64,
-                    high: 40000_f64,
-                },
-                taxable_income_percentage: settings::Span {
-                    low: 50_f64,
-                    high: 80_f64,
-                },
-            },
-        }
-    }
+    use crate::simulation::YearRange;
 
     #[test]
     fn year_input_constant() {
@@ -134,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn year_input_calcualted() {
+    fn year_input_calculated() {
         let settings = test_settings_values();
         let w1 = YearInput::Calculate(YearComputation {
             base: YearSuggestion::YearStart,
@@ -146,6 +150,17 @@ mod tests {
         });
         assert_eq!(w1.value(&settings, None, YearEvalType::StartIn), 2005);
         assert_eq!(w2.value(&settings, None, YearEvalType::EndIn), 2075);
+    }
+
+    #[test]
+    fn year_input_calculated_negative_result_clamps_to_zero() {
+        // Regression test for B6: a huge negative delta must not wrap to a huge year.
+        let settings = test_settings_values();
+        let w = YearInput::Calculate(YearComputation {
+            base: YearSuggestion::YearStart,
+            delta: -3000,
+        });
+        assert_eq!(w.value(&settings, None, YearEvalType::StartIn), 0);
     }
 
     #[test]
@@ -179,5 +194,16 @@ mod tests {
         assert_eq!(w6.value(&settings, Some(dates), YearEvalType::EndIn), 1776);
         assert_eq!(w7.value(&settings, Some(dates), YearEvalType::StartOut), 1900);
         assert_eq!(w8.value(&settings, Some(dates), YearEvalType::EndOut), 1901);
+    }
+
+    #[test]
+    fn year_input_income_link_without_link_falls_back_to_simulation_bounds() {
+        // Regression test for B6: no silent year-0 resolution.
+        let settings = test_settings_values();
+        let w = YearInput::Suggested(YearSuggestion::IncomeLink);
+        assert_eq!(w.value(&settings, None, YearEvalType::StartIn), 2000);
+        assert_eq!(w.value(&settings, None, YearEvalType::EndIn), 2080);
+        assert_eq!(w.value(&settings, None, YearEvalType::StartOut), 2000);
+        assert_eq!(w.value(&settings, None, YearEvalType::EndOut), 2080);
     }
 }

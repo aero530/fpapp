@@ -1,18 +1,13 @@
 //! College savings account (529)
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use ts_rs::TS;
 #[cfg(feature = "plotters-backend")]
 use image::{ImageBuffer, Rgba};
-
-use crate::inputs::fixed_with_inflation;
-use account_savings_derive::AccountSavings;
 
 use super::*;
 
 /// College savings accounts specifically designed to represent 529 accounts
-#[derive(TS, Debug, Clone, Deserialize, Serialize, AccountSavings)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct College<T: std::cmp::Ord> {
     /// String describing this account
@@ -56,14 +51,15 @@ pub struct College<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl From<College<String>> for College<u32> {
-    fn from(other: College<String>) -> Self {
-        Self {
+impl TryFrom<College<String>> for College<u32> {
+    type Error = Box<dyn Error>;
+    fn try_from(other: College<String>) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: other.name,
-            table: other.table.into(),
-            contributions: other.contributions.map(|v| v.into()),
-            earnings: other.earnings.map(|v| v.into()),
-            withdrawals: other.withdrawals.map(|v| v.into()),
+            table: other.table.try_into()?,
+            contributions: other.contributions.map(|v| v.try_into()).transpose()?,
+            earnings: other.earnings.map(|v| v.try_into()).transpose()?,
+            withdrawals: other.withdrawals.map(|v| v.try_into()).transpose()?,
             start_in: other.start_in,
             end_in: other.end_in,
             start_out: other.start_out,
@@ -77,7 +73,7 @@ impl From<College<String>> for College<u32> {
             notes: other.notes,
             analysis: other.analysis,
             dates: other.dates,
-        }
+        })
     }
 }
 
@@ -95,9 +91,19 @@ impl Account for College<u32> {
         &mut self,
         linked_dates: Option<Dates>,
         settings: &Settings,
-    ) -> Result<Vec<(u32, YearlyImpact)>, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         if linked_dates.is_some() {
             return Err(String::from("Linked account dates provided but not used").into());
+        }
+        // Fail fast: only the 529-style tax treatment is implemented for
+        // college accounts.  Catching this here (with the account name) beats
+        // aborting mid-simulation.
+        if self.tax_status != TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed {
+            return Err(format!(
+                "College account '{}': only tax status 'contribute_taxed_earnings_untaxed_when_used' is supported for college accounts",
+                self.name
+            )
+            .into());
         }
 
         // Init the analysis object with values from the stored tables
@@ -112,20 +118,7 @@ impl Account for College<u32> {
             year_in: self.get_range_in(settings, linked_dates),
             year_out: self.get_range_out(settings, linked_dates),
         };
-        Ok(self
-            .table
-            .0
-            .iter()
-            .map(|(year, value)| {
-                (
-                    *year,
-                    YearlyImpact {
-                        saving: *value,
-                        ..Default::default()
-                    },
-                )
-            })
-            .collect())
+        Ok(())
     }
     fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
         Some(YearRange {
@@ -149,9 +142,6 @@ impl Account for College<u32> {
     }
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
-    }
-    fn get_inputs(&self) -> String {
-        String::from("Hello")
     }
     #[cfg(feature = "plotters-backend")]
     fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
@@ -212,7 +202,12 @@ impl Account for College<u32> {
 
         // Calculate contribution
         if self.dates.year_in.unwrap().contains(year) {
-            result.contribution = self.get_contribution(year, totals, settings, None);
+            result.contribution = self.contribution_type.value(
+                self.contribution_value,
+                totals.get_income(year),
+                year,
+                settings,
+            );
         }
 
         // Add contribution to contribution and value tables
@@ -221,42 +216,68 @@ impl Account for College<u32> {
 
         // Calculate withdrawal
         if self.dates.year_out.unwrap().contains(year) {
-            result.withdrawal = self.get_withdrawal(year, &totals, &settings);
+            result.withdrawal = self.withdrawal_type.value(
+                self.withdrawal_value,
+                year,
+                settings,
+                self.dates.year_out,
+                &self.analysis.value,
+                totals,
+                self.tax_status,
+            );
         }
 
         // Add withdrawal to withdrawal table and subtract from value tables
         self.analysis.withdrawals.update(year, result.withdrawal);
         self.analysis.value.update(year, -result.withdrawal);
 
-        log::trace!("Value {:?} Contribution {:?}",self.analysis.value.get(year), self.analysis.contributions.get(year));
-
-        match self.tax_status {
-            // contribute taxed income
-            // payed with taxed income, earnings are not taxed, withdrawals are not taxed
-            TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => Ok(YearlyImpact {
-                expense: result.contribution,
-                healthcare_expense: 0_f64,
-                col: 0_f64,
-                saving: 0_f64, // college funds are not part of the general savings pool (ColFracOfSavings)
-                income_taxable: 0_f64,
-                income: 0_f64,
-                hsa: 0_f64,
-            }),
-            TaxStatus::ContributeTaxedEarningsTaxed => Err(String::from(
-                "This tax status type is not implemented for college accounts.",
-            )
-            .into()),
-            TaxStatus::ContributePretaxTaxedWhenUsed => Err(String::from(
-                "This tax status type is not implemented for college accounts.",
-            )
-            .into()),
-            TaxStatus::ContributePretaxUntaxedWhenUsed => Err(String::from(
-                "This tax status type is not implemented for college accounts.",
-            )
-            .into()),
-        }
+        // Contribute taxed income: paid with taxed income, earnings are not
+        // taxed, withdrawals are not taxed (the only supported status —
+        // validated in init).  College balances are not part of the general
+        // savings pool: withdrawals pay education costs directly rather than
+        // flowing into income, and the runner excludes College balances from
+        // the savings total used by ColFracOfSavings.
+        Ok(YearlyImpact {
+            expense: result.contribution,
+            ..Default::default()
+        })
     }
     fn write(&self, filepath: String) {
         self.analysis.write(filepath);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inputs::test_fixtures::test_settings_values;
+
+    #[test]
+    fn college_rejects_unsupported_tax_status_at_init() {
+        // Regression test: a pretax 529 must fail fast at init with a clear
+        // message instead of aborting mid-simulation.
+        let mut account = College {
+            name: "529".into(),
+            table: Table::default(),
+            contributions: None,
+            earnings: None,
+            withdrawals: None,
+            start_in: YearInput::ConstantInt(2000),
+            end_in: YearInput::ConstantInt(2010),
+            start_out: YearInput::ConstantInt(2011),
+            end_out: YearInput::ConstantInt(2015),
+            contribution_value: 100.0,
+            contribution_type: ContributionOptions::Fixed,
+            yearly_return: PercentInput::ConstantFloat(0.0),
+            withdrawal_type: WithdrawalOptions::EndAtZero,
+            withdrawal_value: 0.0,
+            tax_status: TaxStatus::ContributePretaxTaxedWhenUsed,
+            notes: None,
+            analysis: SavingsTables::default(),
+            dates: Dates::default(),
+        };
+        let settings = test_settings_values();
+        let err = account.init(None, &settings).unwrap_err();
+        assert!(err.to_string().contains("529"));
     }
 }

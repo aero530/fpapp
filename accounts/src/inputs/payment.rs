@@ -1,13 +1,11 @@
 //! User input payment values
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
-// use super::fixed_with_inflation;
+use super::{fixed_with_inflation, Settings};
 
 /// used to populate account dropdown for payment type selection
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum PaymentOptions {
     /// fixed dollar amount
@@ -16,57 +14,39 @@ pub enum PaymentOptions {
     FixedWithInflation,
 }
 
-// impl PaymentOptions {
-//     pub fn value(
-//         self,
-//         payment: f64,
-//         inflation: f64,
-//         duration: u32,
-//         outstanding_balance: f64,
-//     ) -> f64 {
-//         let output = match self {
-//             PaymentOptions::Fixed => payment,
-//             PaymentOptions::FixedWithInflation => {
-//                 fixed_with_inflation(payment, inflation, duration)
-//             }
-//         };
-//         if output > outstanding_balance {
-//             outstanding_balance
-//         } else {
-//             output
-//         }
-//     }
-// }
+impl PaymentOptions {
+    /// The scheduled payment amount for the year (not capped by the loan balance —
+    /// callers cap based on what the payment must cover)
+    pub fn value(&self, payment_value: f64, year: u32, settings: &Settings) -> f64 {
+        match self {
+            PaymentOptions::Fixed => payment_value,
+            PaymentOptions::FixedWithInflation => {
+                fixed_with_inflation(payment_value, year, settings)
+            }
+        }
+    }
+}
 
-// #[cfg(test)]
-// mod tests {
-//     use float_cmp::assert_approx_eq;
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::super::test_fixtures::test_settings_values;
+    use super::*;
+    use float_cmp::assert_approx_eq;
 
-//     #[test]
-//     fn payment_options() {
-//         let payment1 = PaymentOptions::Fixed;
-//         let payment2 = PaymentOptions::FixedWithInflation;
-//         assert_approx_eq!(
-//             f64,
-//             payment1.value(500_f64, 10_f64, 10_u32, 1000_f64),
-//             500_f64
-//         );
-//         assert_approx_eq!(
-//             f64,
-//             payment1.value(500_f64, 10_f64, 10_u32, 100_f64),
-//             100_f64
-//         );
-//         assert_approx_eq!(
-//             f64,
-//             payment2.value(500_f64, 10_f64, 10_u32, 5000_f64),
-//             1296.8712,
-//             epsilon = 0.001
-//         );
-//         assert_approx_eq!(
-//             f64,
-//             payment2.value(500_f64, 10_f64, 10_u32, 500_f64),
-//             500_f64
-//         );
-//     }
-// }
+    #[test]
+    fn payment_options() {
+        let settings = test_settings_values();
+        assert_approx_eq!(
+            f64,
+            PaymentOptions::Fixed.value(500_f64, 2010, &settings),
+            500_f64
+        );
+        // 500 * 1.05^10
+        assert_approx_eq!(
+            f64,
+            PaymentOptions::FixedWithInflation.value(500_f64, 2010, &settings),
+            814.4473,
+            epsilon = 0.001
+        );
+    }
+}

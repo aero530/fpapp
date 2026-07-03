@@ -5,6 +5,7 @@ use crate::app::FpApp;
 use crate::widgets;
 
 mod college;
+mod common;
 mod expense;
 mod hsa;
 mod income;
@@ -89,7 +90,7 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
         "retirement" => changed = retirement::show(ui, &mut account, uuid, app),
         "hsa" => changed = hsa::show(ui, &mut account, uuid),
         "college" => changed = college::show(ui, &mut account, uuid),
-        "expense" => changed = expense::show(ui, &mut account, uuid, app),
+        "expense" => changed = expense::show(ui, &mut account, uuid),
         "loan" => changed = loan::show(ui, &mut account, uuid),
         "mortgage" => changed = mortgage::show(ui, &mut account, uuid),
         "savings" => changed = savings::show(ui, &mut account, uuid),
@@ -99,12 +100,12 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
     }
 
     // Per-account projection chart
-    if let Some(plot_data) = app.plot_data.get(uuid) {
-        if !plot_data.is_empty() {
-            ui.add_space(12.0);
-            ui.separator();
-            widgets::plot_datasets(ui, uuid, plot_data, "Projection", 480.0);
-        }
+    if let Some(plot_data) = app.plot_data.get(uuid)
+        && !plot_data.is_empty()
+    {
+        ui.add_space(12.0);
+        ui.separator();
+        widgets::plot_datasets(ui, uuid, plot_data, "Projection", 480.0);
     }
 
     // Historical data table
@@ -161,42 +162,3 @@ pub(super) fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, i
     changed
 }
 
-pub(super) fn hsa_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, id: &str) -> bool {
-    let current = a["hsaLink"].as_str().unwrap_or("").to_string();
-    let accounts: Vec<(String, String)> = app.data["accounts"]
-        .as_object()
-        .map(|map| {
-            map.iter()
-                .filter(|(_, v)| v["type"].as_str() == Some("hsa"))
-                .map(|(k, v)| (k.clone(), v["name"].as_str().unwrap_or("Unnamed").to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let label = if current.is_empty() {
-        "None".to_string()
-    } else {
-        accounts
-            .iter()
-            .find(|(k, _)| k == &current)
-            .map(|(_, n)| n.clone())
-            .unwrap_or_else(|| "Unknown".to_string())
-    };
-
-    let mut changed = false;
-    egui::ComboBox::new(id, "")
-        .selected_text(&label)
-        .show_ui(ui, |ui| {
-            if ui.selectable_label(current.is_empty(), "None").clicked() {
-                a["hsaLink"] = Value::Null;
-                changed = true;
-            }
-            for (uuid, name) in &accounts {
-                if ui.selectable_label(current == *uuid, name).clicked() {
-                    a["hsaLink"] = json!(uuid);
-                    changed = true;
-                }
-            }
-        });
-    changed
-}

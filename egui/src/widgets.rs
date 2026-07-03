@@ -45,23 +45,58 @@ pub fn u32_field(ui: &mut egui::Ui, label: &str, value: &mut Value, field: &str,
 }
 
 const YEAR_FORMAT_HINT: &str =
-    "\n\nFormat: a year (2025), a keyword (yearStart, yearRetire, yearDie), \
+    "\n\nFormat: a year (2025), a keyword (yearStart, yearRetire, yearDie, yearEnd, incomeLink), \
      or an expression (yearRetire+5, yearDie-2)";
+
+/// A buffered single-line text edit for expression-style fields.
+///
+/// While the field has focus the in-progress text is kept in egui temp memory
+/// (shown in red when it does not parse) and nothing is committed — so typing
+/// "yearRetire+" is not reverted mid-keystroke and typing "2025" does not
+/// commit the intermediate year "2". The value is parsed and committed when
+/// the field loses focus (including via Enter). Returns Some(parsed) only for
+/// a successful commit; invalid text reverts to the canonical value.
+fn expression_input(
+    ui: &mut egui::Ui,
+    id_salt: (&str, &str),
+    canonical: String,
+    parse: impl Fn(&str) -> Option<Value>,
+) -> Option<Value> {
+    let id = ui.id().with(id_salt);
+    let buffer: Option<String> = ui.data_mut(|d| d.get_temp(id));
+    let mut text = buffer.unwrap_or_else(|| canonical.clone());
+
+    let valid = text.trim().is_empty() || parse(&text).is_some();
+    let mut edit = egui::TextEdit::singleline(&mut text).desired_width(f32::INFINITY);
+    if !valid {
+        edit = edit.text_color(egui::Color32::from_rgb(220, 60, 60));
+    }
+    let response = ui.add(edit);
+
+    if response.lost_focus() {
+        ui.data_mut(|d| d.remove::<String>(id));
+        if !text.trim().is_empty() && text != canonical {
+            return parse(&text);
+        }
+    } else if response.has_focus() {
+        ui.data_mut(|d| d.insert_temp(id, text));
+    }
+    None
+}
 
 /// Render label (col 0) + YearInput text edit (col 1).
 /// Accepts: "2025", "yearRetire", "yearStart+5", "yearDie-2".
 pub fn year_input(ui: &mut egui::Ui, label: &str, value: &mut Value, tooltip: &str) -> bool {
     let full_tip = format!("{}{}", tooltip, YEAR_FORMAT_HINT);
     ui.label(label).on_hover_text(full_tip);
-    let mut text = year_input_to_string(value);
-    let changed = ui
-        .add(egui::TextEdit::singleline(&mut text).desired_width(f32::INFINITY))
-        .changed();
-    if changed && !text.trim().is_empty() {
-        if let Some(parsed) = parse_year_input(&text) {
-            *value = parsed;
-            return true;
-        }
+    if let Some(parsed) = expression_input(
+        ui,
+        ("year_input", label),
+        year_input_to_string(value),
+        parse_year_input,
+    ) {
+        *value = parsed;
+        return true;
     }
     false
 }
@@ -89,7 +124,7 @@ fn year_input_to_string(v: &Value) -> String {
     String::new()
 }
 
-const YEAR_KEYWORDS: &[&str] = &["yearRetire", "yearStart", "yearDie"];
+const YEAR_KEYWORDS: &[&str] = &["yearRetire", "yearStart", "yearDie", "yearEnd", "incomeLink"];
 
 fn parse_year_input(s: &str) -> Option<Value> {
     let s = s.trim();
@@ -103,10 +138,10 @@ fn parse_year_input(s: &str) -> Option<Value> {
             return Some(json!(kw));
         }
         // Calculate — {"base": "yearRetire", "delta": N}
-        if let Some(rest) = s.strip_prefix(kw) {
-            if let Ok(delta) = rest.parse::<i64>() {
-                return Some(json!({"base": kw, "delta": delta}));
-            }
+        if let Some(rest) = s.strip_prefix(kw)
+            && let Ok(delta) = rest.parse::<i64>()
+        {
+            return Some(json!({"base": kw, "delta": delta}));
         }
     }
     None
@@ -120,15 +155,14 @@ const PERCENT_FORMAT_HINT: &str =
 pub fn percent_input(ui: &mut egui::Ui, label: &str, value: &mut Value, tooltip: &str) -> bool {
     let full_tip = format!("{}{}", tooltip, PERCENT_FORMAT_HINT);
     ui.label(label).on_hover_text(full_tip);
-    let mut text = percent_input_to_string(value);
-    let changed = ui
-        .add(egui::TextEdit::singleline(&mut text).desired_width(f32::INFINITY))
-        .changed();
-    if changed && !text.trim().is_empty() {
-        if let Some(parsed) = parse_percent_input(&text) {
-            *value = parsed;
-            return true;
-        }
+    if let Some(parsed) = expression_input(
+        ui,
+        ("percent_input", label),
+        percent_input_to_string(value),
+        parse_percent_input,
+    ) {
+        *value = parsed;
+        return true;
     }
     false
 }

@@ -4,13 +4,11 @@
 //! fields to return meaningful values based on text, calculate, and contant value inputs.
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use super::settings;
 
 /// These values can be input as constants or as computed values (strings)
-#[derive(TS, Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum PercentInput {
     /// Calculated value based on suggested options
@@ -26,7 +24,10 @@ impl PercentInput {
         match self {
             Self::Calculate(input) => input.value(settings),
             Self::ConstantFloat(input) => *input,
-            Self::ConstantString(input) => input.parse().unwrap_or_default(),
+            Self::ConstantString(input) => input.parse().unwrap_or_else(|_| {
+                log::warn!("could not parse percent value '{}' — using 0%", input);
+                0_f64
+            }),
         }
     }
 }
@@ -39,8 +40,7 @@ impl PercentInput {
 /// selected as the value for any field that is a percent such that if you change the base
 /// inflation setting then that account's percent value (such as increase in an expense) will
 /// change to reflect the newly set value.
-#[derive(TS, Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
-#[ts(export)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum PercentSuggestions {
     InflationBase,
@@ -56,31 +56,9 @@ impl PercentSuggestions {
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::assert_approx_eq;
+    use super::super::test_fixtures::test_settings_values;
     use super::*;
-    
-    fn test_settings_values() -> settings::Settings {
-        settings::Settings {
-            age_retire: 50,
-            age_die: 100,
-            year_born: 1980,
-            year_start: 2000,
-            inflation_base: 5.0,
-            tax_income: 20.0,
-            tax_capital_gains: 10.0,
-            retirement_cost_of_living: 80.0,
-            ssa: settings::SsaSettings {
-                breakpoints: settings::Span {
-                    low: 30000_f64,
-                    high: 40000_f64,
-                },
-                taxable_income_percentage: settings::Span {
-                    low: 50_f64,
-                    high: 80_f64,
-                },
-            },
-        }
-    }
+    use float_cmp::assert_approx_eq;
 
     #[test]
     fn percent_input() {
@@ -91,5 +69,11 @@ mod tests {
         assert_approx_eq!(f64, p1.value(&test_settings_values()), 5_f64);
         assert_approx_eq!(f64, p2.value(&test_settings_values()), 75_f64);
         assert_approx_eq!(f64, p3.value(&test_settings_values()), 40_f64);
+    }
+
+    #[test]
+    fn unparseable_percent_string_is_zero() {
+        let p = PercentInput::ConstantString("not a number".into());
+        assert_approx_eq!(f64, p.value(&test_settings_values()), 0_f64);
     }
 }
