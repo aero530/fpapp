@@ -45,10 +45,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+      - name: Install cargo-audit (prebuilt binary)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
       - name: Audit
         run: cargo audit

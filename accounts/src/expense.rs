@@ -11,11 +11,11 @@ fn default_true() -> bool {
 /// Account type to represent generic expense
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Expense<T: std::cmp::Ord> {
+pub struct Expense {
     /// String describing this account
     name: String,
     /// Table of account expense for each year
-    table: Table<T>,
+    table: Table,
     /// Calendar year when then expense of this account started to have impact
     start_out: YearInput,
     /// Calendar year when then expense of this account no longer has impact
@@ -43,26 +43,7 @@ pub struct Expense<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<Expense<String>> for Expense<u32> {
-    type Error = Error;
-    fn try_from(other: Expense<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            table: other.table.try_into()?,
-            start_out: other.start_out,
-            end_out: other.end_out,
-            expense_type: other.expense_type,
-            expense_value: other.expense_value,
-            is_healthcare: other.is_healthcare,
-            scales_with_col: other.scales_with_col,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for Expense<u32> {
+impl Account for Expense {
     fn type_id(&self) -> AccountType {
         AccountType::Expense
     }
@@ -164,7 +145,7 @@ mod tests {
     use crate::inputs::test_fixtures::test_settings_values;
     use float_cmp::assert_approx_eq;
 
-    fn test_account(table: Table<u32>) -> Expense<u32> {
+    fn test_account(table: Table) -> Expense {
         Expense {
             name: "Expense Account".into(),
             table,

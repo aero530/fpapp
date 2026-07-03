@@ -7,11 +7,11 @@ use super::*;
 /// Generic loan
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Loan<T: std::cmp::Ord> {
+pub struct Loan {
     /// String describing this account
     name: String,
     /// Table of outstanding loan balance
-    table: Table<T>,
+    table: Table,
     /// Calendar year when payments to this account start
     start_out: YearInput,
     /// Calendar year when payments to this account stop
@@ -33,25 +33,7 @@ pub struct Loan<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<Loan<String>> for Loan<u32> {
-    type Error = Error;
-    fn try_from(other: Loan<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            table: other.table.try_into()?,
-            start_out: other.start_out,
-            end_out: other.end_out,
-            payment_type: other.payment_type,
-            payment_value: other.payment_value,
-            rate: other.rate,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for Loan<u32> {
+impl Account for Loan {
     fn type_id(&self) -> AccountType {
         AccountType::Loan
     }
@@ -156,7 +138,7 @@ mod tests {
     use crate::inputs::test_fixtures::test_settings_values;
     use float_cmp::assert_approx_eq;
 
-    fn test_account(payment_type: PaymentOptions, payment_value: f64, rate: f64) -> Loan<u32> {
+    fn test_account(payment_type: PaymentOptions, payment_value: f64, rate: f64) -> Loan {
         Loan {
             name: "Loan".into(),
             table: Table([(2000, 1000.0)].into_iter().collect()),

@@ -14,7 +14,7 @@ pub trait TableGroup {
 }
 
 /// Build a plot series from a table
-fn plot_set(label: &str, table: &Table<u32>) -> PlotDataSet {
+fn plot_set(label: &str, table: &Table) -> PlotDataSet {
     PlotDataSet {
         label: String::from(label),
         data: table
@@ -30,7 +30,7 @@ fn plot_set(label: &str, table: &Table<u32>) -> PlotDataSet {
 
 /// The starting balance for a new year: the most recent balance prior to
 /// `year` when rolling forward (never a future pre-seeded value), otherwise zero
-fn new_year_value(value: &Table<u32>, year: u32, pull_value_forward: bool) -> f64 {
+fn new_year_value(value: &Table, year: u32, pull_value_forward: bool) -> f64 {
     match pull_value_forward {
         true => value.most_recent_value_before(year).unwrap_or_default(),
         false => 0_f64,
@@ -39,7 +39,7 @@ fn new_year_value(value: &Table<u32>, year: u32, pull_value_forward: bool) -> f6
 
 /// Insert a zero for the year if the table does not already have a value
 /// (pre-seeded historical values are kept)
-fn ensure_year(table: &mut Table<u32>, year: u32) {
+fn ensure_year(table: &mut Table, year: u32) {
     if table.get(year).is_none() {
         table.insert(year, 0_f64);
     }
@@ -49,11 +49,11 @@ fn ensure_year(table: &mut Table<u32>, year: u32) {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct SingleTable {
     /// Account value (meaning depends on account type)
-    pub value: Table<u32>,
+    pub value: Table,
 }
 
 impl SingleTable {
-    pub fn new(value: &Table<u32>) -> SingleTable {
+    pub fn new(value: &Table) -> SingleTable {
         SingleTable {
             value: value.clone(),
         }
@@ -79,24 +79,24 @@ impl TableGroup for SingleTable {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct LoanTables {
     /// Outstanding loan amount
-    pub value: Table<u32>,
+    pub value: Table,
     /// Interest accrued this year
-    pub interest: Table<u32>,
+    pub interest: Table,
     /// Payments made against the loan in each year
-    pub payments: Table<u32>,
+    pub payments: Table,
     /// Escrow amount used for mortgage type loans in each year
-    pub escrow: Table<u32>,
+    pub escrow: Table,
     /// PMI used for mortgage type loans in each year
-    pub insurance: Table<u32>,
+    pub insurance: Table,
 }
 
 impl LoanTables {
     pub fn new(
-        value: &Table<u32>,
-        interest: &Table<u32>,
-        payments: &Table<u32>,
-        escrow: &Table<u32>,
-        insurance: &Table<u32>,
+        value: &Table,
+        interest: &Table,
+        payments: &Table,
+        escrow: &Table,
+        insurance: &Table,
     ) -> LoanTables {
         LoanTables {
             // These keys must always have tables
@@ -151,24 +151,24 @@ impl TableGroup for LoanTables {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct SavingsTables {
     /// Account balance
-    pub value: Table<u32>,
+    pub value: Table,
     /// Amount of money put into the account in each year
-    pub contributions: Table<u32>,
+    pub contributions: Table,
     /// Amount of money put into the account by an employer in each year
-    pub employer_contributions: Table<u32>,
+    pub employer_contributions: Table,
     /// Amount of interest earned by the account in each year
-    pub earnings: Table<u32>,
+    pub earnings: Table,
     /// Amount of money withdrawn from the account in each year
-    pub withdrawals: Table<u32>,
+    pub withdrawals: Table,
 }
 
 impl SavingsTables {
     pub fn new(
-        value: &Table<u32>,
-        contributions: &Option<Table<u32>>,
-        employer_contributions: &Option<Table<u32>>,
-        earnings: &Option<Table<u32>>,
-        withdrawals: &Option<Table<u32>>,
+        value: &Table,
+        contributions: &Option<Table>,
+        employer_contributions: &Option<Table>,
+        earnings: &Option<Table>,
+        withdrawals: &Option<Table>,
     ) -> SavingsTables {
         SavingsTables {
             value: value.clone(),

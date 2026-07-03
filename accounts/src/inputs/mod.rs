@@ -3,8 +3,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::{AccountWrapper, Error, SimAccount};
-
 mod contribution;
 mod expense;
 mod payment;
@@ -28,23 +26,6 @@ pub struct UserData<T> {
     pub settings: Settings,
     /// The metrics that data will be generated for
     pub accounts: HashMap<String, T>,
-}
-
-impl TryFrom<UserData<AccountWrapper>> for UserData<SimAccount> {
-    type Error = Error;
-    fn try_from(other: UserData<AccountWrapper>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            settings: other.settings,
-            accounts: other
-                .accounts
-                .into_iter()
-                .map(|(k, v)| match v.to_account_object() {
-                    Ok(account) => Ok((k, account)),
-                    Err(e) => Err(Error::data(format!("account {}: {}", k, e))),
-                })
-                .collect::<Result<HashMap<String, SimAccount>, Self::Error>>()?,
-        })
-    }
 }
 
 /// Increase the value by inflation from year_start to year

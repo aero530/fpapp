@@ -7,11 +7,11 @@ use super::*;
 /// Loan type specifically tailored for mortgages
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Mortgage<T: std::cmp::Ord> {
+pub struct Mortgage {
     /// String describing this account
     name: String,
     /// Table of outstanding mortgage balance
-    table: Table<T>,
+    table: Table,
     /// Calendar year when payments to this account start
     start_out: YearInput,
     /// Calendar year when payments to this account stop
@@ -43,30 +43,7 @@ pub struct Mortgage<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<Mortgage<String>> for Mortgage<u32> {
-    type Error = Error;
-    fn try_from(other: Mortgage<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            table: other.table.try_into()?,
-            start_out: other.start_out,
-            end_out: other.end_out,
-            payment_type: other.payment_type,
-            payment_value: other.payment_value,
-            rate: other.rate,
-            compound_time: other.compound_time,
-            mortgage_insurance: other.mortgage_insurance,
-            ltv_limit: other.ltv_limit,
-            escrow_value: other.escrow_value,
-            home_value: other.home_value,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for Mortgage<u32> {
+impl Account for Mortgage {
     fn type_id(&self) -> AccountType {
         AccountType::Mortgage
     }
@@ -81,10 +58,11 @@ impl Account for Mortgage<u32> {
             return Err(Error::config("linked account dates provided but not used"));
         }
         // Fail fast on inputs that would otherwise produce NaN in the interest math
+        // (the runner adds the account name as context)
         if self.compound_time <= 0_f64 {
             return Err(Error::config(format!(
-                "Mortgage '{}': compound_time must be greater than zero (got {})",
-                self.name, self.compound_time
+                "compound_time must be greater than zero (got {})",
+                self.compound_time
             )));
         }
         self.analysis = LoanTables::new(
@@ -210,7 +188,7 @@ mod tests {
     use crate::inputs::test_fixtures::test_settings_values;
     use float_cmp::assert_approx_eq;
 
-    fn test_account(balance: f64) -> Mortgage<u32> {
+    fn test_account(balance: f64) -> Mortgage {
         Mortgage {
             name: "Mortgage".into(),
             table: Table([(2000, balance)].into_iter().collect()),

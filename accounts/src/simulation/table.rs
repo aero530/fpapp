@@ -7,15 +7,67 @@ use crate::Error;
 
 /// Table is a map keyed by year that holds account values/amounts.
 ///
-/// Tables are stored as keyed on string but must be converted to
-/// be keyed on a u32 year prior to use for analysis.
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub struct Table<T: std::cmp::Ord>(
+/// The on-disk format is `{"2020": 100.5}` — JSON object keys are always
+/// strings, so deserialization parses them into u32 years (see the manual
+/// `Deserialize` impl below) and serialization writes them back as strings.
+#[derive(Debug, Default, Clone, Serialize)]
+pub struct Table(
     /// Ordered map of (year, dollar amount) pairs
-    pub(crate) BTreeMap<T, f64>,
+    pub(crate) BTreeMap<u32, f64>,
 );
 
-impl Table<u32> {
+/// A year map key that accepts both string keys (the JSON representation and
+/// the buffered form used by internally-tagged enums) and integer keys.
+struct YearKey(u32);
+
+impl<'de> Deserialize<'de> for YearKey {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct KeyVisitor;
+        impl serde::de::Visitor<'_> for KeyVisitor {
+            type Value = YearKey;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a calendar year")
+            }
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<YearKey, E> {
+                v.trim()
+                    .parse::<u32>()
+                    .map(YearKey)
+                    .map_err(|_| E::custom(format!("invalid year '{}' in table", v)))
+            }
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<YearKey, E> {
+                u32::try_from(v)
+                    .map(YearKey)
+                    .map_err(|_| E::custom(format!("invalid year '{}' in table", v)))
+            }
+        }
+        deserializer.deserialize_any(KeyVisitor)
+    }
+}
+
+impl<'de> Deserialize<'de> for Table {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct TableVisitor;
+        impl<'de> serde::de::Visitor<'de> for TableVisitor {
+            type Value = Table;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a map of year to dollar amount")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Table, A::Error> {
+                let mut out = BTreeMap::new();
+                while let Some((key, value)) = map.next_entry::<YearKey, f64>()? {
+                    out.insert(key.0, value);
+                }
+                Ok(Table(out))
+            }
+        }
+        deserializer.deserialize_map(TableVisitor)
+    }
+}
+
+impl Table {
     /// Add year with value. Return Error if it already exists.
     pub fn add(&mut self, year: u32, value: f64) -> Result<(), Error> {
         match self.get(year) {
@@ -60,24 +112,9 @@ impl Table<u32> {
             self.0.insert(year, value);
         }
     }
-    /// Return the minimum table value (dollar amount)
-    fn min_value(&self) -> f64 {
-        self.0.values().fold(f64::NAN, |m, v| v.min(m))
-    }
-    /// Return the maximum table value (dollar amount)
-    pub fn max_value(&self) -> f64 {
-        self.0.values().fold(f64::NAN, |m, v| v.max(m))
-    }
-    /// Return the min and max key (year) values, or None if the table is empty
-    pub fn domain(&self) -> Option<(u32, u32)> {
-        match (self.0.first_key_value(), self.0.last_key_value()) {
-            (Some((min, _)), Some((max, _))) => Some((*min, *max)),
-            _ => None,
-        }
-    }
-    /// Return the min and max value (dollar amount); NaN when the table is empty
-    pub fn range(&self) -> (f64, f64) {
-        (self.min_value(), self.max_value())
+    /// Iterate over (year, value) pairs in year order
+    pub fn iter(&self) -> impl Iterator<Item = (u32, f64)> + '_ {
+        self.0.iter().map(|(k, v)| (*k, *v))
     }
     /// Return values in year order
     pub fn values(&self) -> Vec<f64> {
@@ -89,7 +126,7 @@ impl Table<u32> {
     }
 }
 
-impl IntoIterator for Table<u32> {
+impl IntoIterator for Table {
     type Item = (u32, f64);
     type IntoIter = std::collections::btree_map::IntoIter<u32, f64>;
     fn into_iter(self) -> Self::IntoIter {
@@ -97,37 +134,27 @@ impl IntoIterator for Table<u32> {
     }
 }
 
-impl TryFrom<Table<String>> for Table<u32> {
-    type Error = Error;
-    /// Convert a string-keyed table (as stored in the data file) into a
-    /// year-keyed table. A malformed year key produces an error instead of a panic.
-    fn try_from(other: Table<String>) -> Result<Self, Self::Error> {
-        other
-            .0
-            .into_iter()
-            .map(|(k, v)| {
-                k.trim()
-                    .parse::<u32>()
-                    .map(|year| (year, v))
-                    .map_err(|_| Error::data(format!("invalid year '{}' in table", k)))
-            })
-            .collect::<Result<BTreeMap<u32, f64>, Self::Error>>()
-            .map(Self)
-    }
-}
-
-impl From<(Vec<u32>, Vec<f64>)> for Table<u32> {
-    fn from(other: (Vec<u32>, Vec<f64>)) -> Self {
-        Self(other.0.into_iter().zip(other.1).collect())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn table(entries: &[(u32, f64)]) -> Table<u32> {
+    fn table(entries: &[(u32, f64)]) -> Table {
         Table(entries.iter().copied().collect())
+    }
+
+    #[test]
+    fn deserializes_string_keys_into_years() {
+        // JSON object keys are strings; serde must parse them into u32 years
+        // and serialize them back identically.
+        let t: Table = serde_json::from_str(r#"{"2020": 100.5, "2021": 200.0}"#).unwrap();
+        assert_eq!(t.get(2020), Some(100.5));
+        assert_eq!(t.get(2021), Some(200.0));
+        assert_eq!(
+            serde_json::to_string(&t).unwrap(),
+            r#"{"2020":100.5,"2021":200.0}"#
+        );
+        // a malformed year key is a parse error, not a panic
+        assert!(serde_json::from_str::<Table>(r#"{"20x0": 1.0}"#).is_err());
     }
 
     #[test]
@@ -152,29 +179,5 @@ mod tests {
         assert_eq!(t.most_recent_value_before(2021), Some(100.0));
         assert_eq!(t.most_recent_value_before(2026), Some(500.0));
         assert_eq!(t.most_recent_value_before(2020), None);
-    }
-
-    #[test]
-    fn try_from_rejects_malformed_year_keys() {
-        // Regression test for the panic on hand-edited data files.
-        let mut bad = Table::<String>::default();
-        bad.0.insert("20x0".into(), 1.0);
-        assert!(Table::<u32>::try_from(bad).is_err());
-
-        let mut good = Table::<String>::default();
-        good.0.insert("2020".into(), 1.0);
-        good.0.insert(" 2021 ".into(), 2.0);
-        let converted = Table::<u32>::try_from(good).unwrap();
-        assert_eq!(converted.get(2020), Some(1.0));
-        assert_eq!(converted.get(2021), Some(2.0));
-    }
-
-    #[test]
-    fn domain_of_empty_table_is_none() {
-        assert_eq!(Table::<u32>::default().domain(), None);
-        assert_eq!(
-            table(&[(2020, 1.0), (2030, 2.0)]).domain(),
-            Some((2020, 2030))
-        );
     }
 }

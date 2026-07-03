@@ -16,9 +16,9 @@ use inputs::{
 pub use inputs::UserData;
 
 mod simulation;
-use simulation::{LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact};
+use simulation::{LoanTables, SavingsTables, SingleTable, YearRange, YearlyImpact};
 // re-exported for use outside this lib
-pub use simulation::{Dates, PlotDataSet, TableGroup, YearlyTotals};
+pub use simulation::{Dates, PlotDataSet, Table, TableGroup, YearlyTotals};
 
 mod college;
 use college::College;
@@ -131,8 +131,8 @@ impl AccountType {
     /// - Ssa runs last so the taxable-benefit calculation sees all other
     ///   income for the year, including retirement/savings withdrawals
     ///   (which dominate income during retirement).
-    pub fn order() -> Vec<AccountType> {
-        vec![
+    pub fn order() -> &'static [AccountType] {
+        &[
             AccountType::Income,
             AccountType::Expense,
             AccountType::Hsa,
@@ -146,52 +146,25 @@ impl AccountType {
     }
 }
 
-/// Account Wrapper for json data storage
+/// A financial account, one variant per account type.
+///
+/// This is both the serde representation of the data file (via the `type`
+/// tag — historical year tables deserialize their string keys directly into
+/// u32 years) and the simulation-ready form.  Enum dispatch instead of
+/// `Box<dyn Account>`: no heap indirection, and the set of account types
+/// stays closed and exhaustively matchable.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
-pub enum AccountWrapper {
-    Income(Income<String>),
-    Ssa(Ssa),
-    Retirement(Retirement<String>),
-    Hsa(Hsa<String>),
-    College(College<String>),
-    Expense(Expense<String>),
-    Loan(Loan<String>),
-    Mortgage(Mortgage<String>),
-    Savings(Savings<String>),
-}
-
-impl AccountWrapper {
-    pub fn to_account_object(self) -> Result<SimAccount, Error> {
-        Ok(match self {
-            AccountWrapper::Income(account) => SimAccount::Income(account.try_into()?),
-            AccountWrapper::Ssa(account) => SimAccount::Ssa(account),
-            AccountWrapper::Retirement(account) => SimAccount::Retirement(account.try_into()?),
-            AccountWrapper::Hsa(account) => SimAccount::Hsa(account.try_into()?),
-            AccountWrapper::College(account) => SimAccount::College(account.try_into()?),
-            AccountWrapper::Expense(account) => SimAccount::Expense(account.try_into()?),
-            AccountWrapper::Loan(account) => SimAccount::Loan(account.try_into()?),
-            AccountWrapper::Mortgage(account) => SimAccount::Mortgage(account.try_into()?),
-            AccountWrapper::Savings(account) => SimAccount::Savings(account.try_into()?),
-        })
-    }
-}
-
-/// A simulation-ready account (year-keyed tables), one variant per account type.
-///
-/// Enum dispatch instead of `Box<dyn Account>`: no heap indirection, and the
-/// set of account types stays closed and exhaustively matchable.
-#[derive(Debug)]
 pub enum SimAccount {
-    Income(Income<u32>),
+    Income(Income),
     Ssa(Ssa),
-    Retirement(Retirement<u32>),
-    Hsa(Hsa<u32>),
-    College(College<u32>),
-    Expense(Expense<u32>),
-    Loan(Loan<u32>),
-    Mortgage(Mortgage<u32>),
-    Savings(Savings<u32>),
+    Retirement(Retirement),
+    Hsa(Hsa),
+    College(College),
+    Expense(Expense),
+    Loan(Loan),
+    Mortgage(Mortgage),
+    Savings(Savings),
 }
 
 /// Apply an expression to whichever concrete account this SimAccount holds
@@ -270,24 +243,34 @@ mod sample_plan_tests {
     use super::*;
     use crate::inputs::UserData;
 
-    #[test]
-    fn sample_plan_deserializes() {
+    fn load_sample() -> UserData<SimAccount> {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/sample_plan.json");
         let json = std::fs::read_to_string(path).expect("could not read examples/sample_plan.json");
-        let data: UserData<AccountWrapper> = serde_json::from_str(&json)
-            .unwrap_or_else(|e| panic!("sample_plan.json failed to deserialize: {e}"));
-        assert_eq!(data.accounts.len(), 14);
+        serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("sample_plan.json failed to deserialize: {e}"))
+    }
+
+    #[test]
+    fn sample_plan_deserializes() {
+        assert_eq!(load_sample().accounts.len(), 14);
     }
 
     #[test]
     fn sample_plan_runs() {
-        // End-to-end smoke test: the bundled example must convert and simulate cleanly.
-        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/sample_plan.json");
-        let json = std::fs::read_to_string(path).expect("could not read examples/sample_plan.json");
-        let data: UserData<AccountWrapper> = serde_json::from_str(&json).unwrap();
-        let sim: UserData<SimAccount> = data.try_into().unwrap();
-        let (plot_data, totals) = crate::run(sim).unwrap();
+        // End-to-end smoke test: the bundled example must simulate cleanly.
+        let (plot_data, totals) = crate::run(load_sample()).unwrap();
         assert_eq!(plot_data.len(), 14);
         assert!(!totals.years().is_empty());
+    }
+
+    #[test]
+    fn sample_plan_round_trips_through_serialization() {
+        // Save -> load -> save must be lossless (field defaults materialize on
+        // the first save; after that the representation must be stable).
+        let data = load_sample();
+        let first = serde_json::to_value(&data).unwrap();
+        let reloaded: UserData<SimAccount> = serde_json::from_value(first.clone()).unwrap();
+        let second = serde_json::to_value(&reloaded).unwrap();
+        assert_eq!(first, second);
     }
 }

@@ -9,11 +9,11 @@ use super::*;
 /// Health Savings Account
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Hsa<T: std::cmp::Ord> {
+pub struct Hsa {
     /// String describing this account
     name: String,
     /// Table of account balance
-    table: Table<T>,
+    table: Table,
     /// Calendar year when money starts being added to this account
     start_in: YearInput,
     /// Calendar year when money is no longer added to this account (this value is inclusive)
@@ -45,29 +45,7 @@ pub struct Hsa<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<Hsa<String>> for Hsa<u32> {
-    type Error = Error;
-    fn try_from(other: Hsa<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            table: other.table.try_into()?,
-            start_in: other.start_in,
-            end_in: other.end_in,
-            start_out: other.start_out,
-            end_out: other.end_out,
-            contribution_value: other.contribution_value,
-            contribution_type: other.contribution_type,
-            employer_contribution: other.employer_contribution,
-            yearly_return: other.yearly_return,
-            tax_status: other.tax_status,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for Hsa<u32> {
+impl Account for Hsa {
     fn type_id(&self) -> AccountType {
         AccountType::Hsa
     }
@@ -83,11 +61,11 @@ impl Account for Hsa<u32> {
         }
         // Fail fast: an HSA is by definition pretax-in / untaxed-when-used.
         // Other statuses would tax withdrawals that never arrive as income.
+        // (the runner adds the account name as context)
         if self.tax_status != TaxStatus::ContributePretaxUntaxedWhenUsed {
-            return Err(Error::config(format!(
-                "HSA account '{}': only tax status 'contribute_pretax_untaxed_when_used' is supported for HSA accounts",
-                self.name
-            )));
+            return Err(Error::config(
+                "only tax status 'contribute_pretax_untaxed_when_used' is supported for HSA accounts",
+            ));
         }
         self.analysis = SavingsTables::new(&self.table, &None, &None, &None, &None);
         self.dates = Dates {
@@ -211,7 +189,7 @@ mod tests {
     use crate::inputs::test_fixtures::test_settings_values;
     use float_cmp::assert_approx_eq;
 
-    fn test_account() -> Hsa<u32> {
+    fn test_account() -> Hsa {
         Hsa {
             name: "HSA".into(),
             table: Table([(2000, 1000.0)].into_iter().collect()),

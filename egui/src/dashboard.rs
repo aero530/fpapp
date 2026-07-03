@@ -12,6 +12,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         let years_income = totals.income.years();
         let years_expense = totals.expense.years();
         let years_saving = totals.saving.years();
+        let years_hsa = totals.hsa.years();
         let years_col = totals.col.years();
         let years_hc = totals.healthcare_expense_total.years();
         let years_tax = totals.tax_burden.years();
@@ -20,6 +21,7 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         let vals_income = totals.income.values();
         let vals_expense = totals.expense.values();
         let vals_saving = totals.saving.values();
+        let vals_hsa = totals.hsa.values();
         let vals_col = totals.col.values();
         let vals_hc = totals.healthcare_expense_total.values();
         let vals_tax = totals.tax_burden.values();
@@ -46,12 +48,13 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         });
 
         ui.add_space(12.0);
-        ui.label("Savings");
+        ui.label("Savings & HSA");
         dollar_plot("chart_saving", 440.0).show(ui, |plot_ui| {
             plot_ui.line(Line::new(
                 "Savings",
                 make_points(&years_saving, &vals_saving),
             ));
+            plot_ui.line(Line::new("HSA", make_points(&years_hsa, &vals_hsa)));
         });
 
         ui.add_space(12.0);

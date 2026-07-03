@@ -31,27 +31,27 @@ pub struct YearlyImpact {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct YearlyTotals {
     /// Overall cash account that all money flows in and out of (the value of this account rolls over from year to year)
-    pub net: Table<u32>,
+    pub net: Table,
     /// total expenses for a year
-    pub expense: Table<u32>,
+    pub expense: Table,
     /// outstanding healthcare costs not yet paid (zeroed each year after HSA + net settlement)
-    pub healthcare_expense: Table<u32>,
+    pub healthcare_expense: Table,
     /// gross healthcare costs for the year before HSA/net settlement — use this for reporting
-    pub healthcare_expense_total: Table<u32>,
+    pub healthcare_expense_total: Table,
     /// cost of living
-    pub col: Table<u32>,
+    pub col: Table,
     /// total value of all savings & retirement accounts (set by the runner from account balances each year)
-    pub saving: Table<u32>,
+    pub saving: Table,
     /// total value of all hsa accounts (set by the runner from account balances each year)
-    pub hsa: Table<u32>,
+    pub hsa: Table,
     /// total taxable income for a year
-    pub income_taxable: Table<u32>,
+    pub income_taxable: Table,
     /// total earnings taxed as capital gains for a year
-    pub capital_gains: Table<u32>,
+    pub capital_gains: Table,
     /// total income for a year
-    pub income: Table<u32>,
+    pub income: Table,
     /// amount of income tax paid for a year
-    pub tax_burden: Table<u32>,
+    pub tax_burden: Table,
 }
 
 impl YearlyTotals {

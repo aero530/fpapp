@@ -34,4 +34,23 @@ impl Error {
     pub fn internal(message: impl Into<String>) -> Self {
         Error::Internal(message.into())
     }
+    /// The bare message, without the variant's Display prefix.  Use this when
+    /// nesting an error inside another so prefixes don't stack up.
+    pub fn message(&self) -> &str {
+        match self {
+            Error::Data(m) | Error::Config(m) | Error::Internal(m) => m,
+            Error::Simulation { message, .. } => message,
+        }
+    }
+    /// Prepend context to the message while keeping the variant (so wrapping
+    /// does not turn everything into a differently-typed error or duplicate
+    /// the Display prefix).
+    pub(crate) fn with_context(self, context: impl std::fmt::Display) -> Self {
+        match self {
+            Error::Data(m) => Error::Data(format!("{context}: {m}")),
+            Error::Config(m) => Error::Config(format!("{context}: {m}")),
+            Error::Internal(m) => Error::Internal(format!("{context}: {m}")),
+            e @ Error::Simulation { .. } => e,
+        }
+    }
 }

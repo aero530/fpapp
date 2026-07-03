@@ -54,7 +54,7 @@ pub fn run(mut data: UserData<SimAccount>) -> Result<AnalysisOutput, Error> {
         let account = data.accounts.get_mut(uuid).unwrap();
         account
             .init(linked_dates, &data.settings)
-            .map_err(|e| Error::config(format!("account '{}': {}", account.name(), e)))?;
+            .map_err(|e| e.with_context(format!("account '{}'", account.name())))?;
     }
 
     // Resolve link ids once instead of cloning them for every account-year
@@ -89,7 +89,7 @@ pub fn run(mut data: UserData<SimAccount>) -> Result<AnalysisOutput, Error> {
                 .map_err(|e| Error::Simulation {
                     account: account.name(),
                     year,
-                    message: e.to_string(),
+                    message: e.message().to_string(),
                 })?;
             yearly_totals.update(year, impact);
         }
@@ -136,7 +136,7 @@ pub fn run(mut data: UserData<SimAccount>) -> Result<AnalysisOutput, Error> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AccountWrapper, SimAccount, UserData, YearlyTotals};
+    use crate::{SimAccount, UserData, YearlyTotals};
     use float_cmp::assert_approx_eq;
 
     /// Build UserData from a JSON accounts fragment using compact settings:
@@ -162,9 +162,8 @@ mod tests {
             }}"#,
             accounts_json
         );
-        let wrapped: UserData<AccountWrapper> = serde_json::from_str(&json)
-            .unwrap_or_else(|e| panic!("test json failed to deserialize: {e}"));
-        wrapped.try_into().unwrap()
+        serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("test json failed to deserialize: {e}"))
     }
 
     fn income_json(name: &str, base: f64) -> String {
@@ -336,7 +335,8 @@ mod tests {
 
     #[test]
     fn malformed_table_year_is_an_error_not_a_panic() {
-        // Regression test for the C-class crash vector.
+        // Regression test for the C-class crash vector: a bad year key in a
+        // hand-edited file is a parse error, never a panic.
         let json = r#"{
             "settings": {
                 "ageRetire": 45, "ageDie": 50, "yearBorn": 1980, "yearStart": 2020,
@@ -355,10 +355,8 @@ mod tests {
                 }
             }
         }"#;
-        let wrapped: UserData<AccountWrapper> = serde_json::from_str(json).unwrap();
-        let converted: Result<UserData<SimAccount>, _> = wrapped.try_into();
-        assert!(converted.is_err());
-        assert!(converted.err().unwrap().to_string().contains("20x0"));
+        let parsed: Result<UserData<SimAccount>, _> = serde_json::from_str(json);
+        assert!(parsed.is_err());
     }
 
     #[test]
@@ -377,9 +375,77 @@ mod tests {
             },
             "accounts": {}
         }"#;
-        let wrapped: UserData<AccountWrapper> = serde_json::from_str(json).unwrap();
-        let data: UserData<SimAccount> = wrapped.try_into().unwrap();
+        let data: UserData<SimAccount> = serde_json::from_str(json).unwrap();
         let err = crate::run(data).unwrap_err();
         assert!(err.to_string().contains("breakpoints"));
+    }
+
+    #[test]
+    fn init_errors_carry_single_layer_of_context() {
+        // Regression test: the banner used to read "invalid configuration:
+        // account 'X': invalid configuration: HSA account 'X': ..." — the
+        // account name and the variant prefix must each appear exactly once.
+        let accounts = r#""h": {
+            "type": "hsa", "name": "My HSA", "table": {},
+            "startIn": 2020, "endIn": 2030, "startOut": 2020, "endOut": 2030,
+            "contributionValue": 0.0, "contributionType": "fixed",
+            "employerContribution": 0.0, "yearlyReturn": 0.0,
+            "taxStatus": "contribute_pretax_taxed_when_used", "notes": null
+        }"#;
+        let err = crate::run(user_data(accounts)).unwrap_err();
+        let text = err.to_string();
+        assert_eq!(text.matches("invalid configuration").count(), 1, "{text}");
+        assert_eq!(text.matches("My HSA").count(), 1, "{text}");
+    }
+
+    #[test]
+    fn single_year_settlement_contract() {
+        // Locks the end-of-year settlement order for a year with all four
+        // components: wages, a pretax retirement contribution, an ordinary
+        // expense, and healthcare partially covered by an HSA.
+        let accounts = format!(
+            "{},{},{},{}",
+            income_json("job", 50000.0),
+            r#""ret": {
+                "type": "retirement", "name": "ret", "table": { "2020": 0 },
+                "contributions": null, "earnings": null, "withdrawals": null,
+                "employerContributions": null,
+                "startIn": 2020, "endIn": 2030, "startOut": 2031, "endOut": 2031,
+                "contributionValue": 5000.0, "contributionType": "fixed",
+                "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+                "taxStatus": "contribute_pretax_taxed_when_used",
+                "incomeLink": null, "matching": null, "notes": null
+            }"#,
+            expense_json("rent", 10000.0),
+            r#""hc": {
+                "type": "expense", "name": "hc", "table": {},
+                "startOut": 2020, "endOut": 2030,
+                "expenseType": "fixed", "expenseValue": 2000.0,
+                "isHealthcare": true, "notes": null
+            },
+            "hsa": {
+                "type": "hsa", "name": "hsa", "table": { "2020": 1500 },
+                "startIn": 2021, "endIn": 2021, "startOut": 2020, "endOut": 2030,
+                "contributionValue": 0.0, "contributionType": "fixed",
+                "employerContribution": 0.0, "yearlyReturn": 0.0,
+                "taxStatus": "contribute_pretax_untaxed_when_used", "notes": null
+            }"#
+        );
+        let totals = run_totals(&accounts);
+        // taxable = 50000 wages - 5000 pretax contribution = 45000 -> 9000 tax
+        assert_approx_eq!(f64, totals.tax_burden.get(2020).unwrap(), 9000.0);
+        // expense = 10000 rent + 5000 contribution outflow
+        assert_approx_eq!(f64, totals.expense.get(2020).unwrap(), 15000.0);
+        // healthcare: 2000 gross, 1500 covered by HSA, 500 charged to net
+        assert_approx_eq!(
+            f64,
+            totals.healthcare_expense_total.get(2020).unwrap(),
+            2000.0
+        );
+        assert_approx_eq!(f64, totals.hsa.get(2020).unwrap(), 0.0);
+        // net = 50000 - 9000 tax - 15000 expenses - 500 residual healthcare
+        assert_approx_eq!(f64, totals.net.get(2020).unwrap(), 25500.0);
+        // savings pool holds the retirement balance
+        assert_approx_eq!(f64, totals.saving.get(2020).unwrap(), 5000.0);
     }
 }

@@ -7,11 +7,11 @@ use super::*;
 /// Account to represent sources of income
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Income<T: std::cmp::Ord> {
+pub struct Income {
     /// String describing this account
     name: String,
     /// Table of account income
-    table: Table<T>,
+    table: Table,
     /// Base pay (with bonuses) [in today's dollars]
     base: f64,
     /// Calendar year when money starts being earned by this account
@@ -31,24 +31,7 @@ pub struct Income<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<Income<String>> for Income<u32> {
-    type Error = Error;
-    fn try_from(other: Income<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            base: other.base,
-            table: other.table.try_into()?,
-            start_in: other.start_in,
-            end_in: other.end_in,
-            raise: other.raise,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for Income<u32> {
+impl Account for Income {
     fn type_id(&self) -> AccountType {
         AccountType::Income
     }

@@ -39,17 +39,19 @@ pub fn f64_field(
     changed
 }
 
-/// Render label (col 0) + DragValue (col 1) for a u32 JSON field.
+/// Render label (col 0) + DragValue (col 1) for a u32 JSON field,
+/// clamped to `range` so absurd values can't be entered.
 pub fn u32_field(
     ui: &mut egui::Ui,
     label: &str,
     value: &mut Value,
     field: &str,
+    range: std::ops::RangeInclusive<u32>,
     tooltip: &str,
 ) -> bool {
     ui.label(label).on_hover_text(tooltip);
     let mut n = value[field].as_u64().unwrap_or(0) as u32;
-    let changed = ui.add(egui::DragValue::new(&mut n)).changed();
+    let changed = ui.add(egui::DragValue::new(&mut n).range(range)).changed();
     if changed {
         value[field] = json!(n);
     }
@@ -494,5 +496,89 @@ mod tests {
         assert_eq!(fmt_dollars(-42.0), "-$42");
         assert_eq!(fmt_dollars(999.0), "$999");
         assert_eq!(fmt_dollars(1000.0), "$1,000");
+    }
+
+    use egui_kittest::kittest::Queryable;
+
+    /// Drive a lone year_input with kittest.  The bound JSON value starts as
+    /// Null so the field starts empty.
+    fn year_input_harness() -> egui_kittest::Harness<'static, Value> {
+        egui_kittest::Harness::new_ui_state(
+            |ui, value: &mut Value| {
+                egui::Grid::new("test_grid").num_columns(2).show(ui, |ui| {
+                    year_input(ui, "Year:", "test-owner", value, "tooltip");
+                    ui.end_row();
+                });
+            },
+            Value::Null,
+        )
+    }
+
+    #[test]
+    fn year_input_commits_on_enter() {
+        let mut harness = year_input_harness();
+        harness.run();
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .click();
+        harness.run();
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .type_text("yearRetire+5");
+        harness.run();
+        // still focused: nothing committed yet (no mid-typing commits)
+        assert_eq!(*harness.state(), Value::Null);
+
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+        assert_eq!(*harness.state(), json!({"base": "yearRetire", "delta": 5}));
+    }
+
+    /// Click the field, type into it, and verify the text landed (so the
+    /// cancel/revert tests can't pass vacuously by typing into nothing).
+    fn focus_and_type(harness: &mut egui_kittest::Harness<'static, Value>, text: &str) {
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .click();
+        harness.run();
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .type_text(text);
+        harness.run();
+        let shown = harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .value()
+            .unwrap_or_default();
+        assert_eq!(shown, text, "typed text did not reach the field");
+    }
+
+    #[test]
+    fn year_input_escape_cancels() {
+        let mut harness = year_input_harness();
+        harness.run();
+        focus_and_type(&mut harness, "2025");
+
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+        assert_eq!(*harness.state(), Value::Null);
+        // and the stale buffer is gone: the field shows the canonical value again
+        harness.run();
+        let shown = harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .value()
+            .unwrap_or_default();
+        assert_eq!(shown, "");
+    }
+
+    #[test]
+    fn year_input_invalid_text_reverts_on_blur() {
+        let mut harness = year_input_harness();
+        harness.run();
+        focus_and_type(&mut harness, "yearRetire+");
+
+        // Enter (blur) with unparseable text: nothing committed
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+        assert_eq!(*harness.state(), Value::Null);
     }
 }

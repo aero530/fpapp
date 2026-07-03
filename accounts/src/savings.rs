@@ -7,17 +7,17 @@ use super::*;
 /// Generic savings account
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Savings<T: std::cmp::Ord> {
+pub struct Savings {
     /// String describing this account
     name: String,
     /// Table of account balance
-    table: Table<T>,
+    table: Table,
     /// Table of contributions to this account
-    contributions: Option<Table<T>>,
+    contributions: Option<Table>,
     /// Table of account earnings
-    earnings: Option<Table<T>>,
+    earnings: Option<Table>,
     /// Table of withdrawals from this account
-    withdrawals: Option<Table<T>>,
+    withdrawals: Option<Table>,
     /// Calendar year when money starts being added to this account
     start_in: YearInput,
     /// Calendar year when money is no longer added to this account (this value is inclusive)
@@ -49,33 +49,7 @@ pub struct Savings<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<Savings<String>> for Savings<u32> {
-    type Error = Error;
-    fn try_from(other: Savings<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            table: other.table.try_into()?,
-            contributions: other.contributions.map(|v| v.try_into()).transpose()?,
-            earnings: other.earnings.map(|v| v.try_into()).transpose()?,
-            withdrawals: other.withdrawals.map(|v| v.try_into()).transpose()?,
-            start_in: other.start_in,
-            end_in: other.end_in,
-            start_out: other.start_out,
-            end_out: other.end_out,
-            contribution_value: other.contribution_value,
-            contribution_type: other.contribution_type,
-            yearly_return: other.yearly_return,
-            withdrawal_type: other.withdrawal_type,
-            withdrawal_value: other.withdrawal_value,
-            tax_status: other.tax_status,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for Savings<u32> {
+impl Account for Savings {
     fn type_id(&self) -> AccountType {
         AccountType::Savings
     }

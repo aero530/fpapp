@@ -19,7 +19,7 @@ use serde::Serialize;
 
 mod log_config;
 
-use accounts::{AccountWrapper, SimAccount, UserData, YearlyTotals, PlotDataSet};
+use accounts::{SimAccount, UserData, YearlyTotals, PlotDataSet};
 
 #[derive(Debug, Clone, Serialize)]
 struct MenuEvent {
@@ -27,7 +27,7 @@ struct MenuEvent {
 }
 
 #[tauri::command]
-fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
+fn file_open(path: String) -> Result<UserData<SimAccount>, String> {
     let json_file_str;
     let a = std::path::Path::new(&path);
     match read_to_string(a) {
@@ -35,7 +35,7 @@ fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
         Err(e) => return Err(format!("Unable to open file {}",e)),
     }
 
-    let data = match serde_json::from_str::<UserData<AccountWrapper>>(&json_file_str) {
+    let data = match serde_json::from_str::<UserData<SimAccount>>(&json_file_str) {
         Ok(data) => data,
         Err(e) => return Err(format!("Unable to process input data file {}", e)),
     };
@@ -44,7 +44,7 @@ fn file_open(path: String) -> Result<UserData<AccountWrapper>, String> {
 }
 
 #[tauri::command]
-fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, String> {
+fn file_save(path: String, data: UserData<SimAccount> ) -> Result<String, String> {
 
     let json = match serde_json::to_string(&data) {
         Ok(value) => value,
@@ -58,9 +58,8 @@ fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, St
 }
 
 #[tauri::command]
-fn run_analysis(input: UserData<AccountWrapper>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), String> {
-    let data: UserData<SimAccount> = input.try_into().map_err(|e: accounts::Error| e.to_string())?;
-    accounts::run(data).map_err(|e| e.to_string())
+fn run_analysis(input: UserData<SimAccount>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), String> {
+    accounts::run(input).map_err(|e| e.to_string())
 }
 
 /// Main loop

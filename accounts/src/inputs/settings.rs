@@ -94,6 +94,32 @@ impl Settings {
                 self.ssa.taxable_income_percentage.low, self.ssa.taxable_income_percentage.high
             )));
         }
+        // Rates outside these bounds produce nonsense (negative tax as income,
+        // >100% tax, negative inflation factors that alternate sign)
+        if !(0.0..=100.0).contains(&self.tax_income) {
+            return Err(Error::config(format!(
+                "tax_income must be between 0 and 100 percent (got {})",
+                self.tax_income
+            )));
+        }
+        if !(0.0..=100.0).contains(&self.tax_capital_gains) {
+            return Err(Error::config(format!(
+                "tax_capital_gains must be between 0 and 100 percent (got {})",
+                self.tax_capital_gains
+            )));
+        }
+        if self.inflation_base <= -100.0 {
+            return Err(Error::config(format!(
+                "inflation_base must be greater than -100 percent (got {})",
+                self.inflation_base
+            )));
+        }
+        if self.retirement_cost_of_living < 0.0 {
+            return Err(Error::config(format!(
+                "retirement_cost_of_living must not be negative (got {})",
+                self.retirement_cost_of_living
+            )));
+        }
         Ok(())
     }
 }
@@ -148,6 +174,25 @@ mod tests {
     fn validate_rejects_year_overflow() {
         let mut settings = test_settings_values();
         settings.year_born = u32::MAX - 10;
+        assert!(settings.validate().is_err());
+    }
+
+    #[test]
+    fn validate_rejects_nonsense_rates() {
+        let mut settings = test_settings_values();
+        settings.tax_income = 150.0;
+        assert!(settings.validate().is_err());
+
+        let mut settings = test_settings_values();
+        settings.tax_capital_gains = -5.0;
+        assert!(settings.validate().is_err());
+
+        let mut settings = test_settings_values();
+        settings.inflation_base = -150.0;
+        assert!(settings.validate().is_err());
+
+        let mut settings = test_settings_values();
+        settings.retirement_cost_of_living = -10.0;
         assert!(settings.validate().is_err());
     }
 }

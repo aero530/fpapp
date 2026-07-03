@@ -197,7 +197,7 @@ Funds contributed pre-tax and used to pay healthcare expenses tax-free. HSA acco
 | **Contribution Value** | Your annual contribution in today's dollars. |
 | **Employer Contribution ($)** | Employer's fixed annual contribution in today's dollars. |
 | **Yearly Return (%)** | Investment return on the HSA balance. |
-| **Tax Status** | Normally *Tax-Free (HSA/529)*. |
+| **Tax Status** | Fixed to *Tax-Free (HSA)* — pre-tax contributions (a deduction), tax-free withdrawals for healthcare. |
 | **Notes** | Free text for your own reference. |
 
 To have an HSA pay for a cost, open the Expense account and check **Healthcare expense** — all HSA accounts are drawn from automatically.
@@ -253,7 +253,7 @@ Any non-mortgage debt: auto loans, student loans, personal loans.
 | **End Year** | Last year payments are made. |
 | **Payment Type** | Fixed Amount or Fixed + Inflation. |
 | **Annual Payment ($)** | Total yearly payment amount in today's dollars. |
-| **Interest Rate (%)** | Annual percentage rate (APR), compounded monthly. |
+| **Interest Rate (%)** | Annual percentage rate (APR). Accepts a number or the `inflationBase` keyword. |
 | **Notes** | Free text for your own reference. |
 
 The simulation calculates how much of each payment covers interest versus principal. The outstanding balance is tracked internally.
@@ -271,7 +271,7 @@ Home loan with support for escrow, mortgage insurance (PMI), and LTV-based PMI r
 | **End Year** | Loan payoff year. |
 | **Payment Type** | Fixed Amount or Fixed + Inflation. |
 | **Annual Payment ($)** | Total yearly payment including principal, interest, escrow, and mortgage insurance. |
-| **Interest Rate (%)** | APR, compounded at the frequency set by Compound Periods/Year. |
+| **Interest Rate (%)** | APR, compounded at the frequency set by Compound Periods/Year. Accepts a number or the `inflationBase` keyword. |
 | **Compound Periods/Year** | `12` for monthly compounding (standard), `1` for annual. |
 | **Mortgage Insurance ($)** | Annual PMI premium in today's dollars. Applied each year until the LTV drops below the limit. |
 | **LTV Limit (%)** | Loan-to-value ratio at which PMI is no longer required (typically 80%). |
@@ -319,9 +319,9 @@ Click **📊 Dashboard** to see the summary charts. Charts appear once a data fi
 | Chart | What it shows |
 |---|---|
 | **Net / Income / Expense** | Your liquid cash balance (net), total income, and total expenses year by year. The net line rolls forward — a positive and growing net line means you're accumulating cash. |
-| **Savings** | The combined balance of all Retirement and Savings accounts. Does not include HSA or College balances. |
+| **Savings & HSA** | The combined balance of all Retirement and Savings accounts (College balances are excluded), plus a separate line for the combined HSA balance. |
 | **Cost of Living** | Total annual lifestyle spending tracked from your Expense accounts. Drops in retirement if Retirement Cost of Living is set below 100%. |
-| **Healthcare & Tax Burden** | Annual healthcare costs and income tax paid. |
+| **Healthcare & Tax Burden** | Annual healthcare costs and income tax paid (income tax plus capital-gains tax). |
 
 Each account's own chart is shown at the bottom of its form page under **Projection**.
 

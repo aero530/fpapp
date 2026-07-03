@@ -6,17 +6,17 @@ use super::*;
 /// College savings accounts specifically designed to represent 529 accounts
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct College<T: std::cmp::Ord> {
+pub struct College {
     /// String describing this account
     name: String,
     /// Table of account balance
-    table: Table<T>,
+    table: Table,
     /// Table of contributions to this account
-    contributions: Option<Table<T>>,
+    contributions: Option<Table>,
     /// Table of account earnings
-    earnings: Option<Table<T>>,
+    earnings: Option<Table>,
     /// Table of withdrawals from this account
-    withdrawals: Option<Table<T>>,
+    withdrawals: Option<Table>,
     /// Calendar year when money starts being added to this account
     start_in: YearInput,
     /// Calendar year when money is no longer added to this account (this value is inclusive)
@@ -48,33 +48,7 @@ pub struct College<T: std::cmp::Ord> {
     dates: Dates,
 }
 
-impl TryFrom<College<String>> for College<u32> {
-    type Error = Error;
-    fn try_from(other: College<String>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            name: other.name,
-            table: other.table.try_into()?,
-            contributions: other.contributions.map(|v| v.try_into()).transpose()?,
-            earnings: other.earnings.map(|v| v.try_into()).transpose()?,
-            withdrawals: other.withdrawals.map(|v| v.try_into()).transpose()?,
-            start_in: other.start_in,
-            end_in: other.end_in,
-            start_out: other.start_out,
-            end_out: other.end_out,
-            contribution_value: other.contribution_value,
-            contribution_type: other.contribution_type,
-            yearly_return: other.yearly_return,
-            withdrawal_type: other.withdrawal_type,
-            withdrawal_value: other.withdrawal_value,
-            tax_status: other.tax_status,
-            notes: other.notes,
-            analysis: other.analysis,
-            dates: other.dates,
-        })
-    }
-}
-
-impl Account for College<u32> {
+impl Account for College {
     fn type_id(&self) -> AccountType {
         AccountType::College
     }
@@ -89,13 +63,12 @@ impl Account for College<u32> {
             return Err(Error::config("linked account dates provided but not used"));
         }
         // Fail fast: only the 529-style tax treatment is implemented for
-        // college accounts.  Catching this here (with the account name) beats
-        // aborting mid-simulation.
+        // college accounts.  Catching this at init (the runner adds the
+        // account name as context) beats aborting mid-simulation.
         if self.tax_status != TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed {
-            return Err(Error::config(format!(
-                "College account '{}': only tax status 'contribute_taxed_earnings_untaxed_when_used' is supported for college accounts",
-                self.name
-            )));
+            return Err(Error::config(
+                "only tax status 'contribute_taxed_earnings_untaxed_when_used' is supported for college accounts",
+            ));
         }
 
         // Init the analysis object with values from the stored tables
@@ -243,6 +216,6 @@ mod tests {
         };
         let settings = test_settings_values();
         let err = account.init(None, &settings).unwrap_err();
-        assert!(err.to_string().contains("529"));
+        assert!(err.to_string().contains("college"));
     }
 }

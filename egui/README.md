@@ -8,7 +8,7 @@ Native desktop app built with eframe 0.35. Owns the UI layer only; all financial
 |---|---|
 | `main.rs` | Loads the app icon from `egui/assets/icon-256.png` at compile time, configures the 1280×800 viewport, and calls `eframe::run_native`. |
 | `app.rs` | Defines `FpApp` (all app state) and implements `eframe::App`. The `fn ui()` method is the frame entry point: checks the dirty flag, runs analysis, shows the delete-confirmation modal, delegates to `nav` and the current page. |
-| `analyze.rs` | Bridge between the live `serde_json::Value` state and the typed `accounts` library. Deserializes the JSON blob by reference (no clone) into `UserData<AccountWrapper>`, converts to `UserData<SimAccount>`, runs the full simulation, and returns `(plot_data, yearly_totals)`. |
+| `analyze.rs` | Bridge between the live `serde_json::Value` state and the typed `accounts` library. Deserializes the JSON blob by reference (no clone) directly into `UserData<SimAccount>`, runs the full simulation, and returns `(plot_data, yearly_totals)`. |
 | `logger.rs` | Logger that forwards to env_logger and tees warn-level records into a shared buffer; the app displays warnings from the most recent analysis in the sidebar. |
 | `nav.rs` | Left sidebar (230 px). File open / save / save-as buttons, a scrollable account tree grouped by type with per-group collapse headers and "+ Add" buttons that insert a default JSON account object. |
 | `dashboard.rs` | Four `egui_plot::Plot` charts drawn from `YearlyTotals`: Net / Income / Expense, Savings balance, Cost of Living, Healthcare & Tax Burden. |

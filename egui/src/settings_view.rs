@@ -22,16 +22,16 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
         .spacing([12.0, 5.0])
         .min_col_width(200.0)
         .show(ui, |ui| {
-            changed |= widgets::u32_field(ui, "Year Born:", settings, "yearBorn",
+            changed |= widgets::u32_field(ui, "Year Born:", settings, "yearBorn", 1850..=2200,
                 "The year you were born — used to calculate retirement and death years");
             ui.end_row();
-            changed |= widgets::u32_field(ui, "Year Start:", settings, "yearStart",
+            changed |= widgets::u32_field(ui, "Year Start:", settings, "yearStart", 1850..=2200,
                 "The first year of the simulation (usually the current year)");
             ui.end_row();
-            changed |= widgets::u32_field(ui, "Age at Retire:", settings, "ageRetire",
+            changed |= widgets::u32_field(ui, "Age at Retire:", settings, "ageRetire", 0..=130,
                 "The age at which you plan to retire — sets the yearRetire variable");
             ui.end_row();
-            changed |= widgets::u32_field(ui, "Age at Death:", settings, "ageDie",
+            changed |= widgets::u32_field(ui, "Age at Death:", settings, "ageDie", 0..=130,
                 "The age used as the end of the simulation — sets the yearDie variable");
             ui.end_row();
 
@@ -128,15 +128,18 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
         app.dirty = true;
     }
 
-    // Derived info
+    // Derived info (saturating: existing files may hold out-of-range values)
     let year_born = app.data["settings"]["yearBorn"].as_u64().unwrap_or(1970) as u32;
     let age_retire = app.data["settings"]["ageRetire"].as_u64().unwrap_or(65) as u32;
     let age_die = app.data["settings"]["ageDie"].as_u64().unwrap_or(90) as u32;
     ui.add_space(12.0);
     ui.separator();
     ui.horizontal(|ui| {
-        ui.label(format!("Retire in: {}", year_born + age_retire));
+        ui.label(format!(
+            "Retire in: {}",
+            year_born.saturating_add(age_retire)
+        ));
         ui.separator();
-        ui.label(format!("End year: {}", year_born + age_die));
+        ui.label(format!("End year: {}", year_born.saturating_add(age_die)));
     });
 }

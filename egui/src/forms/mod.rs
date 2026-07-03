@@ -139,7 +139,7 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
 
 pub(super) fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, id: &str) -> bool {
     let current = a["incomeLink"].as_str().unwrap_or("").to_string();
-    let accounts: Vec<(String, String)> = app.data["accounts"]
+    let mut accounts: Vec<(String, String)> = app.data["accounts"]
         .as_object()
         .map(|map| {
             map.iter()
@@ -153,6 +153,8 @@ pub(super) fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, i
                 .collect()
         })
         .unwrap_or_default();
+    // sort by name (uuid as tiebreak) so the dropdown order is predictable
+    accounts.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
 
     let label = if current.is_empty() {
         "None".to_string()

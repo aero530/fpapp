@@ -74,7 +74,11 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
                             }
 
                             for (type_key, type_label) in ACCOUNT_TYPES {
-                                let type_accounts = groups.remove(*type_key).unwrap_or_default();
+                                let mut type_accounts =
+                                    groups.remove(*type_key).unwrap_or_default();
+                                // sort by name (uuid as tiebreak) — map order is
+                                // uuid order, which looks random to the user
+                                type_accounts.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
 
                                 let header_text =
                                     format!("{} ({})", type_label, type_accounts.len());
@@ -344,12 +348,11 @@ mod tests {
     #[test]
     fn default_account_templates_match_the_accounts_schema() {
         // Every "+ Add" template must deserialize into the engine's
-        // AccountWrapper — this catches schema drift between the UI templates
+        // SimAccount — this catches schema drift between the UI templates
         // and the accounts crate (removed/renamed fields).
         for (type_key, _) in ACCOUNT_TYPES {
             let template = default_account(type_key);
-            let result: Result<accounts::AccountWrapper, _> =
-                serde_json::from_value(template.clone());
+            let result: Result<accounts::SimAccount, _> = serde_json::from_value(template.clone());
             assert!(
                 result.is_ok(),
                 "default template for '{}' does not deserialize: {}\n{}",

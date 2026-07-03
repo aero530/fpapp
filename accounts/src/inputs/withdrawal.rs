@@ -34,7 +34,7 @@ impl WithdrawalOptions {
         year: u32,
         settings: &Settings,
         year_out: Option<YearRange>,
-        value_table: &Table<u32>,
+        value_table: &Table,
         totals: &YearlyTotals,
         tax_status: TaxStatus,
     ) -> f64 {
@@ -148,7 +148,7 @@ mod tests {
     use super::*;
     use float_cmp::assert_approx_eq;
 
-    fn value_table(entries: &[(u32, f64)]) -> Table<u32> {
+    fn value_table(entries: &[(u32, f64)]) -> Table {
         Table(entries.iter().copied().collect())
     }
 

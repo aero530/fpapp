@@ -29,10 +29,12 @@ impl WarningBuffer {
         }
     }
     fn push(&self, message: String) {
+        // Hard cap as a backstop; deduplication keeps the buffer tiny in practice
+        const MAX_WARNINGS: usize = 100;
         if let Ok(mut buf) = self.0.lock() {
             // The simulation logs the same warning once per simulated year;
             // collapse duplicates so the UI shows each problem once
-            if !buf.contains(&message) {
+            if buf.len() < MAX_WARNINGS && !buf.contains(&message) {
                 buf.push(message);
             }
         }
