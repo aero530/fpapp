@@ -1,8 +1,5 @@
 //! College savings account (529)
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -52,7 +49,7 @@ pub struct College<T: std::cmp::Ord> {
 }
 
 impl TryFrom<College<String>> for College<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: College<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -87,23 +84,18 @@ impl Account for College<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
         // Fail fast: only the 529-style tax treatment is implemented for
         // college accounts.  Catching this here (with the account name) beats
         // aborting mid-simulation.
         if self.tax_status != TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed {
-            return Err(format!(
+            return Err(Error::config(format!(
                 "College account '{}': only tax status 'contribute_taxed_earnings_untaxed_when_used' is supported for college accounts",
                 self.name
-            )
-            .into());
+            )));
         }
 
         // Init the analysis object with values from the stored tables
@@ -143,35 +135,6 @@ impl Account for College<u32> {
     fn get_value(&self, year: u32) -> Option<f64> {
         self.analysis.value.get(year)
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -181,7 +144,10 @@ impl Account for College<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_in = self.dates.require_in()?;
+        let year_out = self.dates.require_out()?;
+
         // Init value table with previous year's value; skip for pre-seeded years (table has the starting balance)
         if self.analysis.value.get(year).is_none() {
             self.analysis.add_year(year, true)?;
@@ -189,7 +155,7 @@ impl Account for College<u32> {
         let mut result = WorkingValues::default();
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
-            return Err(String::from("College fund account value is negative.").into());
+            return Err(Error::internal("college fund account value is negative"));
         }
 
         // Calculate earnings
@@ -201,7 +167,7 @@ impl Account for College<u32> {
         self.analysis.value.update(year, result.earning);
 
         // Calculate contribution
-        if self.dates.year_in.unwrap().contains(year) {
+        if year_in.contains(year) {
             result.contribution = self.contribution_type.value(
                 self.contribution_value,
                 totals.get_income(year),
@@ -211,11 +177,13 @@ impl Account for College<u32> {
         }
 
         // Add contribution to contribution and value tables
-        self.analysis.contributions.update(year, result.contribution);
+        self.analysis
+            .contributions
+            .update(year, result.contribution);
         self.analysis.value.update(year, result.contribution);
 
         // Calculate withdrawal
-        if self.dates.year_out.unwrap().contains(year) {
+        if year_out.contains(year) {
             result.withdrawal = self.withdrawal_type.value(
                 self.withdrawal_value,
                 year,
@@ -241,9 +209,6 @@ impl Account for College<u32> {
             expense: result.contribution,
             ..Default::default()
         })
-    }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
     }
 }
 

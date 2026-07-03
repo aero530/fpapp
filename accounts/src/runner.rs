@@ -1,11 +1,13 @@
+use crate::{Account, AccountType, Dates, Error, PlotDataSet, SimAccount, UserData, YearlyTotals};
 use std::collections::HashMap;
-use std::error::Error;
-use crate::{Account, AccountType, Dates, PlotDataSet, UserData, YearlyTotals};
 
 /// Per-account plot series keyed by account uuid, plus the aggregate totals
 pub type AnalysisOutput = (HashMap<String, Vec<PlotDataSet>>, YearlyTotals);
 
-pub fn run(mut data: UserData<Box<dyn Account>>) -> Result<AnalysisOutput, Box<dyn Error>> {
+pub fn run(mut data: UserData<SimAccount>) -> Result<AnalysisOutput, Error> {
+    // Reject configurations that would silently produce an empty or corrupt run
+    data.settings.validate()?;
+
     // Build a deterministic simulation order: the fixed type sequence, then by
     // account name and uuid within a type (HashMap iteration order must never
     // influence the results)
@@ -27,30 +29,32 @@ pub fn run(mut data: UserData<Box<dyn Account>>) -> Result<AnalysisOutput, Box<d
 
     // Init pass: resolve linked dates and seed analysis tables from historical data
     for uuid in &account_order {
-        let linked_dates: Option<Dates> = match data.accounts
+        let linked_dates: Option<Dates> = match data
+            .accounts
             .get(uuid)
-            .ok_or_else(|| format!("account {} missing from map", uuid))?
+            .ok_or_else(|| Error::internal(format!("account {} missing from map", uuid)))?
             .link_id()
         {
-            Some(link_id) => {
-                match data.accounts.get(&link_id) {
-                    Some(linked) => Some(Dates {
-                        year_in: linked.get_range_in(&data.settings, None),
-                        year_out: linked.get_range_out(&data.settings, None),
-                    }),
-                    None => {
-                        log::warn!("linked account {} not found — treating as unlinked", link_id);
-                        None
-                    }
+            Some(link_id) => match data.accounts.get(&link_id) {
+                Some(linked) => Some(Dates {
+                    year_in: linked.get_range_in(&data.settings, None),
+                    year_out: linked.get_range_out(&data.settings, None),
+                }),
+                None => {
+                    log::warn!(
+                        "linked account {} not found — treating as unlinked",
+                        link_id
+                    );
+                    None
                 }
-            }
+            },
             None => None,
         };
 
         let account = data.accounts.get_mut(uuid).unwrap();
         account
             .init(linked_dates, &data.settings)
-            .map_err(|e| format!("Account '{}': {}", account.name(), e))?;
+            .map_err(|e| Error::config(format!("account '{}': {}", account.name(), e)))?;
     }
 
     // Resolve link ids once instead of cloning them for every account-year
@@ -82,8 +86,10 @@ pub fn run(mut data: UserData<Box<dyn Account>>) -> Result<AnalysisOutput, Box<d
             let account = data.accounts.get_mut(uuid).unwrap();
             let impact = account
                 .simulate(year, &yearly_totals, &data.settings, link_value)
-                .map_err(|e| {
-                    format!("Account '{}', year {}: {}", account.name(), year, e)
+                .map_err(|e| Error::Simulation {
+                    account: account.name(),
+                    year,
+                    message: e.to_string(),
                 })?;
             yearly_totals.update(year, impact);
         }
@@ -130,12 +136,12 @@ pub fn run(mut data: UserData<Box<dyn Account>>) -> Result<AnalysisOutput, Box<d
 
 #[cfg(test)]
 mod tests {
-    use crate::{Account, AccountWrapper, UserData, YearlyTotals};
+    use crate::{AccountWrapper, SimAccount, UserData, YearlyTotals};
     use float_cmp::assert_approx_eq;
 
     /// Build UserData from a JSON accounts fragment using compact settings:
     /// simulation 2020..=2030, no inflation, 20% income tax, 10% capital gains tax
-    fn user_data(accounts_json: &str) -> UserData<Box<dyn Account>> {
+    fn user_data(accounts_json: &str) -> UserData<SimAccount> {
         let json = format!(
             r#"{{
                 "settings": {{
@@ -221,11 +227,7 @@ mod tests {
         let totals = run_totals(&accounts);
         // net accumulates 8000/year (10000 income - 20% tax) with no gaps
         for (i, year) in (2020..=2030).enumerate() {
-            assert_approx_eq!(
-                f64,
-                totals.net.get(year).unwrap(),
-                8000.0 * (i + 1) as f64
-            );
+            assert_approx_eq!(f64, totals.net.get(year).unwrap(), 8000.0 * (i + 1) as f64);
         }
     }
 
@@ -354,8 +356,30 @@ mod tests {
             }
         }"#;
         let wrapped: UserData<AccountWrapper> = serde_json::from_str(json).unwrap();
-        let converted: Result<UserData<Box<dyn Account>>, _> = wrapped.try_into();
+        let converted: Result<UserData<SimAccount>, _> = wrapped.try_into();
         assert!(converted.is_err());
         assert!(converted.err().unwrap().to_string().contains("20x0"));
+    }
+
+    #[test]
+    fn misordered_ssa_breakpoints_are_rejected() {
+        // Regression test: low > high used to feed a negative term into the
+        // SSA taxable-benefit formula; now the run fails fast with a clear error.
+        let json = r#"{
+            "settings": {
+                "ageRetire": 45, "ageDie": 50, "yearBorn": 1980, "yearStart": 2020,
+                "inflationBase": 0.0, "taxIncome": 20.0, "taxCapitalGains": 10.0,
+                "retirementCostOfLiving": 100.0,
+                "ssa": {
+                    "breakpoints": { "low": 50000, "high": 40000 },
+                    "taxableIncomePercentage": { "low": 50, "high": 85 }
+                }
+            },
+            "accounts": {}
+        }"#;
+        let wrapped: UserData<AccountWrapper> = serde_json::from_str(json).unwrap();
+        let data: UserData<SimAccount> = wrapped.try_into().unwrap();
+        let err = crate::run(data).unwrap_err();
+        assert!(err.to_string().contains("breakpoints"));
     }
 }

@@ -2,7 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::error::Error;
+
+use crate::Error;
 
 /// Table is a map keyed by year that holds account values/amounts.
 ///
@@ -11,14 +12,17 @@ use std::error::Error;
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Table<T: std::cmp::Ord>(
     /// Ordered map of (year, dollar amount) pairs
-    pub BTreeMap<T, f64>,
+    pub(crate) BTreeMap<T, f64>,
 );
 
 impl Table<u32> {
     /// Add year with value. Return Error if it already exists.
-    pub fn add(&mut self, year: u32, value: f64) -> Result<(), Box<dyn Error>> {
+    pub fn add(&mut self, year: u32, value: f64) -> Result<(), Error> {
         match self.get(year) {
-            Some(_x) => Err(format!("The year {} already exists in table", year).into()),
+            Some(_x) => Err(Error::internal(format!(
+                "the year {} already exists in table",
+                year
+            ))),
             None => {
                 self.0.insert(year, value);
                 Ok(())
@@ -94,7 +98,7 @@ impl IntoIterator for Table<u32> {
 }
 
 impl TryFrom<Table<String>> for Table<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     /// Convert a string-keyed table (as stored in the data file) into a
     /// year-keyed table. A malformed year key produces an error instead of a panic.
     fn try_from(other: Table<String>) -> Result<Self, Self::Error> {
@@ -105,7 +109,7 @@ impl TryFrom<Table<String>> for Table<u32> {
                 k.trim()
                     .parse::<u32>()
                     .map(|year| (year, v))
-                    .map_err(|_| format!("invalid year '{}' in table", k).into())
+                    .map_err(|_| Error::data(format!("invalid year '{}' in table", k)))
             })
             .collect::<Result<BTreeMap<u32, f64>, Self::Error>>()
             .map(Self)
@@ -168,6 +172,9 @@ mod tests {
     #[test]
     fn domain_of_empty_table_is_none() {
         assert_eq!(Table::<u32>::default().domain(), None);
-        assert_eq!(table(&[(2020, 1.0), (2030, 2.0)]).domain(), Some((2020, 2030)));
+        assert_eq!(
+            table(&[(2020, 1.0), (2030, 2.0)]).domain(),
+            Some((2020, 2030))
+        );
     }
 }

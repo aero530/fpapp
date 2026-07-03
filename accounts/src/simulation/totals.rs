@@ -2,14 +2,9 @@
 
 use log::error;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::io::Write;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::Table;
-#[cfg(feature = "plotters-backend")]
-use crate::plot::{scatter_plot_file, scatter_plot_buf};
+use crate::Error;
 
 /// How the results of the simulation of an account impact a YearlyTotal
 ///
@@ -65,9 +60,9 @@ impl YearlyTotals {
         YearlyTotals::default()
     }
     /// Initialize a new year and pull forward net when told to
-    pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+    pub fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Error> {
         match self.net.0.contains_key(&year) {
-            true => Err(String::from("Year already exists.").into()),
+            true => Err(Error::internal("year already exists")),
             false => {
                 self.net.insert(year, 0_f64);
                 self.expense.insert(year, 0_f64);
@@ -125,7 +120,8 @@ impl YearlyTotals {
     }
     /// Add income to net
     pub fn deposit_income_in_net(&mut self, year: u32) {
-        self.net.update(year, self.income.get(year).unwrap_or_default());
+        self.net
+            .update(year, self.income.get(year).unwrap_or_default());
     }
     /// Pay income and capital gains tax for the year
     ///
@@ -156,103 +152,6 @@ impl YearlyTotals {
             self.healthcare_expense.insert(year, 0_f64);
         }
     }
-    /// Write yearly total data to a csv file
-    pub fn write_summary(&self, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, totals.net, totals.saving, totals.hsa, totals.healthcare_expense, totals.expense, totals.col, totals.income, totals.income_taxable, totals.tax_burden\n".as_bytes()).unwrap();
-
-        self.years().iter().for_each(|year| {
-            file.write_all(
-                format!(
-                    "{},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2},\t{:.2}\n",
-                    year,
-                    self.net.get(*year).unwrap_or_default(),
-                    self.saving.get(*year).unwrap_or_default(),
-                    self.hsa.get(*year).unwrap_or_default(),
-                    self.healthcare_expense.get(*year).unwrap_or_default(),
-                    self.expense.get(*year).unwrap_or_default(),
-                    self.col.get(*year).unwrap_or_default(),
-                    self.income.get(*year).unwrap_or_default(),
-                    self.income_taxable.get(*year).unwrap_or_default(),
-                    self.tax_burden.get(*year).unwrap_or_default()
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        });
-    }
-    /// Generate plot
-    #[cfg(feature = "plotters-backend")]
-    pub fn plot_to_file(&self, filepath: String) {
-        let net: Vec<f64> = self.net.values();
-        let saving: Vec<f64> = self.saving.values();
-        let hsa: Vec<f64> = self.hsa.values();
-        let healthcare_expense: Vec<f64> = self.healthcare_expense.values();
-        let expense: Vec<f64> = self.expense.values();
-        let col: Vec<f64> = self.col.values();
-        let income: Vec<f64> = self.income.values();
-        let income_taxable: Vec<f64> = self.income_taxable.values();
-        let tax_burden: Vec<f64> = self.tax_burden.values();
-
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Net".into(), &(self.years(), net).into()),
-                ("Saving".into(), &(self.years(), saving).into()),
-                ("HSA".into(), &(self.years(), hsa).into()),
-                (
-                    "Healthcare Expense".into(),
-                    &(self.years(), healthcare_expense).into(),
-                ),
-                ("Expense".into(), &(self.years(), expense).into()),
-                ("COL".into(), &(self.years(), col).into()),
-                ("Income".into(), &(self.years(), income).into()),
-                (
-                    "Taxable Income".into(),
-                    &(self.years(), income_taxable).into(),
-                ),
-                ("Tax Burden".into(), &(self.years(), tax_burden).into()),
-            ],
-            "Summary".into(),
-            1600,
-            1200,
-        );
-    }
-    /// Plot the account and return it as a vec
-    #[cfg(feature = "plotters-backend")]
-    pub fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let net: Vec<f64> = self.net.values();
-        let saving: Vec<f64> = self.saving.values();
-        let hsa: Vec<f64> = self.hsa.values();
-        let healthcare_expense: Vec<f64> = self.healthcare_expense.values();
-        let expense: Vec<f64> = self.expense.values();
-        let col: Vec<f64> = self.col.values();
-        let income: Vec<f64> = self.income.values();
-        let income_taxable: Vec<f64> = self.income_taxable.values();
-        let tax_burden: Vec<f64> = self.tax_burden.values();
-        scatter_plot_buf(
-            vec![
-                ("Net".into(), &(self.years(), net).into()),
-                ("Saving".into(), &(self.years(), saving).into()),
-                ("HSA".into(), &(self.years(), hsa).into()),
-                (
-                    "Healthcare Expense".into(),
-                    &(self.years(), healthcare_expense).into(),
-                ),
-                ("Expense".into(), &(self.years(), expense).into()),
-                ("COL".into(), &(self.years(), col).into()),
-                ("Income".into(), &(self.years(), income).into()),
-                (
-                    "Taxable Income".into(),
-                    &(self.years(), income_taxable).into(),
-                ),
-                ("Tax Burden".into(), &(self.years(), tax_burden).into()),
-            ],
-            "Summary".into(),
-            width,
-            height,
-        )
-    }
 
     /// Get the cost of living for the specified year
     ///
@@ -272,11 +171,18 @@ impl YearlyTotals {
     pub fn get_saving(&self, year: u32) -> f64 {
         self.saving.get(year).unwrap_or_default()
     }
-    /// Get the healthcare_expense for the specified year
+    /// Get the outstanding (not yet covered) healthcare_expense for the specified year
     ///
     /// If the year is not found then zero is returned
     pub fn get_healthcare_expense(&self, year: u32) -> f64 {
         self.healthcare_expense.get(year).unwrap_or_default()
+    }
+    /// Get the gross healthcare expense for the specified year, before any
+    /// HSA coverage
+    ///
+    /// If the year is not found then zero is returned
+    pub fn get_healthcare_expense_total(&self, year: u32) -> f64 {
+        self.healthcare_expense_total.get(year).unwrap_or_default()
     }
     /// Return a sorted list of keys (years)
     ///

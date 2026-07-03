@@ -25,38 +25,50 @@ pub fn show(app: &FpApp, ui: &mut eframe::egui::Ui) {
         let vals_tax = totals.tax_burden.values();
 
         let make_points = |years: &[u32], vals: &[f64]| -> PlotPoints {
-            years.iter().zip(vals.iter()).map(|(&x, &y)| [x as f64, y]).collect()
+            years
+                .iter()
+                .zip(vals.iter())
+                .map(|(&x, &y)| [x as f64, y])
+                .collect()
         };
 
         ui.label("Net / Income / Expense");
-        dollar_plot("chart_nie", 440.0)
-            .show(ui, |plot_ui| {
-                plot_ui.line(Line::new("Net", make_points(&years_net, &vals_net)));
-                plot_ui.line(Line::new("Income", make_points(&years_income, &vals_income)));
-                plot_ui.line(Line::new("Expense", make_points(&years_expense, &vals_expense)));
-            });
+        dollar_plot("chart_nie", 440.0).show(ui, |plot_ui| {
+            plot_ui.line(Line::new("Net", make_points(&years_net, &vals_net)));
+            plot_ui.line(Line::new(
+                "Income",
+                make_points(&years_income, &vals_income),
+            ));
+            plot_ui.line(Line::new(
+                "Expense",
+                make_points(&years_expense, &vals_expense),
+            ));
+        });
 
         ui.add_space(12.0);
         ui.label("Savings");
-        dollar_plot("chart_saving", 440.0)
-            .show(ui, |plot_ui| {
-                plot_ui.line(Line::new("Savings", make_points(&years_saving, &vals_saving)));
-            });
+        dollar_plot("chart_saving", 440.0).show(ui, |plot_ui| {
+            plot_ui.line(Line::new(
+                "Savings",
+                make_points(&years_saving, &vals_saving),
+            ));
+        });
 
         ui.add_space(12.0);
         ui.label("Cost of Living");
-        dollar_plot("chart_col", 440.0)
-            .show(ui, |plot_ui| {
-                plot_ui.line(Line::new("Cost of Living", make_points(&years_col, &vals_col)));
-            });
+        dollar_plot("chart_col", 440.0).show(ui, |plot_ui| {
+            plot_ui.line(Line::new(
+                "Cost of Living",
+                make_points(&years_col, &vals_col),
+            ));
+        });
 
         ui.add_space(12.0);
         ui.label("Healthcare & Tax");
-        dollar_plot("chart_hc_tax", 440.0)
-            .show(ui, |plot_ui| {
-                plot_ui.line(Line::new("Healthcare", make_points(&years_hc, &vals_hc)));
-                plot_ui.line(Line::new("Tax Burden", make_points(&years_tax, &vals_tax)));
-            });
+        dollar_plot("chart_hc_tax", 440.0).show(ui, |plot_ui| {
+            plot_ui.line(Line::new("Healthcare", make_points(&years_hc, &vals_hc)));
+            plot_ui.line(Line::new("Tax Burden", make_points(&years_tax, &vals_tax)));
+        });
     } else if app.error.is_none() {
         ui.centered_and_justified(|ui| {
             ui.label("Open a data file to see the dashboard.");

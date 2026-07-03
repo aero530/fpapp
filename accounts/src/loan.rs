@@ -1,9 +1,6 @@
 //! Generic loan
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -37,7 +34,7 @@ pub struct Loan<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Loan<String>> for Loan<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Loan<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -64,13 +61,9 @@ impl Account for Loan<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
 
         self.analysis = LoanTables::new(
@@ -106,33 +99,6 @@ impl Account for Loan<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Interest".into(), &self.analysis.interest),
-                ("Payments".into(), &self.analysis.payments),
-            ],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Interest".into(), &self.analysis.interest),
-                ("Payments".into(), &self.analysis.payments),
-            ],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -142,7 +108,8 @@ impl Account for Loan<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_out = self.dates.require_out()?;
         let mut result = WorkingValues::default();
 
         // Skip add_year for pre-seeded years; the table value is the starting balance
@@ -151,7 +118,7 @@ impl Account for Loan<u32> {
         }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
-            return Err(String::from("Loan account value is negative.").into());
+            return Err(Error::internal("loan account value is negative"));
         }
 
         // Calculate interest
@@ -163,7 +130,7 @@ impl Account for Loan<u32> {
         self.analysis.value.update(year, result.interest);
 
         // Calculate payment amount (capped at the outstanding balance)
-        if self.dates.year_out.unwrap().contains(year) {
+        if year_out.contains(year) {
             let scheduled = self.payment_type.value(self.payment_value, year, settings);
             result.payment = scheduled.min(self.analysis.value.get(year).unwrap());
         }
@@ -181,9 +148,6 @@ impl Account for Loan<u32> {
             ..Default::default()
         })
     }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
-    }
 }
 
 #[cfg(test)]
@@ -192,20 +156,24 @@ mod tests {
     use crate::inputs::test_fixtures::test_settings_values;
     use float_cmp::assert_approx_eq;
 
-    #[test]
-    fn loan_amortizes_and_stops_paying_at_zero() {
-        let mut account = Loan {
+    fn test_account(payment_type: PaymentOptions, payment_value: f64, rate: f64) -> Loan<u32> {
+        Loan {
             name: "Loan".into(),
             table: Table([(2000, 1000.0)].into_iter().collect()),
             start_out: YearInput::ConstantInt(2000),
             end_out: YearInput::ConstantInt(2030),
-            payment_type: PaymentOptions::Fixed,
-            payment_value: 550.0,
-            rate: PercentInput::ConstantFloat(10.0),
+            payment_type,
+            payment_value,
+            rate: PercentInput::ConstantFloat(rate),
             notes: None,
             analysis: LoanTables::default(),
             dates: Dates::default(),
-        };
+        }
+    }
+
+    #[test]
+    fn loan_amortizes_and_stops_paying_at_zero() {
+        let mut account = test_account(PaymentOptions::Fixed, 550.0, 10.0);
         let settings = test_settings_values();
         account.init(None, &settings).unwrap();
         let totals = YearlyTotals::new();
@@ -227,5 +195,21 @@ mod tests {
         // Year 4: nothing left to pay
         let impact = account.simulate(2003, &totals, &settings, None).unwrap();
         assert_approx_eq!(f64, impact.expense, 0.0);
+    }
+
+    #[test]
+    fn loan_inflation_adjusted_payment_grows() {
+        // FixedWithInflation payments grow with the inflation setting (5%).
+        let mut account = test_account(PaymentOptions::FixedWithInflation, 100.0, 0.0);
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let totals = YearlyTotals::new();
+
+        let impact = account.simulate(2000, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.expense, 100.0);
+        let impact = account.simulate(2001, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.expense, 105.0);
+        let impact = account.simulate(2002, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.expense, 110.25, epsilon = 0.001);
     }
 }

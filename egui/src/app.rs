@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use accounts::{PlotDataSet, YearlyTotals};
 use eframe::egui;
 use serde_json::Value;
-use accounts::{PlotDataSet, YearlyTotals};
+
+use crate::logger::WarningBuffer;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Page {
@@ -22,8 +24,13 @@ pub struct FpApp {
     pub plot_data: HashMap<String, Vec<PlotDataSet>>,
     pub yearly_totals: Option<YearlyTotals>,
     pub error: Option<String>,
+    /// Engine warnings (misconfigurations that were worked around) from the
+    /// most recent analysis run, shown in the sidebar.
+    pub warnings: Vec<String>,
     /// UUID of account awaiting delete confirmation; None when no dialog is open.
     pub confirm_delete: Option<String>,
+    /// Shared buffer the logger captures warn-level records into.
+    warning_buffer: WarningBuffer,
 }
 
 /// How long an edit must sit idle before the simulation re-runs.  Keeps a
@@ -31,7 +38,7 @@ pub struct FpApp {
 const ANALYSIS_DEBOUNCE_SECS: f64 = 0.25;
 
 impl FpApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>, warning_buffer: WarningBuffer) -> Self {
         Self {
             data: Value::Null,
             file_path: None,
@@ -41,11 +48,15 @@ impl FpApp {
             plot_data: HashMap::new(),
             yearly_totals: None,
             error: None,
+            warnings: Vec::new(),
             confirm_delete: None,
+            warning_buffer,
         }
     }
 
     pub fn run_analysis(&mut self) {
+        // Capture only the warnings emitted by this run
+        self.warning_buffer.clear();
         match crate::analyze::run_analysis(&self.data) {
             Ok((plot_data, totals)) => {
                 self.plot_data = plot_data;
@@ -58,6 +69,7 @@ impl FpApp {
                 self.yearly_totals = None;
             }
         }
+        self.warnings = self.warning_buffer.take();
     }
 }
 
@@ -70,7 +82,10 @@ impl eframe::App for FpApp {
             let now = ui.ctx().input(|i| i.time);
             let since = *self.dirty_since.get_or_insert(now);
             let dragging = ui.ctx().input(|i| i.pointer.any_down());
-            if !dragging && now - since >= ANALYSIS_DEBOUNCE_SECS {
+            // No debounce for the first run after a file is opened (nothing is
+            // being dragged/typed then, and waiting just flashes an empty dashboard)
+            let first_run = self.yearly_totals.is_none() && self.error.is_none();
+            if first_run || (!dragging && now - since >= ANALYSIS_DEBOUNCE_SECS) {
                 if !self.data.is_null() {
                     self.run_analysis();
                 }
@@ -153,37 +168,45 @@ impl eframe::App for FpApp {
             .frame(
                 egui::Frame::new()
                     .fill(ui.visuals().panel_fill)
-                    .inner_margin(egui::Margin { left: 8, right: 0, top: 8, bottom: 8 }),
+                    .inner_margin(egui::Margin {
+                        left: 8,
+                        right: 0,
+                        top: 8,
+                        bottom: 8,
+                    }),
             )
             .show(ui, |ui| {
-            if self.data.is_null() {
-                ui.vertical_centered(|ui| {
-                    ui.add_space(120.0);
-                    ui.heading("Financial Planner");
-                    ui.add_space(16.0);
-                    ui.label("Open a data file to get started.");
-                    ui.add_space(12.0);
-                    if ui.button("Open File...").clicked() {
-                        crate::nav::open_file(self);
-                    }
-                });
-                return;
-            }
+                if self.data.is_null() {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(120.0);
+                        ui.heading("Financial Planner");
+                        ui.add_space(16.0);
+                        ui.label("Open a data file to get started.");
+                        ui.add_space(12.0);
+                        if ui.button("Open File...").clicked() {
+                            crate::nav::open_file(self);
+                        }
+                    });
+                    return;
+                }
 
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                egui::Frame::new()
-                    .inner_margin(egui::Margin { left: 0, right: 16, top: 0, bottom: 0 })
-                    .show(ui, |ui| {
-                        match &page {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    egui::Frame::new()
+                        .inner_margin(egui::Margin {
+                            left: 0,
+                            right: 16,
+                            top: 0,
+                            bottom: 0,
+                        })
+                        .show(ui, |ui| match &page {
                             Page::Dashboard => crate::dashboard::show(self, ui),
                             Page::Settings => crate::settings_view::show(self, ui),
                             Page::Account(uuid) => {
                                 let uuid = uuid.clone();
                                 crate::forms::show_account(self, ui, &uuid);
                             }
-                        }
-                    });
+                        });
+                });
             });
-        });
     }
 }

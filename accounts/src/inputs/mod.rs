@@ -2,9 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
 
-use super::{Account, AccountWrapper};
+use super::{AccountWrapper, Error, SimAccount};
 
 mod contribution;
 mod expense;
@@ -31,8 +30,8 @@ pub struct UserData<T> {
     pub accounts: HashMap<String, T>,
 }
 
-impl TryFrom<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
-    type Error = Box<dyn Error>;
+impl TryFrom<UserData<AccountWrapper>> for UserData<SimAccount> {
+    type Error = Error;
     fn try_from(other: UserData<AccountWrapper>) -> Result<Self, Self::Error> {
         Ok(Self {
             settings: other.settings,
@@ -41,9 +40,9 @@ impl TryFrom<UserData<AccountWrapper>> for UserData<Box<dyn Account>> {
                 .into_iter()
                 .map(|(k, v)| match v.to_account_object() {
                     Ok(account) => Ok((k, account)),
-                    Err(e) => Err(format!("account {}: {}", k, e).into()),
+                    Err(e) => Err(Error::data(format!("account {}: {}", k, e))),
                 })
-                .collect::<Result<HashMap<String, Box<dyn Account>>, Self::Error>>()?,
+                .collect::<Result<HashMap<String, SimAccount>, Self::Error>>()?,
         })
     }
 }

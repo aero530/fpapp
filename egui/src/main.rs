@@ -2,12 +2,13 @@ mod analyze;
 mod app;
 mod dashboard;
 mod forms;
+mod logger;
 mod nav;
 mod settings_view;
 mod widgets;
 
 fn main() -> eframe::Result {
-    env_logger::init();
+    let warnings = logger::init();
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_title("Financial Planner")
@@ -18,7 +19,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Financial Planner",
         options,
-        Box::new(|cc| Ok(Box::new(app::FpApp::new(cc)))),
+        Box::new(move |cc| Ok(Box::new(app::FpApp::new(cc, warnings)))),
     )
 }
 

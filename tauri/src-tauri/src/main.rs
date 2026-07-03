@@ -19,7 +19,7 @@ use serde::Serialize;
 
 mod log_config;
 
-use accounts::{Account, AccountWrapper, UserData, YearlyTotals, PlotDataSet};
+use accounts::{AccountWrapper, SimAccount, UserData, YearlyTotals, PlotDataSet};
 
 #[derive(Debug, Clone, Serialize)]
 struct MenuEvent {
@@ -59,7 +59,7 @@ fn file_save(path: String, data: UserData<AccountWrapper> ) -> Result<String, St
 
 #[tauri::command]
 fn run_analysis(input: UserData<AccountWrapper>) -> Result<(HashMap<String, Vec<PlotDataSet>>, YearlyTotals), String> {
-    let data: UserData<Box<dyn Account>> = input.try_into().map_err(|e: Box<dyn std::error::Error>| e.to_string())?;
+    let data: UserData<SimAccount> = input.try_into().map_err(|e: accounts::Error| e.to_string())?;
     accounts::run(data).map_err(|e| e.to_string())
 }
 

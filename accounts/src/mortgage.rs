@@ -1,9 +1,6 @@
 //! Loan type specifically tailored for mortgages
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -47,7 +44,7 @@ pub struct Mortgage<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Mortgage<String>> for Mortgage<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Mortgage<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -79,21 +76,16 @@ impl Account for Mortgage<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
         // Fail fast on inputs that would otherwise produce NaN in the interest math
         if self.compound_time <= 0_f64 {
-            return Err(format!(
+            return Err(Error::config(format!(
                 "Mortgage '{}': compound_time must be greater than zero (got {})",
                 self.name, self.compound_time
-            )
-            .into());
+            )));
         }
         self.analysis = LoanTables::new(
             &self.table,
@@ -128,37 +120,6 @@ impl Account for Mortgage<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Interest".into(), &self.analysis.interest),
-                ("Payments".into(), &self.analysis.payments),
-                ("Escrow".into(), &self.analysis.escrow),
-                ("Insurance".into(), &self.analysis.insurance),
-            ],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Interest".into(), &self.analysis.interest),
-                ("Payments".into(), &self.analysis.payments),
-                ("Escrow".into(), &self.analysis.escrow),
-                ("Insurance".into(), &self.analysis.insurance),
-            ],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_mortgage_plot_data()
     }
@@ -168,7 +129,8 @@ impl Account for Mortgage<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_out = self.dates.require_out()?;
         let mut result = WorkingValues::default();
 
         // Skip add_year for pre-seeded years; the table value is the starting balance
@@ -177,7 +139,7 @@ impl Account for Mortgage<u32> {
         }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
-            return Err(String::from("Mortgage account value is negative.").into());
+            return Err(Error::internal("mortgage account value is negative"));
         }
 
         // Calculate interest (accrues regardless of payment window)
@@ -200,8 +162,7 @@ impl Account for Mortgage<u32> {
         // window and while a balance remains (once the mortgage is paid off,
         // escrow and insurance are no longer collected through the payment)
         let balance = self.analysis.value.get(year).unwrap();
-        if self.dates.year_out.unwrap().contains(year) && balance > 0_f64 {
-
+        if year_out.contains(year) && balance > 0_f64 {
             // Mortgage insurance applies while the loan-to-value ratio is above the
             // configured limit.  A home value of zero means LTV can't be computed;
             // treat it as no insurance rather than dividing by zero.
@@ -223,9 +184,7 @@ impl Account for Mortgage<u32> {
             // pays down principal.  In the payoff year the payment is capped at
             // the remaining balance PLUS insurance and escrow, so the principal
             // actually reaches zero instead of leaving a residual balance.
-            let scheduled = self
-                .payment_type
-                .value(self.payment_value, year, settings);
+            let scheduled = self.payment_type.value(self.payment_value, year, settings);
             result.payment = scheduled.min(balance + insurance_payment + self.escrow_value);
             self.analysis.payments.update(year, result.payment);
 
@@ -242,9 +201,6 @@ impl Account for Mortgage<u32> {
             expense: result.payment,
             ..Default::default()
         })
-    }
-    fn write(&self, filepath: String) {
-        self.analysis.write_mortgage(filepath);
     }
 }
 

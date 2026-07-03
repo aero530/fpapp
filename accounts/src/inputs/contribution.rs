@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{fixed_with_inflation, PercentInput, Settings};
+use super::{PercentInput, Settings, fixed_with_inflation};
 
 /// description used to populate account dropdown for contribution type selection
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
@@ -22,7 +22,13 @@ impl ContributionOptions {
     /// `income` is the income the contribution is based on for percent-of-income
     /// contributions: the linked income account's value when a link exists,
     /// otherwise the total income accumulated so far this year.
-    pub fn value(&self, contribution_value: f64, income: f64, year: u32, settings: &Settings) -> f64 {
+    pub fn value(
+        &self,
+        contribution_value: f64,
+        income: f64,
+        year: u32,
+        settings: &Settings,
+    ) -> f64 {
         match self {
             ContributionOptions::Fixed => contribution_value,
             ContributionOptions::PercentOfIncome => income * contribution_value / 100_f64,

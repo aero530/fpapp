@@ -8,3 +8,7 @@ target/
 WixTools
 
 *.csv
+
+# This app is deprecated and excluded from the workspace; it generates its own
+# lockfile when built ad hoc. No reproducibility requirement, so don't track it.
+/Cargo.lock

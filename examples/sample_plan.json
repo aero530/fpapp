@@ -107,7 +107,7 @@
       "withdrawalType": "other",
       "withdrawalValue": 0.0,
       "taxStatus": "contribute_pretax_untaxed_when_used",
-      "notes": "Withdrawals driven automatically by linked healthcare expense accounts"
+      "notes": "Withdrawals driven automatically by healthcare expense accounts"
     },
     "a7a7a7a7-a7a7-a7a7-a7a7-a7a7a7a7a7a7": {
       "type": "college",

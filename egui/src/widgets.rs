@@ -3,7 +3,13 @@ use serde_json::{Value, json};
 
 /// Render label (col 0) + text edit (col 1) for a string JSON field.
 /// Call inside a 2-column Grid; the caller adds ui.end_row().
-pub fn string_field(ui: &mut egui::Ui, label: &str, value: &mut Value, field: &str, tooltip: &str) -> bool {
+pub fn string_field(
+    ui: &mut egui::Ui,
+    label: &str,
+    value: &mut Value,
+    field: &str,
+    tooltip: &str,
+) -> bool {
     ui.label(label).on_hover_text(tooltip);
     let mut text = value[field].as_str().unwrap_or("").to_string();
     let changed = ui
@@ -34,7 +40,13 @@ pub fn f64_field(
 }
 
 /// Render label (col 0) + DragValue (col 1) for a u32 JSON field.
-pub fn u32_field(ui: &mut egui::Ui, label: &str, value: &mut Value, field: &str, tooltip: &str) -> bool {
+pub fn u32_field(
+    ui: &mut egui::Ui,
+    label: &str,
+    value: &mut Value,
+    field: &str,
+    tooltip: &str,
+) -> bool {
     ui.label(label).on_hover_text(tooltip);
     let mut n = value[field].as_u64().unwrap_or(0) as u32;
     let changed = ui.add(egui::DragValue::new(&mut n)).changed();
@@ -44,8 +56,7 @@ pub fn u32_field(ui: &mut egui::Ui, label: &str, value: &mut Value, field: &str,
     changed
 }
 
-const YEAR_FORMAT_HINT: &str =
-    "\n\nFormat: a year (2025), a keyword (yearStart, yearRetire, yearDie, yearEnd, incomeLink), \
+const YEAR_FORMAT_HINT: &str = "\n\nFormat: a year (2025), a keyword (yearStart, yearRetire, yearDie, yearEnd, incomeLink), \
      or an expression (yearRetire+5, yearDie-2)";
 
 /// A buffered single-line text edit for expression-style fields.
@@ -54,11 +65,16 @@ const YEAR_FORMAT_HINT: &str =
 /// (shown in red when it does not parse) and nothing is committed — so typing
 /// "yearRetire+" is not reverted mid-keystroke and typing "2025" does not
 /// commit the intermediate year "2". The value is parsed and committed when
-/// the field loses focus (including via Enter). Returns Some(parsed) only for
-/// a successful commit; invalid text reverts to the canonical value.
+/// the field loses focus (including via Enter); Escape cancels the edit.
+/// Returns Some(parsed) only for a successful commit; invalid text reverts to
+/// the canonical value.
+///
+/// `id_salt` must be unique per (widget kind, owner, label) — the owner part
+/// (e.g. the account uuid) prevents a buffer or focus from one account's field
+/// leaking into the same field on another account's page.
 fn expression_input(
     ui: &mut egui::Ui,
-    id_salt: (&str, &str),
+    id_salt: (&str, &str, &str),
     canonical: String,
     parse: impl Fn(&str) -> Option<Value>,
 ) -> Option<Value> {
@@ -75,23 +91,37 @@ fn expression_input(
 
     if response.lost_focus() {
         ui.data_mut(|d| d.remove::<String>(id));
-        if !text.trim().is_empty() && text != canonical {
+        // Escape surrenders focus too, but means "cancel", not "commit"
+        let cancelled = ui.input(|i| i.key_pressed(egui::Key::Escape));
+        if !cancelled && !text.trim().is_empty() && text != canonical {
             return parse(&text);
         }
     } else if response.has_focus() {
         ui.data_mut(|d| d.insert_temp(id, text));
+    } else {
+        // Not focused and not just blurred: any leftover buffer is stale
+        // (e.g. focus disappeared while this widget was not being rendered).
+        // Drop it so the canonical value shows again.
+        ui.data_mut(|d| d.remove::<String>(id));
     }
     None
 }
 
 /// Render label (col 0) + YearInput text edit (col 1).
 /// Accepts: "2025", "yearRetire", "yearStart+5", "yearDie-2".
-pub fn year_input(ui: &mut egui::Ui, label: &str, value: &mut Value, tooltip: &str) -> bool {
+/// `owner_id` scopes the edit buffer (use the account uuid or a page name).
+pub fn year_input(
+    ui: &mut egui::Ui,
+    label: &str,
+    owner_id: &str,
+    value: &mut Value,
+    tooltip: &str,
+) -> bool {
     let full_tip = format!("{}{}", tooltip, YEAR_FORMAT_HINT);
     ui.label(label).on_hover_text(full_tip);
     if let Some(parsed) = expression_input(
         ui,
-        ("year_input", label),
+        ("year_input", owner_id, label),
         year_input_to_string(value),
         parse_year_input,
     ) {
@@ -124,7 +154,13 @@ fn year_input_to_string(v: &Value) -> String {
     String::new()
 }
 
-const YEAR_KEYWORDS: &[&str] = &["yearRetire", "yearStart", "yearDie", "yearEnd", "incomeLink"];
+const YEAR_KEYWORDS: &[&str] = &[
+    "yearRetire",
+    "yearStart",
+    "yearDie",
+    "yearEnd",
+    "incomeLink",
+];
 
 fn parse_year_input(s: &str) -> Option<Value> {
     let s = s.trim();
@@ -147,17 +183,23 @@ fn parse_year_input(s: &str) -> Option<Value> {
     None
 }
 
-const PERCENT_FORMAT_HINT: &str =
-    "\n\nFormat: a number (3.5) or a keyword (inflationBase)";
+const PERCENT_FORMAT_HINT: &str = "\n\nFormat: a number (3.5) or a keyword (inflationBase)";
 
 /// Render label (col 0) + PercentInput text edit (col 1).
 /// Accepts: "3.5", "inflationBase".
-pub fn percent_input(ui: &mut egui::Ui, label: &str, value: &mut Value, tooltip: &str) -> bool {
+/// `owner_id` scopes the edit buffer (use the account uuid or a page name).
+pub fn percent_input(
+    ui: &mut egui::Ui,
+    label: &str,
+    owner_id: &str,
+    value: &mut Value,
+    tooltip: &str,
+) -> bool {
     let full_tip = format!("{}{}", tooltip, PERCENT_FORMAT_HINT);
     ui.label(label).on_hover_text(full_tip);
     if let Some(parsed) = expression_input(
         ui,
-        ("percent_input", label),
+        ("percent_input", owner_id, label),
         percent_input_to_string(value),
         parse_percent_input,
     ) {
@@ -260,7 +302,9 @@ pub fn table_editor(ui: &mut egui::Ui, value: &mut Value, field: &str) -> bool {
             .map(|(k, v)| (k.clone(), v.as_f64().unwrap_or(0.0)))
             .collect();
         rows.sort_by(|a, b| {
-            a.0.parse::<u32>().unwrap_or(0).cmp(&b.0.parse::<u32>().unwrap_or(0))
+            a.0.parse::<u32>()
+                .unwrap_or(0)
+                .cmp(&b.0.parse::<u32>().unwrap_or(0))
         });
         rows
     } else {
@@ -354,12 +398,19 @@ pub(crate) fn fmt_dollars(v: f64) -> String {
 
 /// Build a Plot pre-configured with a dollar-value hover label showing
 /// "Series Name\n2035: $123,456" when the cursor is near a line.
-pub(crate) fn dollar_plot(id: impl std::hash::Hash + std::fmt::Debug, height: f32) -> egui_plot::Plot<'static> {
+pub(crate) fn dollar_plot(
+    id: impl std::hash::Hash + std::fmt::Debug,
+    height: f32,
+) -> egui_plot::Plot<'static> {
     egui_plot::Plot::new(id)
         .height(height)
         .legend(egui_plot::Legend::default())
         .label_formatter(|pos| match pos {
-            egui_plot::HoverPosition::NearDataPoint { plot_name, position, .. } => {
+            egui_plot::HoverPosition::NearDataPoint {
+                plot_name,
+                position,
+                ..
+            } => {
                 let year = position.x as u32;
                 let dollars = fmt_dollars(position.y);
                 if plot_name.is_empty() {
@@ -381,11 +432,67 @@ pub fn plot_datasets(
     height: f32,
 ) {
     ui.label(title);
-    dollar_plot(id, height)
-        .show(ui, |plot_ui| {
-            for ds in datasets {
-                let points: egui_plot::PlotPoints = ds.data.iter().map(|p| [p.x as f64, p.y]).collect();
-                plot_ui.line(egui_plot::Line::new(&ds.label, points));
-            }
-        });
+    dollar_plot(id, height).show(ui, |plot_ui| {
+        for ds in datasets {
+            let points: egui_plot::PlotPoints = ds.data.iter().map(|p| [p.x as f64, p.y]).collect();
+            plot_ui.line(egui_plot::Line::new(&ds.label, points));
+        }
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_year_input_accepts_all_forms() {
+        assert_eq!(parse_year_input("2025"), Some(json!(2025)));
+        assert_eq!(parse_year_input(" yearRetire "), Some(json!("yearRetire")));
+        assert_eq!(parse_year_input("yearEnd"), Some(json!("yearEnd")));
+        assert_eq!(parse_year_input("incomeLink"), Some(json!("incomeLink")));
+        assert_eq!(
+            parse_year_input("yearRetire+5"),
+            Some(json!({"base": "yearRetire", "delta": 5}))
+        );
+        assert_eq!(
+            parse_year_input("yearDie-2"),
+            Some(json!({"base": "yearDie", "delta": -2}))
+        );
+    }
+
+    #[test]
+    fn parse_year_input_rejects_partial_and_garbage() {
+        assert_eq!(parse_year_input("yearRetire+"), None);
+        assert_eq!(parse_year_input("year"), None);
+        assert_eq!(parse_year_input("-5"), None);
+        assert_eq!(parse_year_input(""), None);
+    }
+
+    #[test]
+    fn year_input_round_trips_through_display() {
+        // to_string(parse(s)) == s for every accepted form
+        for s in ["2025", "yearRetire", "yearEnd", "yearStart+5", "yearDie-2"] {
+            let parsed = parse_year_input(s).unwrap();
+            assert_eq!(year_input_to_string(&parsed), s, "round-trip of {s}");
+        }
+    }
+
+    #[test]
+    fn parse_percent_input_accepts_numbers_and_keywords() {
+        assert_eq!(parse_percent_input("3.5"), Some(json!(3.5)));
+        assert_eq!(
+            parse_percent_input(" inflationBase "),
+            Some(json!("inflationBase"))
+        );
+        assert_eq!(parse_percent_input("banana"), None);
+    }
+
+    #[test]
+    fn fmt_dollars_formats_with_separators_and_sign() {
+        assert_eq!(fmt_dollars(0.0), "$0");
+        assert_eq!(fmt_dollars(1234567.89), "$1,234,567");
+        assert_eq!(fmt_dollars(-42.0), "-$42");
+        assert_eq!(fmt_dollars(999.0), "$999");
+        assert_eq!(fmt_dollars(1000.0), "$1,000");
+    }
 }

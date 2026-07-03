@@ -1,9 +1,6 @@
 //! Generic savings account
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -53,7 +50,7 @@ pub struct Savings<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Savings<String>> for Savings<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Savings<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -88,13 +85,9 @@ impl Account for Savings<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
 
         self.analysis = SavingsTables::new(
@@ -133,35 +126,6 @@ impl Account for Savings<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -171,7 +135,9 @@ impl Account for Savings<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_in = self.dates.require_in()?;
+        let year_out = self.dates.require_out()?;
         let mut result = WorkingValues::default();
 
         // Skip add_year for pre-seeded years; the table value is the starting balance
@@ -180,7 +146,7 @@ impl Account for Savings<u32> {
         }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
-            return Err(String::from("Savings account value is negative.").into());
+            return Err(Error::internal("savings account value is negative"));
         }
 
         // Calculate earnings
@@ -192,7 +158,7 @@ impl Account for Savings<u32> {
         self.analysis.value.update(year, result.earning);
 
         // Calculate contribution
-        if self.dates.year_in.unwrap().contains(year) {
+        if year_in.contains(year) {
             result.contribution = self.contribution_type.value(
                 self.contribution_value,
                 totals.get_income(year),
@@ -208,7 +174,7 @@ impl Account for Savings<u32> {
         self.analysis.value.update(year, result.contribution);
 
         // Calculate withdrawal
-        if self.dates.year_out.unwrap().contains(year) {
+        if year_out.contains(year) {
             result.withdrawal = self.withdrawal_type.value(
                 self.withdrawal_value,
                 year,
@@ -240,9 +206,6 @@ impl Account for Savings<u32> {
             capital_gains,
             income: result.withdrawal,
         })
-    }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
     }
 }
 

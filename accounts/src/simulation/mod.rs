@@ -35,6 +35,23 @@ pub struct Dates {
     pub year_out: Option<YearRange>,
 }
 
+impl Dates {
+    /// The in-flow range.  An error (not a panic) if `init` has not resolved
+    /// the account's dates yet — `init` must run before `simulate`.
+    pub(crate) fn require_in(&self) -> Result<YearRange, crate::Error> {
+        self.year_in.ok_or_else(|| {
+            crate::Error::internal("account dates not resolved: init() must run before simulate()")
+        })
+    }
+    /// The out-flow range.  An error (not a panic) if `init` has not resolved
+    /// the account's dates yet — `init` must run before `simulate`.
+    pub(crate) fn require_out(&self) -> Result<YearRange, crate::Error> {
+        self.year_out.ok_or_else(|| {
+            crate::Error::internal("account dates not resolved: init() must run before simulate()")
+        })
+    }
+}
+
 /// Data point used in UI plotting
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
 pub struct PlotDataPoint {

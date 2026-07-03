@@ -1,9 +1,6 @@
 //! Social Security Account
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -40,13 +37,9 @@ impl Account for Ssa {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
         self.analysis = SingleTable::default();
         self.dates = Dates {
@@ -75,25 +68,6 @@ impl Account for Ssa {
     ) -> Option<YearRange> {
         None
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![("Balance".into(), &self.analysis.value)],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![("Balance".into(), &self.analysis.value)],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -103,7 +77,8 @@ impl Account for Ssa {
         totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_in = self.dates.require_in()?;
         let mut result = WorkingValues::default();
 
         if self.analysis.value.get(year).is_none() {
@@ -111,7 +86,7 @@ impl Account for Ssa {
         }
 
         // Calculate earnings
-        if self.dates.year_in.unwrap().contains(year) {
+        if year_in.contains(year) {
             result.earning = self.base;
         }
 
@@ -133,6 +108,9 @@ impl Account for Ssa {
         //   combined > high:          pct_high of the excess over high plus the
         //                             middle-tier amount, capped at pct_high
         //                             of the benefit
+        //
+        // Breakpoint and percentage ordering (low <= high) is enforced by
+        // Settings::validate at the start of the run.
         let benefit = result.earning;
         let combined_income = totals.get_income(year) + benefit / 2.0;
         let low = settings.ssa.breakpoints.low;
@@ -145,9 +123,8 @@ impl Account for Ssa {
         } else if combined_income <= high {
             (pct_low * (combined_income - low)).min(pct_low * benefit)
         } else {
-            (pct_high * (combined_income - high)
-                + (pct_low * (high - low)).min(pct_low * benefit))
-            .min(pct_high * benefit)
+            (pct_high * (combined_income - high) + (pct_low * (high - low)).min(pct_low * benefit))
+                .min(pct_high * benefit)
         };
 
         Ok(YearlyImpact {
@@ -155,9 +132,6 @@ impl Account for Ssa {
             income: result.earning,
             ..Default::default()
         })
-    }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
     }
 }
 
@@ -231,5 +205,14 @@ mod tests {
             .simulate(2010, &totals_with_income(2010, 50000.0), &settings, None)
             .unwrap();
         assert_approx_eq!(f64, impact.income_taxable, 8000.0);
+    }
+
+    #[test]
+    fn simulate_before_init_is_an_error_not_a_panic() {
+        // Regression test: dates unresolved must produce an error.
+        let mut account = test_account();
+        let settings = test_settings_values();
+        let totals = YearlyTotals::new();
+        assert!(account.simulate(2010, &totals, &settings, None).is_err());
     }
 }

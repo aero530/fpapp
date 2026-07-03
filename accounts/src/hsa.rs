@@ -1,9 +1,6 @@
 //! Health savings account
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use crate::inputs::fixed_with_inflation;
 
@@ -33,7 +30,9 @@ pub struct Hsa<T: std::cmp::Ord> {
     employer_contribution: f64,
     /// Percent interest earned each year
     yearly_return: PercentInput,
-    /// How cashflow in this account is treated for tax purposes
+    /// How cashflow in this account is treated for tax purposes.
+    /// Only contribute_pretax_untaxed_when_used (the actual HSA tax treatment)
+    /// is supported; validated in init.
     tax_status: TaxStatus,
     /// General information to store with this account
     notes: Option<String>,
@@ -47,7 +46,7 @@ pub struct Hsa<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Hsa<String>> for Hsa<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Hsa<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -78,13 +77,17 @@ impl Account for Hsa<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
+        }
+        // Fail fast: an HSA is by definition pretax-in / untaxed-when-used.
+        // Other statuses would tax withdrawals that never arrive as income.
+        if self.tax_status != TaxStatus::ContributePretaxUntaxedWhenUsed {
+            return Err(Error::config(format!(
+                "HSA account '{}': only tax status 'contribute_pretax_untaxed_when_used' is supported for HSA accounts",
+                self.name
+            )));
         }
         self.analysis = SavingsTables::new(&self.table, &None, &None, &None, &None);
         self.dates = Dates {
@@ -116,43 +119,6 @@ impl Account for Hsa<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                (
-                    "Employer Contributions".into(),
-                    &self.analysis.employer_contributions,
-                ),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                (
-                    "Employer Contributions".into(),
-                    &self.analysis.employer_contributions,
-                ),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -162,7 +128,9 @@ impl Account for Hsa<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_in = self.dates.require_in()?;
+        let year_out = self.dates.require_out()?;
         let mut result = WorkingValues::default();
 
         // Skip add_year for pre-seeded years; the table value is the starting balance
@@ -171,7 +139,7 @@ impl Account for Hsa<u32> {
         }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
-            return Err(String::from("HSA account value is negative.").into());
+            return Err(Error::internal("HSA account value is negative"));
         }
 
         // Calculate earnings
@@ -183,7 +151,7 @@ impl Account for Hsa<u32> {
         self.analysis.value.update(year, result.earning);
 
         // Calculate contribution
-        if self.dates.year_in.unwrap().contains(year) {
+        if year_in.contains(year) {
             result.contribution = self.contribution_type.value(
                 self.contribution_value,
                 totals.get_income(year),
@@ -212,9 +180,9 @@ impl Account for Hsa<u32> {
         // Unpaid healthcare_expenses are positive values (>0)
         let healthcare_expense = totals.get_healthcare_expense(year);
         if healthcare_expense < 0_f64 {
-            return Err(String::from("Negative healthcare expense.").into());
+            return Err(Error::internal("negative healthcare expense"));
         }
-        if self.dates.year_out.unwrap().contains(year) {
+        if year_out.contains(year) {
             result.withdrawal = healthcare_expense.min(self.analysis.value.get(year).unwrap());
         }
 
@@ -222,31 +190,18 @@ impl Account for Hsa<u32> {
         self.analysis.withdrawals.update(year, result.withdrawal);
         self.analysis.value.update(year, -result.withdrawal);
 
-        // Employee contributions come out of net; the tax treatment of the
-        // contribution follows the account's tax status (an HSA is normally
-        // ContributePretaxUntaxedWhenUsed: the contribution is a deduction and
-        // qualified withdrawals are never taxed).  Withdrawals offset
-        // healthcare expenses directly rather than flowing into income.
-        let (income_taxable, capital_gains) = match self.tax_status {
-            TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed => (0_f64, 0_f64),
-            TaxStatus::ContributeTaxedEarningsTaxed => (0_f64, result.earning),
-            TaxStatus::ContributePretaxTaxedWhenUsed => {
-                (result.withdrawal - result.contribution, 0_f64)
-            }
-            TaxStatus::ContributePretaxUntaxedWhenUsed => (0_f64 - result.contribution, 0_f64),
-        };
-
+        // HSA tax treatment (the only supported status, validated in init):
+        // the employee contribution comes out of net and is a pretax deduction;
+        // employer contributions are neither.  Withdrawals offset healthcare
+        // expenses directly rather than flowing into income, and are untaxed.
         Ok(YearlyImpact {
             expense: result.contribution,
             healthcare_expense: -result.withdrawal, // reduce this years healthcare expense by the amount paid for from this account
             col: 0_f64,
-            income_taxable,
-            capital_gains,
+            income_taxable: -result.contribution,
+            capital_gains: 0_f64,
             income: 0_f64,
         })
-    }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
     }
 }
 
@@ -278,7 +233,7 @@ mod tests {
     #[test]
     fn hsa_contribution_is_expense_and_deduction() {
         // Regression test for A5: HSA contributions must come out of net and
-        // reduce taxable income for a pretax account.
+        // reduce taxable income.
         let mut account = test_account();
         let settings = test_settings_values();
         account.init(None, &settings).unwrap();
@@ -309,5 +264,16 @@ mod tests {
         assert_approx_eq!(f64, impact.healthcare_expense, -800.0);
         // balance = 1000 + 500 contribution - 800 withdrawal
         assert_approx_eq!(f64, account.get_value(2000).unwrap(), 700.0);
+    }
+
+    #[test]
+    fn hsa_rejects_unsupported_tax_status_at_init() {
+        // Only the real HSA tax treatment is supported; anything else would
+        // tax withdrawals that never arrive as income.
+        let mut account = test_account();
+        account.tax_status = TaxStatus::ContributePretaxTaxedWhenUsed;
+        let settings = test_settings_values();
+        let err = account.init(None, &settings).unwrap_err();
+        assert!(err.to_string().contains("HSA"));
     }
 }

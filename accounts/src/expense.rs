@@ -1,9 +1,6 @@
 //! Generic expense account (things you spend money on)
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -47,7 +44,7 @@ pub struct Expense<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Expense<String>> for Expense<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Expense<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -75,13 +72,9 @@ impl Account for Expense<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
         // Seed the analysis with historical expense values so recorded actuals
         // are used (and plotted) instead of being discarded
@@ -112,25 +105,6 @@ impl Account for Expense<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![("Amount".into(), &self.analysis.value)],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![("Amount".into(), &self.analysis.value)],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -140,7 +114,8 @@ impl Account for Expense<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_out = self.dates.require_out()?;
         let mut result = WorkingValues::default();
 
         // If this year is pre-seeded from the historical table, treat the
@@ -159,9 +134,9 @@ impl Account for Expense<u32> {
             };
 
             // Calculate expense
-            if self.dates.year_out.unwrap().contains(year) {
-                result.expense = self.expense_type.value(self.expense_value, year, settings)
-                    * col_scale;
+            if year_out.contains(year) {
+                result.expense =
+                    self.expense_type.value(self.expense_value, year, settings) * col_scale;
             }
 
             // Update value table with expense value
@@ -181,22 +156,20 @@ impl Account for Expense<u32> {
             }),
         }
     }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::inputs::test_fixtures::test_settings_values;
+    use float_cmp::assert_approx_eq;
 
     fn test_account(table: Table<u32>) -> Expense<u32> {
         Expense {
             name: "Expense Account".into(),
             table,
             start_out: YearInput::ConstantInt(2000),
-            end_out: YearInput::ConstantInt(2020),
+            end_out: YearInput::ConstantInt(2080),
             expense_type: ExpenseOptions::Fixed,
             expense_value: 500_f64,
             is_healthcare: false,
@@ -237,5 +210,28 @@ mod tests {
             .simulate(2010, &yearly_totals, &settings, None)
             .unwrap();
         assert_eq!(update.expense, 750.0);
+    }
+
+    #[test]
+    fn expense_scales_with_retirement_cost_of_living() {
+        // In retirement (year >= 2030 in the test settings) a scaling expense
+        // is reduced to retirement_cost_of_living (80%).
+        let mut account = test_account(Table::default());
+        let yearly_totals = YearlyTotals::new();
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let update = account
+            .simulate(2040, &yearly_totals, &settings, None)
+            .unwrap();
+        assert_approx_eq!(f64, update.expense, 400.0);
+
+        // A non-scaling expense stays at full value in retirement.
+        let mut fixed = test_account(Table::default());
+        fixed.scales_with_col = false;
+        fixed.init(None, &settings).unwrap();
+        let update = fixed
+            .simulate(2040, &yearly_totals, &settings, None)
+            .unwrap();
+        assert_approx_eq!(f64, update.expense, 500.0);
     }
 }

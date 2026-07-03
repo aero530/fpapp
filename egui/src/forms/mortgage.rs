@@ -1,8 +1,8 @@
 use eframe::egui;
 use serde_json::Value;
 
+use super::{PAYMENT_OPTIONS, form_grid};
 use crate::widgets;
-use super::{form_grid, PAYMENT_OPTIONS};
 
 pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
@@ -10,10 +10,10 @@ pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
         c |= widgets::string_field(ui, "Name:", a, "name",
             "Human friendly name for the account");
         ui.end_row();
-        c |= widgets::year_input(ui, "Start Year:", &mut a["startOut"],
+        c |= widgets::year_input(ui, "Start Year:", uuid, &mut a["startOut"],
             "When mortgage payments will start");
         ui.end_row();
-        c |= widgets::year_input(ui, "End Year:", &mut a["endOut"],
+        c |= widgets::year_input(ui, "End Year:", uuid, &mut a["endOut"],
             "When mortgage payments will end (loan payoff year)");
         ui.end_row();
         c |= widgets::combo_field(
@@ -27,7 +27,7 @@ pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
         c |= widgets::f64_field(ui, "Annual Payment ($):", a, "paymentValue", 500.0,
             "Total amount paid per year including principal, interest, escrow, and mortgage insurance [in today's dollars]");
         ui.end_row();
-        c |= widgets::f64_field(ui, "Interest Rate (%):", a, "rate", 0.05,
+        c |= widgets::percent_input(ui, "Interest Rate (%):", uuid, &mut a["rate"],
             "Interest rate on borrowed money (APR, compounded based on compound periods setting)");
         ui.end_row();
         c |= widgets::f64_field(ui, "Compound Periods/Year:", a, "compoundTime", 1.0,

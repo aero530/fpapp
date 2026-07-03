@@ -75,6 +75,14 @@ All withdrawals are capped at the account balance.
 ## Simulation flow
 
 Runs once per analysis request over the full year range `[year_start, year_die]`.
+Errors are reported through the crate's `Error` enum (`Data` for malformed files,
+`Config` for invalid plans, `Simulation` for per-account/year failures).
+
+### Phase 0 — Validation
+
+`Settings::validate()` rejects configurations that would silently corrupt the run:
+an empty year range, year arithmetic that overflows, and misordered SSA breakpoints
+or taxable percentages.
 
 ### Phase 1 — Initialisation (before the year loop)
 

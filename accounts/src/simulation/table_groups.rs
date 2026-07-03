@@ -1,19 +1,16 @@
 //! Groups of [tables](Table) to provide standard format for simulating different account types
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::io::Write;
 
-use super::{Table, PlotDataPoint, PlotDataSet};
+use super::{PlotDataPoint, PlotDataSet, Table};
+use crate::Error;
 
 /// Trait for table groups
 pub trait TableGroup {
-    ///  Write account values out to csv file
-    fn write(&self, filename: String);
     /// Return analysis data to use in UI plotting
     fn get_plot_data(&self) -> Vec<PlotDataSet>;
     /// Add a new year to the tables in this group
-    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>>;
+    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Error>;
 }
 
 /// Build a plot series from a table
@@ -23,7 +20,10 @@ fn plot_set(label: &str, table: &Table<u32>) -> PlotDataSet {
         data: table
             .0
             .iter()
-            .map(|(year, value)| PlotDataPoint { x: *year, y: *value })
+            .map(|(year, value)| PlotDataPoint {
+                x: *year,
+                y: *value,
+            })
             .collect(),
     }
 }
@@ -61,21 +61,12 @@ impl SingleTable {
 }
 
 impl TableGroup for SingleTable {
-    fn write(&self, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, value\n".as_bytes()).unwrap();
-
-        self.value.0.iter().for_each(|(year, value)| {
-            file.write_all(format!("{}, {:.2}\n", year, value).as_bytes())
-                .unwrap();
-        });
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         vec![plot_set("Value", &self.value)]
     }
-    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Error> {
         match self.value.0.contains_key(&year) {
-            true => Err(String::from("Year already exists.").into()),
+            true => Err(Error::internal("year already exists")),
             false => {
                 let prev_value = new_year_value(&self.value, year, pull_value_forward);
                 self.value.add(year, prev_value)
@@ -127,51 +118,9 @@ impl LoanTables {
             plot_set("Insurance", &self.insurance),
         ]
     }
-    /// Write account values out to csv file
-    pub fn write_mortgage(&self, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, value, interest, payments, escrow, insurance\n".as_bytes())
-            .unwrap();
-
-        self.value.years().iter().for_each(|year| {
-            file.write_all(
-                format!(
-                    "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
-                    year,
-                    self.value.get(*year).unwrap_or(0_f64),
-                    self.interest.get(*year).unwrap_or(0_f64),
-                    self.payments.get(*year).unwrap_or(0_f64),
-                    self.escrow.get(*year).unwrap_or(0_f64),
-                    self.insurance.get(*year).unwrap_or(0_f64),
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        });
-    }
 }
 
 impl TableGroup for LoanTables {
-    /// Write account values out to csv file
-    fn write(&self, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, value, interest, payments\n".as_bytes())
-            .unwrap();
-
-        self.value.years().iter().for_each(|year| {
-            file.write_all(
-                format!(
-                    "{}, {:.2}, {:.2}, {:.2}\n",
-                    year,
-                    self.value.get(*year).unwrap_or(0_f64),
-                    self.interest.get(*year).unwrap_or(0_f64),
-                    self.payments.get(*year).unwrap_or(0_f64),
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        });
-    }
     /// Return analysis data to use in UI plotting
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         vec![
@@ -182,9 +131,9 @@ impl TableGroup for LoanTables {
     }
 
     /// Initialize a new year
-    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Error> {
         match self.value.0.contains_key(&year) {
-            true => Err(String::from("Year already exists.").into()),
+            true => Err(Error::internal("year already exists")),
             false => {
                 let prev_value = new_year_value(&self.value, year, pull_value_forward);
                 self.value.add(year, prev_value)?;
@@ -229,31 +178,6 @@ impl SavingsTables {
             withdrawals: withdrawals.clone().unwrap_or_default(),
         }
     }
-    /// Write account values out to csv file
-    pub fn write_matching(&self, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all(
-            "year, value, contributions, employer_contributions, earnings, withdrawals\n"
-                .as_bytes(),
-        )
-        .unwrap();
-
-        self.value.years().iter().for_each(|year| {
-            file.write_all(
-                format!(
-                    "{}, {:.2}, {:.2}, {:.2}, {:.2}, {:.2}\n",
-                    year,
-                    self.value.get(*year).unwrap_or(0_f64),
-                    self.contributions.get(*year).unwrap_or(0_f64),
-                    self.employer_contributions.get(*year).unwrap_or(0_f64),
-                    self.earnings.get(*year).unwrap_or(0_f64),
-                    self.withdrawals.get(*year).unwrap_or(0_f64),
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        });
-    }
     /// Return analysis data to use in UI plotting
     pub fn get_matching_plot_data(&self) -> Vec<PlotDataSet> {
         vec![
@@ -267,27 +191,6 @@ impl SavingsTables {
 }
 
 impl TableGroup for SavingsTables {
-    /// Write account values out to csv file
-    fn write(&self, filename: String) {
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all("year, value, contributions, earnings, withdrawals\n".as_bytes())
-            .unwrap();
-
-        self.value.years().iter().for_each(|year| {
-            file.write_all(
-                format!(
-                    "{}, {:.2}, {:.2}, {:.2}, {:.2}\n",
-                    year,
-                    self.value.get(*year).unwrap_or(0_f64),
-                    self.contributions.get(*year).unwrap_or(0_f64),
-                    self.earnings.get(*year).unwrap_or(0_f64),
-                    self.withdrawals.get(*year).unwrap_or(0_f64),
-                )
-                .as_bytes(),
-            )
-            .unwrap();
-        });
-    }
     /// Return analysis data to use in UI plotting
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         vec![
@@ -298,9 +201,9 @@ impl TableGroup for SavingsTables {
         ]
     }
     /// Initialize a new year
-    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Box<dyn Error>> {
+    fn add_year(&mut self, year: u32, pull_value_forward: bool) -> Result<(), Error> {
         match self.value.0.contains_key(&year) {
-            true => Err(String::from("Year already exists.").into()),
+            true => Err(Error::internal("year already exists")),
             false => {
                 let prev_value = new_year_value(&self.value, year, pull_value_forward);
                 self.value.add(year, prev_value)?;

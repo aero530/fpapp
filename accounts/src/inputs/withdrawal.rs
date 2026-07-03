@@ -2,7 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{fixed_with_inflation, Settings};
+use super::{Settings, fixed_with_inflation};
+#[cfg(test)]
+use crate::simulation::YearlyImpact;
 use crate::simulation::{Table, YearRange, YearlyTotals};
 
 /// used to populate account dropdown for withdrawal type selection
@@ -58,7 +60,14 @@ impl WithdrawalOptions {
                 let prev_savings = prev_year
                     .map(|py| totals.get_saving(py))
                     .unwrap_or_default();
-                let col = totals.get_col(year);
+                // The cost of living to cover excludes healthcare that HSA
+                // accounts have already paid this year (HSAs run earlier in
+                // the account order), so savings are not drawn down for costs
+                // that are already covered.
+                let covered_by_hsa = (totals.get_healthcare_expense_total(year)
+                    - totals.get_healthcare_expense(year))
+                .max(0_f64);
+                let col = (totals.get_col(year) - covered_by_hsa).max(0_f64);
                 if prev_account_value > 0_f64 && prev_savings > 0_f64 {
                     // withdrawal from this account = cost of living this year
                     // * fraction of total savings this account represents
@@ -235,7 +244,7 @@ mod tests {
         totals.add_year(2010, false).unwrap();
         totals.update(
             2010,
-            crate::simulation::YearlyImpact {
+            YearlyImpact {
                 col: 1000.0,
                 ..Default::default()
             },
@@ -268,6 +277,57 @@ mod tests {
                 TaxStatus::ContributePretaxTaxedWhenUsed
             ),
             625_f64
+        );
+    }
+
+    #[test]
+    fn withdrawal_cost_of_living_excludes_hsa_covered_healthcare() {
+        // Healthcare already paid by an HSA must not also be funded from savings.
+        let settings = test_settings_values();
+        let table = value_table(&[(2009, 500.0), (2010, 10000.0)]);
+        let mut totals = YearlyTotals::new();
+        totals.add_year(2009, false).unwrap();
+        totals.set_saving(2009, 1000.0);
+        totals.add_year(2010, false).unwrap();
+        // 600 of ordinary cost of living
+        totals.update(
+            2010,
+            YearlyImpact {
+                col: 600.0,
+                ..Default::default()
+            },
+        );
+        // 400 of healthcare expenses ...
+        totals.update(
+            2010,
+            YearlyImpact {
+                healthcare_expense: 400.0,
+                col: 400.0,
+                ..Default::default()
+            },
+        );
+        // ... fully covered by an HSA withdrawal
+        totals.update(
+            2010,
+            YearlyImpact {
+                healthcare_expense: -400.0,
+                ..Default::default()
+            },
+        );
+
+        // effective col = 1000 - 400 covered = 600; withdrawal = 600 * 0.5
+        assert_approx_eq!(
+            f64,
+            WithdrawalOptions::ColFracOfSavings.value(
+                0_f64,
+                2010,
+                &settings,
+                None,
+                &table,
+                &totals,
+                TaxStatus::ContributeTaxedEarningsUntaxedWhenUsed
+            ),
+            300_f64
         );
     }
 

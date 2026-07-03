@@ -1,9 +1,6 @@
 //! Generic retirement account type applicable for 401K, Roth IRA, IRA, etc.
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -59,7 +56,7 @@ pub struct Retirement<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Retirement<String>> for Retirement<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Retirement<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -100,11 +97,7 @@ impl Account for Retirement<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         self.analysis = SavingsTables::new(
             &self.table,
             &self.contributions,
@@ -141,43 +134,6 @@ impl Account for Retirement<u32> {
                 .value(settings, linked_dates, YearEvalType::EndOut),
         })
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                (
-                    "Employer Contributions".into(),
-                    &self.analysis.employer_contributions,
-                ),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![
-                ("Balance".into(), &self.analysis.value),
-                ("Contributions".into(), &self.analysis.contributions),
-                (
-                    "Employer Contributions".into(),
-                    &self.analysis.employer_contributions,
-                ),
-                ("Earnings".into(), &self.analysis.earnings),
-                ("Withdrawals".into(), &self.analysis.withdrawals),
-            ],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         match &self.matching {
             Some(_) => self.analysis.get_matching_plot_data(),
@@ -190,7 +146,9 @@ impl Account for Retirement<u32> {
         totals: &YearlyTotals,
         settings: &Settings,
         linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
+    ) -> Result<YearlyImpact, Error> {
+        let year_in = self.dates.require_in()?;
+        let year_out = self.dates.require_out()?;
         let mut result = WorkingValues::default();
 
         // Init value table with previous year's value; skip for pre-seeded years (table has the starting balance)
@@ -199,7 +157,7 @@ impl Account for Retirement<u32> {
         }
 
         if self.analysis.value.get(year).unwrap() < 0_f64 {
-            return Err(String::from("Retirement account value is negative.").into());
+            return Err(Error::internal("retirement account value is negative"));
         }
 
         // Calculate earnings
@@ -211,7 +169,7 @@ impl Account for Retirement<u32> {
         self.analysis.value.update(year, result.earning);
 
         // Calculate contribution
-        if self.dates.year_in.unwrap().contains(year) {
+        if year_in.contains(year) {
             result.contribution = self.contribution_type.value(
                 self.contribution_value,
                 linked_value.unwrap_or_else(|| totals.get_income(year)),
@@ -264,7 +222,7 @@ impl Account for Retirement<u32> {
             .update(year, result.contribution + result.employer_contribution);
 
         // Calculate withdrawal
-        if self.dates.year_out.unwrap().contains(year) {
+        if year_out.contains(year) {
             result.withdrawal = self.withdrawal_type.value(
                 self.withdrawal_value,
                 year,
@@ -292,7 +250,7 @@ impl Account for Retirement<u32> {
             TaxStatus::ContributePretaxTaxedWhenUsed => {
                 (result.withdrawal - result.contribution, 0_f64)
             }
-            // Paid with pretax income and not taxed as income (use with HSA)
+            // Paid with pretax income and not taxed as income
             TaxStatus::ContributePretaxUntaxedWhenUsed => (0_f64 - result.contribution, 0_f64),
         };
 
@@ -304,16 +262,6 @@ impl Account for Retirement<u32> {
             capital_gains,
             income: result.withdrawal,
         })
-    }
-    fn write(&self, filepath: String) {
-        match &self.matching {
-            Some(_) => {
-                self.analysis.write_matching(filepath);
-            }
-            None => {
-                self.analysis.write(filepath);
-            }
-        }
     }
 }
 

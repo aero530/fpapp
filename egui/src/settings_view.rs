@@ -12,7 +12,9 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
         return;
     }
 
-    let mut settings = app.data["settings"].clone();
+    // Edit the settings object in place (no per-frame clone); `changed` is
+    // tracked by the widgets themselves.
+    let settings = &mut app.data["settings"];
     let mut changed = false;
 
     egui::Grid::new("settings_grid")
@@ -20,16 +22,16 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
         .spacing([12.0, 5.0])
         .min_col_width(200.0)
         .show(ui, |ui| {
-            changed |= widgets::u32_field(ui, "Year Born:", &mut settings, "yearBorn",
+            changed |= widgets::u32_field(ui, "Year Born:", settings, "yearBorn",
                 "The year you were born — used to calculate retirement and death years");
             ui.end_row();
-            changed |= widgets::u32_field(ui, "Year Start:", &mut settings, "yearStart",
+            changed |= widgets::u32_field(ui, "Year Start:", settings, "yearStart",
                 "The first year of the simulation (usually the current year)");
             ui.end_row();
-            changed |= widgets::u32_field(ui, "Age at Retire:", &mut settings, "ageRetire",
+            changed |= widgets::u32_field(ui, "Age at Retire:", settings, "ageRetire",
                 "The age at which you plan to retire — sets the yearRetire variable");
             ui.end_row();
-            changed |= widgets::u32_field(ui, "Age at Death:", &mut settings, "ageDie",
+            changed |= widgets::u32_field(ui, "Age at Death:", settings, "ageDie",
                 "The age used as the end of the simulation — sets the yearDie variable");
             ui.end_row();
 
@@ -77,10 +79,15 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.separator();
             ui.end_row();
 
+            // The breakpoint and percentage pairs are each constrained so low
+            // cannot be dragged past high (the engine also validates this)
+            let bp_low = settings["ssa"]["breakpoints"]["low"].as_f64().unwrap_or(25000.0);
+            let bp_high = settings["ssa"]["breakpoints"]["high"].as_f64().unwrap_or(34000.0);
+
             ui.label("SSA Breakpoint Low ($):")
                 .on_hover_text("Combined income threshold below which 0% of Social Security benefits are taxable");
-            let mut v = settings["ssa"]["breakpoints"]["low"].as_f64().unwrap_or(25000.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(500.0)).changed() {
+            let mut v = bp_low;
+            if ui.add(egui::DragValue::new(&mut v).speed(500.0).range(0.0..=bp_high)).changed() {
                 settings["ssa"]["breakpoints"]["low"] = json!(v);
                 changed = true;
             }
@@ -88,17 +95,20 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
 
             ui.label("SSA Breakpoint High ($):")
                 .on_hover_text("Combined income threshold above which the maximum percentage of Social Security benefits are taxable");
-            let mut v = settings["ssa"]["breakpoints"]["high"].as_f64().unwrap_or(34000.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(500.0)).changed() {
+            let mut v = bp_high;
+            if ui.add(egui::DragValue::new(&mut v).speed(500.0).range(bp_low..=f64::MAX)).changed() {
                 settings["ssa"]["breakpoints"]["high"] = json!(v);
                 changed = true;
             }
             ui.end_row();
 
+            let pct_low = settings["ssa"]["taxableIncomePercentage"]["low"].as_f64().unwrap_or(50.0);
+            let pct_high = settings["ssa"]["taxableIncomePercentage"]["high"].as_f64().unwrap_or(85.0);
+
             ui.label("SSA Taxable % (Low):")
                 .on_hover_text("Percent of Social Security benefits that are taxable when income is between the low and high breakpoints");
-            let mut v = settings["ssa"]["taxableIncomePercentage"]["low"].as_f64().unwrap_or(50.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=100.0)).changed() {
+            let mut v = pct_low;
+            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=pct_high)).changed() {
                 settings["ssa"]["taxableIncomePercentage"]["low"] = json!(v);
                 changed = true;
             }
@@ -106,8 +116,8 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
 
             ui.label("SSA Taxable % (High):")
                 .on_hover_text("Percent of Social Security benefits that are taxable when income is above the high breakpoint");
-            let mut v = settings["ssa"]["taxableIncomePercentage"]["high"].as_f64().unwrap_or(85.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=100.0)).changed() {
+            let mut v = pct_high;
+            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(pct_low..=100.0)).changed() {
                 settings["ssa"]["taxableIncomePercentage"]["high"] = json!(v);
                 changed = true;
             }
@@ -115,7 +125,6 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
         });
 
     if changed {
-        app.data["settings"] = settings;
         app.dirty = true;
     }
 

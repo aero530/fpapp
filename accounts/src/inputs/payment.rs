@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{fixed_with_inflation, Settings};
+use super::{Settings, fixed_with_inflation};
 
 /// used to populate account dropdown for payment type selection
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]

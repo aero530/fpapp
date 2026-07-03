@@ -1,5 +1,5 @@
 use eframe::egui;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::app::FpApp;
 use crate::widgets;
@@ -30,15 +30,30 @@ pub(super) const WITHDRAWAL_OPTIONS: &[(&str, &str)] = &[
 ];
 
 pub(super) const TAX_STATUS_OPTIONS: &[(&str, &str)] = &[
-    ("contribute_taxed_earnings_untaxed_when_used", "Roth (post-tax, tax-free withdrawal)"),
+    (
+        "contribute_taxed_earnings_untaxed_when_used",
+        "Roth (post-tax, tax-free withdrawal)",
+    ),
     ("contribute_taxed_earnings_taxed", "Taxed Both Ways"),
-    ("contribute_pretax_taxed_when_used", "Traditional (pre-tax, taxed on withdrawal)"),
-    ("contribute_pretax_untaxed_when_used", "Tax-Free (HSA / 529)"),
+    (
+        "contribute_pretax_taxed_when_used",
+        "Traditional (pre-tax, taxed on withdrawal)",
+    ),
+    (
+        "contribute_pretax_untaxed_when_used",
+        "Tax-Free (HSA / 529)",
+    ),
 ];
 
-pub(super) const COLLEGE_TAX_OPTIONS: &[(&str, &str)] = &[
-    ("contribute_taxed_earnings_untaxed_when_used", "Post-tax, tax-free withdrawal (529-style)"),
-];
+pub(super) const COLLEGE_TAX_OPTIONS: &[(&str, &str)] = &[(
+    "contribute_taxed_earnings_untaxed_when_used",
+    "Post-tax, tax-free withdrawal (529-style)",
+)];
+
+pub(super) const HSA_TAX_OPTIONS: &[(&str, &str)] = &[(
+    "contribute_pretax_untaxed_when_used",
+    "Pre-tax, tax-free withdrawal (HSA)",
+)];
 
 pub(super) const EXPENSE_OPTIONS: &[(&str, &str)] = &[
     ("fixed", "Fixed Amount"),
@@ -129,7 +144,12 @@ pub(super) fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, i
         .map(|map| {
             map.iter()
                 .filter(|(_, v)| v["type"].as_str() == Some("income"))
-                .map(|(k, v)| (k.clone(), v["name"].as_str().unwrap_or("Unnamed").to_string()))
+                .map(|(k, v)| {
+                    (
+                        k.clone(),
+                        v["name"].as_str().unwrap_or("Unnamed").to_string(),
+                    )
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -161,4 +181,3 @@ pub(super) fn income_link_combo(ui: &mut egui::Ui, a: &mut Value, app: &FpApp, i
         });
     changed
 }
-

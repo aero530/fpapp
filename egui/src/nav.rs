@@ -44,56 +44,57 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
                 .max_height(ui.available_height() - 48.0)
                 .show(ui, |ui| {
                     egui::Frame::new()
-                        .inner_margin(egui::Margin { left: 0, right: 10, top: 0, bottom: 0 })
+                        .inner_margin(egui::Margin {
+                            left: 0,
+                            right: 10,
+                            top: 0,
+                            bottom: 0,
+                        })
                         .show(ui, |ui| {
-                    if app.data.is_null() {
-                        ui.weak("Open a file to see accounts");
-                        return;
-                    }
+                            if app.data.is_null() {
+                                ui.weak("Open a file to see accounts");
+                                return;
+                            }
 
-                    // Collect info up-front to avoid borrow issues
-                    let accounts_info: Vec<(String, String, String)> =
-                        if let Some(accounts) = app.data["accounts"].as_object() {
-                            accounts
-                                .iter()
-                                .map(|(uuid, v)| {
-                                    (
-                                        uuid.clone(),
-                                        v["type"].as_str().unwrap_or("").to_string(),
-                                        v["name"].as_str().unwrap_or("Unnamed").to_string(),
-                                    )
-                                })
-                                .collect()
-                        } else {
-                            vec![]
-                        };
-
-                    for (type_key, type_label) in ACCOUNT_TYPES {
-                        let type_accounts: Vec<(String, String)> = accounts_info
-                            .iter()
-                            .filter(|(_, t, _)| t == type_key)
-                            .map(|(uuid, _, name)| (uuid.clone(), name.clone()))
-                            .collect();
-
-                        let header_text =
-                            format!("{} ({})", type_label, type_accounts.len());
-
-                        egui::CollapsingHeader::new(header_text)
-                            .id_salt(*type_key)
-                            .show(ui, |ui| {
-                                for (uuid, name) in &type_accounts {
-                                    let selected =
-                                        app.selected == Page::Account(uuid.clone());
-                                    if ui.selectable_label(selected, name).clicked() {
-                                        app.selected = Page::Account(uuid.clone());
+                            // Group accounts by type in a single pass (collected
+                            // up-front to avoid borrow issues while rendering)
+                            let mut groups: std::collections::HashMap<
+                                String,
+                                Vec<(String, String)>,
+                            > = std::collections::HashMap::new();
+                            if let Some(accounts) = app.data["accounts"].as_object() {
+                                for (uuid, v) in accounts {
+                                    if let Some(type_key) = v["type"].as_str() {
+                                        groups.entry(type_key.to_string()).or_default().push((
+                                            uuid.clone(),
+                                            v["name"].as_str().unwrap_or("Unnamed").to_string(),
+                                        ));
                                     }
                                 }
-                                if ui.small_button("+ Add").clicked() {
-                                    add_account(app, type_key);
-                                }
-                            });
-                    }
-                    }); // Frame
+                            }
+
+                            for (type_key, type_label) in ACCOUNT_TYPES {
+                                let type_accounts = groups.remove(*type_key).unwrap_or_default();
+
+                                let header_text =
+                                    format!("{} ({})", type_label, type_accounts.len());
+
+                                egui::CollapsingHeader::new(header_text)
+                                    .id_salt(*type_key)
+                                    .show(ui, |ui| {
+                                        for (uuid, name) in &type_accounts {
+                                            let selected =
+                                                app.selected == Page::Account(uuid.clone());
+                                            if ui.selectable_label(selected, name).clicked() {
+                                                app.selected = Page::Account(uuid.clone());
+                                            }
+                                        }
+                                        if ui.small_button("+ Add").clicked() {
+                                            add_account(app, type_key);
+                                        }
+                                    });
+                            }
+                        }); // Frame
                 });
 
             // Pinned footer with Open / Save
@@ -112,10 +113,23 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
 
             if let Some(err) = &app.error.clone() {
                 ui.add_space(4.0);
-                ui.colored_label(
-                    egui::Color32::from_rgb(220, 60, 60),
-                    format!("⚠ {}", err),
-                );
+                ui.colored_label(egui::Color32::from_rgb(220, 60, 60), format!("⚠ {}", err));
+            }
+
+            // Engine warnings from the last analysis (misconfigurations that
+            // were worked around rather than aborting the run)
+            if !app.warnings.is_empty() {
+                const MAX_SHOWN: usize = 4;
+                ui.add_space(4.0);
+                for warning in app.warnings.iter().take(MAX_SHOWN) {
+                    ui.colored_label(
+                        egui::Color32::from_rgb(220, 150, 40),
+                        format!("⚠ {}", warning),
+                    );
+                }
+                if app.warnings.len() > MAX_SHOWN {
+                    ui.weak(format!("… and {} more", app.warnings.len() - MAX_SHOWN));
+                }
             }
         });
 }
@@ -147,7 +161,7 @@ pub fn open_file(app: &mut FpApp) {
 
 pub fn save_file(app: &mut FpApp) {
     if let Some(path) = &app.file_path.clone() {
-        write_file(app, path.to_str().unwrap_or(""));  // file_path already set; no update needed
+        write_file(app, path.to_str().unwrap_or("")); // file_path already set; no update needed
     } else {
         save_file_as(app);
     }
@@ -251,10 +265,11 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "type": "college",
             "name": "New College Fund",
             "table": {},
+            // contributions until college starts ~16 years out, then draw down over 4 years
             "startIn": "yearStart",
-            "endIn": 2036,
-            "startOut": 2036,
-            "endOut": 2040,
+            "endIn": {"base": "yearStart", "delta": 16},
+            "startOut": {"base": "yearStart", "delta": 16},
+            "endOut": {"base": "yearStart", "delta": 20},
             "contributionValue": 5000.0,
             "contributionType": "fixed",
             "yearlyReturn": 5.0,
@@ -280,7 +295,7 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "name": "New Loan",
             "table": {},
             "startOut": "yearStart",
-            "endOut": 2034,
+            "endOut": {"base": "yearStart", "delta": 10},
             "paymentType": "fixed",
             "paymentValue": 500.0,
             "rate": 5.0,
@@ -291,7 +306,7 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "name": "New Mortgage",
             "table": {},
             "startOut": "yearStart",
-            "endOut": 2054,
+            "endOut": {"base": "yearStart", "delta": 30},
             "paymentType": "fixed",
             "paymentValue": 2000.0,
             "rate": 6.5,
@@ -319,5 +334,29 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "notes": null
         }),
         _ => json!({"type": account_type, "name": "New Account"}),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_account_templates_match_the_accounts_schema() {
+        // Every "+ Add" template must deserialize into the engine's
+        // AccountWrapper — this catches schema drift between the UI templates
+        // and the accounts crate (removed/renamed fields).
+        for (type_key, _) in ACCOUNT_TYPES {
+            let template = default_account(type_key);
+            let result: Result<accounts::AccountWrapper, _> =
+                serde_json::from_value(template.clone());
+            assert!(
+                result.is_ok(),
+                "default template for '{}' does not deserialize: {}\n{}",
+                type_key,
+                result.err().unwrap(),
+                serde_json::to_string_pretty(&template).unwrap()
+            );
+        }
     }
 }

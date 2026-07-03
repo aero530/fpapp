@@ -3,9 +3,9 @@
 //! Simulate accounts such as income, expense, retirement, 529, loan, mortgage, etc.
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
+
+mod error;
+pub use error::Error;
 
 mod inputs;
 use inputs::{
@@ -19,11 +19,6 @@ mod simulation;
 use simulation::{LoanTables, SavingsTables, SingleTable, Table, YearRange, YearlyImpact};
 // re-exported for use outside this lib
 pub use simulation::{Dates, PlotDataSet, TableGroup, YearlyTotals};
-
-#[cfg(feature = "plotters-backend")]
-mod plot;
-#[cfg(feature = "plotters-backend")]
-use plot::{scatter_plot_buf, scatter_plot_file};
 
 mod college;
 use college::College;
@@ -53,7 +48,7 @@ mod ssa;
 use ssa::Ssa;
 
 mod runner;
-pub use runner::run;
+pub use runner::{AnalysisOutput, run};
 
 /// Trait used to define what each account type must be able to provide
 pub trait Account: std::fmt::Debug {
@@ -68,11 +63,7 @@ pub trait Account: std::fmt::Debug {
 
     /// Initialize analysis tables from historical user data and resolve the
     /// year ranges used during simulation.  Must be called before `simulate`.
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>>;
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error>;
 
     /// Return the value for the specified year
     fn get_value(&self, year: u32) -> Option<f64>;
@@ -92,18 +83,7 @@ pub trait Account: std::fmt::Debug {
         totals: &YearlyTotals,
         settings: &Settings,
         linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>>;
-
-    /// Save the account simulation results to a csv file
-    fn write(&self, filepath: String);
-
-    /// Plot the account simulation results & save to a file
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32);
-
-    /// Plot the account and return it as an image buffer
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>;
+    ) -> Result<YearlyImpact, Error>;
 
     /// Get plot data for UI plotting
     fn get_plot_data(&self) -> Vec<PlotDataSet>;
@@ -182,18 +162,88 @@ pub enum AccountWrapper {
 }
 
 impl AccountWrapper {
-    pub fn to_account_object(self) -> Result<Box<dyn Account>, Box<dyn Error>> {
+    pub fn to_account_object(self) -> Result<SimAccount, Error> {
         Ok(match self {
-            AccountWrapper::Income(account) => Box::new(Income::<u32>::try_from(account)?),
-            AccountWrapper::Ssa(account) => Box::new(account),
-            AccountWrapper::Retirement(account) => Box::new(Retirement::<u32>::try_from(account)?),
-            AccountWrapper::Hsa(account) => Box::new(Hsa::<u32>::try_from(account)?),
-            AccountWrapper::College(account) => Box::new(College::<u32>::try_from(account)?),
-            AccountWrapper::Expense(account) => Box::new(Expense::<u32>::try_from(account)?),
-            AccountWrapper::Loan(account) => Box::new(Loan::<u32>::try_from(account)?),
-            AccountWrapper::Mortgage(account) => Box::new(Mortgage::<u32>::try_from(account)?),
-            AccountWrapper::Savings(account) => Box::new(Savings::<u32>::try_from(account)?),
+            AccountWrapper::Income(account) => SimAccount::Income(account.try_into()?),
+            AccountWrapper::Ssa(account) => SimAccount::Ssa(account),
+            AccountWrapper::Retirement(account) => SimAccount::Retirement(account.try_into()?),
+            AccountWrapper::Hsa(account) => SimAccount::Hsa(account.try_into()?),
+            AccountWrapper::College(account) => SimAccount::College(account.try_into()?),
+            AccountWrapper::Expense(account) => SimAccount::Expense(account.try_into()?),
+            AccountWrapper::Loan(account) => SimAccount::Loan(account.try_into()?),
+            AccountWrapper::Mortgage(account) => SimAccount::Mortgage(account.try_into()?),
+            AccountWrapper::Savings(account) => SimAccount::Savings(account.try_into()?),
         })
+    }
+}
+
+/// A simulation-ready account (year-keyed tables), one variant per account type.
+///
+/// Enum dispatch instead of `Box<dyn Account>`: no heap indirection, and the
+/// set of account types stays closed and exhaustively matchable.
+#[derive(Debug)]
+pub enum SimAccount {
+    Income(Income<u32>),
+    Ssa(Ssa),
+    Retirement(Retirement<u32>),
+    Hsa(Hsa<u32>),
+    College(College<u32>),
+    Expense(Expense<u32>),
+    Loan(Loan<u32>),
+    Mortgage(Mortgage<u32>),
+    Savings(Savings<u32>),
+}
+
+/// Apply an expression to whichever concrete account this SimAccount holds
+macro_rules! delegate {
+    ($self:expr, $account:ident => $body:expr) => {
+        match $self {
+            SimAccount::Income($account) => $body,
+            SimAccount::Ssa($account) => $body,
+            SimAccount::Retirement($account) => $body,
+            SimAccount::Hsa($account) => $body,
+            SimAccount::College($account) => $body,
+            SimAccount::Expense($account) => $body,
+            SimAccount::Loan($account) => $body,
+            SimAccount::Mortgage($account) => $body,
+            SimAccount::Savings($account) => $body,
+        }
+    };
+}
+
+impl Account for SimAccount {
+    fn type_id(&self) -> AccountType {
+        delegate!(self, a => a.type_id())
+    }
+    fn name(&self) -> String {
+        delegate!(self, a => a.name())
+    }
+    fn link_id(&self) -> Option<String> {
+        delegate!(self, a => a.link_id())
+    }
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
+        delegate!(self, a => a.init(linked_dates, settings))
+    }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        delegate!(self, a => a.get_value(year))
+    }
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
+        delegate!(self, a => a.get_range_in(settings, linked_dates))
+    }
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
+        delegate!(self, a => a.get_range_out(settings, linked_dates))
+    }
+    fn simulate(
+        &mut self,
+        year: u32,
+        totals: &YearlyTotals,
+        settings: &Settings,
+        linked_value: Option<f64>,
+    ) -> Result<YearlyImpact, Error> {
+        delegate!(self, a => a.simulate(year, totals, settings, linked_value))
+    }
+    fn get_plot_data(&self) -> Vec<PlotDataSet> {
+        delegate!(self, a => a.get_plot_data())
     }
 }
 
@@ -223,8 +273,7 @@ mod sample_plan_tests {
     #[test]
     fn sample_plan_deserializes() {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/sample_plan.json");
-        let json = std::fs::read_to_string(path)
-            .expect("could not read examples/sample_plan.json");
+        let json = std::fs::read_to_string(path).expect("could not read examples/sample_plan.json");
         let data: UserData<AccountWrapper> = serde_json::from_str(&json)
             .unwrap_or_else(|e| panic!("sample_plan.json failed to deserialize: {e}"));
         assert_eq!(data.accounts.len(), 14);
@@ -234,11 +283,10 @@ mod sample_plan_tests {
     fn sample_plan_runs() {
         // End-to-end smoke test: the bundled example must convert and simulate cleanly.
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/sample_plan.json");
-        let json = std::fs::read_to_string(path)
-            .expect("could not read examples/sample_plan.json");
+        let json = std::fs::read_to_string(path).expect("could not read examples/sample_plan.json");
         let data: UserData<AccountWrapper> = serde_json::from_str(&json).unwrap();
-        let boxed: UserData<Box<dyn Account>> = data.try_into().unwrap();
-        let (plot_data, totals) = crate::run(boxed).unwrap();
+        let sim: UserData<SimAccount> = data.try_into().unwrap();
+        let (plot_data, totals) = crate::run(sim).unwrap();
         assert_eq!(plot_data.len(), 14);
         assert!(!totals.years().is_empty());
     }

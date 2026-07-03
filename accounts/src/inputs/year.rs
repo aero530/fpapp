@@ -43,17 +43,20 @@ impl YearInput {
     ) -> u32 {
         match self {
             Self::Calculate(input) => {
-                // do the math in i64 so a large negative delta clamps to zero
-                // instead of wrapping around to a huge year
+                // Do the math in i64 so a large negative delta cannot wrap
+                // around to a huge year.  Clamp nonsensical negative results to
+                // year_start (not 0 — a year-0 range start makes exponential
+                // formulas like raise^(year - start) blow up to infinity).
                 let year =
                     input.base.value(settings, linked_dates, eval_type) as i64 + input.delta as i64;
                 if year < 0 {
                     log::warn!(
-                        "year computation {:?} produced negative year {} — clamping to 0",
+                        "year computation {:?} produced negative year {} — clamping to year_start ({})",
                         input,
-                        year
+                        year,
+                        settings.year_start()
                     );
-                    0
+                    settings.year_start()
                 } else {
                     year as u32
                 }
@@ -153,14 +156,16 @@ mod tests {
     }
 
     #[test]
-    fn year_input_calculated_negative_result_clamps_to_zero() {
-        // Regression test for B6: a huge negative delta must not wrap to a huge year.
+    fn year_input_calculated_negative_result_clamps_to_year_start() {
+        // A huge negative delta must not wrap to a huge year, and must not
+        // clamp to year 0 either (a range starting at year 0 makes exponential
+        // formulas like raise^(year - start) overflow to infinity).
         let settings = test_settings_values();
         let w = YearInput::Calculate(YearComputation {
             base: YearSuggestion::YearStart,
             delta: -3000,
         });
-        assert_eq!(w.value(&settings, None, YearEvalType::StartIn), 0);
+        assert_eq!(w.value(&settings, None, YearEvalType::StartIn), 2000);
     }
 
     #[test]
@@ -190,9 +195,15 @@ mod tests {
         assert_eq!(w2.value(&settings, None, YearEvalType::StartIn), 2030);
         assert_eq!(w3.value(&settings, None, YearEvalType::StartIn), 2080);
         assert_eq!(w4.value(&settings, None, YearEvalType::StartIn), 2080);
-        assert_eq!(w5.value(&settings, Some(dates), YearEvalType::StartIn), 1432);
+        assert_eq!(
+            w5.value(&settings, Some(dates), YearEvalType::StartIn),
+            1432
+        );
         assert_eq!(w6.value(&settings, Some(dates), YearEvalType::EndIn), 1776);
-        assert_eq!(w7.value(&settings, Some(dates), YearEvalType::StartOut), 1900);
+        assert_eq!(
+            w7.value(&settings, Some(dates), YearEvalType::StartOut),
+            1900
+        );
         assert_eq!(w8.value(&settings, Some(dates), YearEvalType::EndOut), 1901);
     }
 

@@ -1,9 +1,6 @@
 //! Source of income
 
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-#[cfg(feature = "plotters-backend")]
-use image::{ImageBuffer, Rgba};
 
 use super::*;
 
@@ -35,7 +32,7 @@ pub struct Income<T: std::cmp::Ord> {
 }
 
 impl TryFrom<Income<String>> for Income<u32> {
-    type Error = Box<dyn Error>;
+    type Error = Error;
     fn try_from(other: Income<String>) -> Result<Self, Self::Error> {
         Ok(Self {
             name: other.name,
@@ -61,13 +58,9 @@ impl Account for Income<u32> {
     fn name(&self) -> String {
         self.name.clone()
     }
-    fn init(
-        &mut self,
-        linked_dates: Option<Dates>,
-        settings: &Settings,
-    ) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
         if linked_dates.is_some() {
-            return Err(String::from("Linked account dates provided but not used").into());
+            return Err(Error::config("linked account dates provided but not used"));
         }
         self.analysis = SingleTable::new(&self.table);
         self.dates = Dates {
@@ -96,25 +89,6 @@ impl Account for Income<u32> {
     ) -> Option<YearRange> {
         None
     }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_file(&self, filepath: String, width: u32, height: u32) {
-        scatter_plot_file(
-            filepath,
-            vec![("Amount".into(), &self.analysis.value)],
-            self.name(),
-            width,
-            height,
-        );
-    }
-    #[cfg(feature = "plotters-backend")]
-    fn plot_to_buf(&self, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        scatter_plot_buf(
-            vec![("Amount".into(), &self.analysis.value)],
-            self.name(),
-            width,
-            height,
-        )
-    }
     fn get_plot_data(&self) -> Vec<PlotDataSet> {
         self.analysis.get_plot_data()
     }
@@ -124,13 +98,13 @@ impl Account for Income<u32> {
         _totals: &YearlyTotals,
         settings: &Settings,
         _linked_value: Option<f64>,
-    ) -> Result<YearlyImpact, Box<dyn Error>> {
-        let start_in = self.dates.year_in.unwrap().start;
+    ) -> Result<YearlyImpact, Error> {
+        let year_in = self.dates.require_in()?;
         let mut result = WorkingValues::default();
 
         // If this year is pre-seeded from the historical table, use it as the actual income
         if let Some(actual) = self.analysis.value.get(year) {
-            if self.dates.year_in.unwrap().contains(year) {
+            if year_in.contains(year) {
                 return Ok(YearlyImpact {
                     income: actual,
                     income_taxable: actual,
@@ -144,9 +118,10 @@ impl Account for Income<u32> {
         self.analysis.add_year(year, false)?;
 
         // Calculate earnings
-        if self.dates.year_in.unwrap().contains(year) {
+        if year_in.contains(year) {
             let raise = self.raise.value(settings) / 100.0 + 1.0;
-            result.earning = self.base * f64::powf(raise, year.saturating_sub(start_in) as f64);
+            result.earning =
+                self.base * f64::powf(raise, year.saturating_sub(year_in.start) as f64);
         }
 
         // Add earnings to value tables
@@ -157,8 +132,5 @@ impl Account for Income<u32> {
             income: result.earning,
             ..Default::default()
         })
-    }
-    fn write(&self, filepath: String) {
-        self.analysis.write(filepath);
     }
 }
