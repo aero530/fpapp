@@ -8,7 +8,7 @@ Every account type implements `Account`. The two methods that drive the simulati
 
 **`init(linked_dates, settings)`** → `Result<()>`
 
-Seeds internal year tables from user-supplied historical data, resolves the account's active date ranges, and validates configuration (e.g. a mortgage rejects `compound_time <= 0`, a college account rejects unsupported tax statuses). Must be called before `simulate`.
+Seeds internal year tables from user-supplied historical data, resolves the account's active date ranges, and validates configuration (e.g. a mortgage rejects `compound_time <= 0`, a college account rejects unsupported tax statuses, negative dollar inputs and historical values are rejected, and rates/returns must be greater than −100%). Must be called before `simulate`.
 
 **`simulate(year, totals, settings, linked_value)`** → `Result<YearlyImpact>`
 
@@ -26,7 +26,7 @@ Accounts are simulated in a fixed type order every year (ties within a type brea
 | 2 | `Expense` | Fixed or inflation-adjusted costs. Contributes to `expense` and `col`. Healthcare expenses set `healthcare_expense` instead. Historical table entries override the computed value. |
 | 3 | `Hsa` | Must run after Expense so it can read `totals.healthcare_expense` and apply HSA funds to cover it. Employee contributions count as an expense and follow the account's tax status (normally a pre-tax deduction). |
 | 4 | `Mortgage` | Amortized payment with escrow and PMI. PMI drops once LTV falls below the configured threshold. The payoff-year payment is capped at balance + escrow + PMI so the principal actually reaches zero. |
-| 5 | `Loan` | Fixed or inflation-adjusted payment with amortized principal/interest split. |
+| 5 | `Loan` | Fixed or inflation-adjusted payment with amortized principal/interest split. Loans and mortgages log a warning when a payment fails to cover interest (negative amortization) or when the payment window ends with a balance outstanding. |
 | 6 | `College` | 529-style savings. Only `ContributeTaxedEarningsUntaxedWhenUsed` is supported (validated at init). Balances stay out of the savings pool. |
 | 7 | `Retirement` | 401k, IRA, Roth. Supports income-linked employer matching. Balance counts toward the savings pool. |
 | 8 | `Savings` | General savings or brokerage account. Balance counts toward the savings pool. |
@@ -59,7 +59,7 @@ Flexible year reference used for `start_in`, `end_in`, `start_out`, `end_out` on
 | `Fixed` | Constant dollar withdrawal each year of the withdrawal window. |
 | `FixedWithInflation` | Withdrawal amount grows with inflation from `year_start`. |
 | `EndAtZero` | Amortizes the balance evenly to zero over the remaining withdrawal period. Amount re-computed each year from remaining balance and remaining years. |
-| `ColFracOfSavings` | Withdrawal = `col × (account_balance / total_savings)` using the prior year's balances. Traditional (pre-tax) accounts gross the withdrawal up to cover the income tax due on it. |
+| `ColFracOfSavings` | Withdrawal = `col × (account_balance / total_savings)` using the prior year's balances. Traditional (pre-tax) accounts gross the withdrawal up to cover the income tax due on it. Not meaningful for College accounts (their balances are outside the savings pool); the UI does not offer it there and `init` warns if a data file uses it. |
 
 All withdrawals are capped at the account balance.
 

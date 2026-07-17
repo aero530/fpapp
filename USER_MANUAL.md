@@ -18,7 +18,7 @@ The Financial Planner models your income, savings, expenses, and debt over your 
 │  ▸ Expense (3)  │                                               │
 │    …            │                                               │
 │  ─────────────  │                                               │
-│  Open  Save  …  │                                               │
+│  New Open Save… │                                               │
 └─────────────────┴──────────────────────────────────────────────┘
 ```
 
@@ -37,11 +37,12 @@ All data is stored in a single JSON file. The app does not auto-save.
 
 | Button | Action |
 |---|---|
+| **New** | Start a new plan with default settings and no accounts |
 | **Open…** | Open an existing data file |
-| **Save** | Save to the currently open file |
+| **Save** | Save to the currently open file (disabled until a plan is open) |
 | **Save As…** | Save to a new file |
 
-Start fresh by clicking **Open…** and choosing a file that doesn't exist yet, or save an empty plan immediately with **Save As…**. You can maintain separate files for different scenarios.
+Start fresh by clicking **New** (also offered on the welcome screen). The Settings page opens with sensible defaults — adjust them, add your accounts, then click **Save As…** to choose where the file lives. You can maintain separate files for different scenarios.
 
 ---
 
@@ -102,9 +103,11 @@ All start and end year fields accept three formats:
 | A keyword | `yearRetire` | Resolved from your settings at simulation time |
 | A keyword with an offset | `yearRetire-1`, `yearStart+5` | Keyword ± a whole number of years |
 
-Available keywords: `yearStart`, `yearRetire`, `yearDie`.
+Available keywords: `yearStart`, `yearRetire`, `yearDie`, and `yearEnd` (same as `yearDie`). Accounts with an Income Link also accept `incomeLink`, which copies the corresponding start or end year from the linked income account.
 
 Using keywords means you only need to update the Settings page when your plans change — all accounts that reference `yearRetire` update automatically.
+
+If a start year resolves to a year *after* its matching end year (for example a contribution window ending at `yearRetire-1` when you are already retired), the window is simply empty and no money flows during it. This is not an error.
 
 ---
 
@@ -161,7 +164,7 @@ Tax-advantaged savings accounts: 401(k), IRA, Roth IRA, etc.
 | Option | Behaviour |
 |---|---|
 | Fixed Amount | The same dollar amount every year (in today's dollars). |
-| % of Income | A percentage of the linked income account's value for that year. Requires an Income Link. |
+| % of Income | A percentage of the linked income account's value for that year. Without an Income Link, the percentage applies to the total income for the year instead. |
 | Fixed + Inflation | The amount grows with the inflation rate from Year Start. |
 
 **Withdrawal types:**
@@ -172,6 +175,7 @@ Tax-advantaged savings accounts: 401(k), IRA, Roth IRA, etc.
 | Fixed + Inflation | The amount grows with inflation from Year Start. |
 | Draw Down to Zero | Calculates equal annual withdrawals so the balance reaches zero by the Withdrawal End year. |
 | Fraction of Savings | Withdraws an amount proportional to this account's share of total savings, scaled by your cost-of-living spending. |
+| Other | No automatic withdrawals. Use for accounts you only contribute to. |
 
 **Tax status:**
 
@@ -216,12 +220,14 @@ Savings earmarked for education expenses. Contributions are made with after-tax 
 | **Contribution Type** | Fixed Amount, % of Income, or Fixed + Inflation. |
 | **Contribution Value** | Annual contribution in today's dollars. |
 | **Yearly Return (%)** | Expected investment return. |
-| **Withdrawal Type** | Fixed Amount, Fixed + Inflation, or Draw Down to Zero. |
+| **Withdrawal Type** | Fixed Amount, Fixed + Inflation, Draw Down to Zero, or Other. |
 | **Withdrawal Value** | Annual withdrawal amount when not drawing down to zero. |
 | **Tax Status** | Fixed at *Post-tax contributions, tax-free withdrawals (529-style)*. |
 | **Notes** | Free text for your own reference. |
 
 College account balances are tracked separately and do not contribute to the general savings pool shown in the Dashboard.
+
+> **Don't double-count tuition.** The simulation assumes college withdrawals pay education costs directly — tuition never touches your cash balance or yearly expenses. Do **not** also create an Expense account for the same tuition, or the cost will be counted twice.
 
 ---
 
@@ -258,6 +264,8 @@ Any non-mortgage debt: auto loans, student loans, personal loans.
 
 The simulation calculates how much of each payment covers interest versus principal. The outstanding balance is tracked internally.
 
+If the payment does not cover the interest (the balance grows), or the End Year arrives with a balance still outstanding, a warning appears in the sidebar — the simulation continues either way. The same warnings apply to mortgages.
+
 ---
 
 ### Mortgage
@@ -293,7 +301,7 @@ General-purpose savings or brokerage accounts: taxable investment accounts, mone
 | **Contribution Type** | Fixed Amount, % of Income, or Fixed + Inflation. |
 | **Contribution Value** | Annual contribution in today's dollars. |
 | **Yearly Return (%)** | Expected annual return. |
-| **Withdrawal Type** | Fixed Amount, Fixed + Inflation, Draw Down to Zero, or Fraction of Savings. |
+| **Withdrawal Type** | Fixed Amount, Fixed + Inflation, Draw Down to Zero, Fraction of Savings, or Other. |
 | **Withdrawal Value** | Annual withdrawal when not drawing down to zero. |
 | **Tax Status** | Roth, Taxed Both Ways, Traditional, or Tax-Free. |
 | **Notes** | Free text for your own reference. |
@@ -302,13 +310,17 @@ General-purpose savings or brokerage accounts: taxable investment accounts, mone
 
 ## Historical data
 
-Every account has a **Historical Data** table at the bottom of its form. Use this to enter known past or current balances:
+Every account except Social Security has a **Historical Data** table at the bottom of its form. Use it to enter known past or current values:
 
 - Add a row with the **+ Add row** button
-- Set the **Year** to the year the balance applies
-- Set the **Amount** to the account balance at the end of that year
+- Set the **Year** and the **Amount** for that year (amounts must be zero or greater)
 
-Historical data seeds the simulation with real opening balances rather than starting from zero. This is particularly useful for existing retirement accounts, HSA balances, or outstanding loan principals. Values outside the simulation window are ignored.
+What the amount means depends on the account type:
+
+- **Balance accounts** (Retirement, Savings, HSA, College, Loan, Mortgage): the account balance. For a year *before* the simulation starts, enter the end-of-year balance — it becomes the opening balance when the simulation begins. For a year *inside* the simulation window, the value is used as that year's **opening** balance, and the year's earnings, contributions, withdrawals, and payments are applied on top of it.
+- **Flow accounts** (Income, Expense): the actual amount earned or spent that year. A recorded actual replaces the computed value for that year — even if the year falls outside the account's start/end window.
+
+Historical data is particularly useful for existing retirement accounts, HSA balances, or outstanding loan principals. Years before the first simulated year appear in the account's Projection chart but are otherwise only used to seed opening balances.
 
 ---
 
@@ -324,6 +336,20 @@ Click **📊 Dashboard** to see the summary charts. Charts appear once a data fi
 | **Healthcare & Tax Burden** | Annual healthcare costs and income tax paid (income tax plus capital-gains tax). |
 
 Each account's own chart is shown at the bottom of its form page under **Projection**.
+
+---
+
+## Model assumptions and simplifications
+
+The simulator favors clarity over tax-code fidelity. Keep these simplifications in mind when comparing its output against other tools:
+
+- **Flat tax rates.** A single marginal income-tax rate and a single capital-gains rate apply to every year — no brackets, standard deduction, or payroll (FICA) taxes. Deductions can offset other income in the same year, but a negative taxable total never produces a refund.
+- **Social Security combined income.** The taxable-benefit calculation counts *all* income for the year, including Roth withdrawals, which the real IRS rules exclude. Plans funded mainly from Roth accounts in retirement will show more SSA tax than the actual rules produce.
+- **Employer match follows the account's tax status.** A match into a Roth account is modeled as Roth money (never taxed). Real employer matches are pre-tax and taxed at withdrawal.
+- **"Taxed Both Ways" accounts realize gains annually.** All investment earnings are taxed in the year they are earned at the capital-gains rate — there is no deferral or cost-basis tracking.
+- **College withdrawals settle off-ledger.** Withdrawals are assumed to exactly pay education costs; see the note in the College section about not double-counting tuition.
+- **Annual timing.** All flows happen once per year: a full year of interest accrues before the year's loan or mortgage payment is applied, so debt interest is slightly overstated compared to monthly payments. Escrow stays constant over time and stops when the mortgage is paid off.
+- **Non-amortizing debt is flagged, not fixed.** If a loan or mortgage payment doesn't cover its interest, or the payment window ends with a balance outstanding, the simulation continues and a warning appears in the sidebar.
 
 ---
 

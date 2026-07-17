@@ -65,6 +65,13 @@ impl Account for Mortgage {
                 self.compound_time
             )));
         }
+        require_non_negative(self.payment_value, "payment value")?;
+        require_non_negative(self.mortgage_insurance, "mortgage insurance")?;
+        require_non_negative(self.escrow_value, "escrow value")?;
+        require_non_negative(self.home_value, "home value")?;
+        require_non_negative(self.ltv_limit, "LTV limit")?;
+        require_rate_above_neg_100(self.rate.value(settings), "interest rate")?;
+        self.table.validate_non_negative()?;
         self.analysis = LoanTables::new(
             &self.table,
             &Table::default(),
@@ -173,6 +180,26 @@ impl Account for Mortgage {
             if self.analysis.value.get(year).unwrap() < 0.0001 {
                 self.analysis.value.insert(year, 0_f64);
             }
+
+            // Surface a payment that cannot keep up with the interest —
+            // otherwise the balance grows silently
+            if result.payment > 0_f64 && principal_payment < result.interest {
+                log::warn!(
+                    "mortgage '{}': the payment left after insurance and escrow does not cover the interest — the balance is growing (negative amortization)",
+                    self.name
+                );
+            }
+        }
+
+        // Surface debt that outlives its payment window
+        let end_balance = self.analysis.value.get(year).unwrap();
+        if year == year_out.end && end_balance > 0.01 {
+            log::warn!(
+                "mortgage '{}': payments end in {} with ${:.0} still outstanding — increase the payment or extend the end year",
+                self.name,
+                year,
+                end_balance
+            );
         }
 
         Ok(YearlyImpact {

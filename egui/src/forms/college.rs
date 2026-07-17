@@ -2,10 +2,10 @@ use eframe::egui;
 use serde_json::Value;
 
 use super::common::{
-    contribution_rows, in_out_year_rows, name_row, notes_row, tax_status_row, withdrawal_rows,
-    yearly_return_row,
+    COLLEGE_WITHDRAWAL_TOOLTIP, contribution_rows, in_out_year_rows, name_row, notes_row,
+    tax_status_row, withdrawal_rows, yearly_return_row,
 };
-use super::{COLLEGE_TAX_OPTIONS, form_grid};
+use super::{COLLEGE_TAX_OPTIONS, COLLEGE_WITHDRAWAL_OPTIONS, form_grid};
 
 pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
     let mut c = false;
@@ -14,7 +14,14 @@ pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str) -> bool {
         c |= in_out_year_rows(ui, a, uuid);
         c |= contribution_rows(ui, a, "col", uuid, 500.0);
         c |= yearly_return_row(ui, a, uuid);
-        c |= withdrawal_rows(ui, a, "col", uuid);
+        c |= withdrawal_rows(
+            ui,
+            a,
+            "col",
+            uuid,
+            COLLEGE_WITHDRAWAL_OPTIONS,
+            COLLEGE_WITHDRAWAL_TOOLTIP,
+        );
         c |= tax_status_row(
             ui, a, "col", uuid, COLLEGE_TAX_OPTIONS,
             "How taxes impact this account:\n\

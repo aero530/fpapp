@@ -54,3 +54,30 @@ impl Error {
         }
     }
 }
+
+/// Config error when a user-supplied dollar amount is negative.  Used by
+/// account `init` validation so bad inputs fail fast with a clear message
+/// instead of surfacing as mid-simulation internal errors.
+pub(crate) fn require_non_negative(value: f64, field: &str) -> Result<(), Error> {
+    if value < 0_f64 {
+        Err(Error::config(format!(
+            "{} must not be negative (got {})",
+            field, value
+        )))
+    } else {
+        Ok(())
+    }
+}
+
+/// Config error when a rate/return is -100% or below (a yearly factor of
+/// zero or less makes balances go negative or oscillate in sign).
+pub(crate) fn require_rate_above_neg_100(value: f64, field: &str) -> Result<(), Error> {
+    if value <= -100_f64 {
+        Err(Error::config(format!(
+            "{} must be greater than -100 percent (got {})",
+            field, value
+        )))
+    } else {
+        Ok(())
+    }
+}

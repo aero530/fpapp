@@ -101,16 +101,28 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
                         }); // Frame
                 });
 
-            // Pinned footer with Open / Save
+            // Pinned footer with New / Open / Save
             ui.separator();
             ui.horizontal(|ui| {
+                if ui.button("New").clicked() {
+                    new_file(app);
+                }
                 if ui.button("Open...").clicked() {
                     open_file(app);
                 }
-                if ui.button("Save").clicked() {
+            });
+            let can_save = !app.data.is_null();
+            ui.horizontal(|ui| {
+                if ui
+                    .add_enabled(can_save, egui::Button::new("Save"))
+                    .clicked()
+                {
                     save_file(app);
                 }
-                if ui.button("Save As...").clicked() {
+                if ui
+                    .add_enabled(can_save, egui::Button::new("Save As..."))
+                    .clicked()
+                {
                     save_file_as(app);
                 }
             });
@@ -136,6 +148,47 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
                 }
             }
         });
+}
+
+/// The calendar year, derived from the system clock.  Average Gregorian year
+/// length is close enough here — worst case it is off by a day around New
+/// Year, and it only seeds the default `yearStart`.
+fn current_year() -> u32 {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    1970 + (secs / 31_556_952) as u32
+}
+
+/// A new plan: default settings, no accounts.
+fn default_plan(year_start: u32) -> serde_json::Value {
+    json!({
+        "settings": {
+            "ageRetire": 65,
+            "ageDie": 90,
+            "yearBorn": year_start - 35,
+            "yearStart": year_start,
+            "inflationBase": 3.0,
+            "taxIncome": 22.0,
+            "taxCapitalGains": 15.0,
+            "retirementCostOfLiving": 80.0,
+            "ssa": {
+                "breakpoints": { "low": 25000.0, "high": 34000.0 },
+                "taxableIncomePercentage": { "low": 50.0, "high": 85.0 }
+            }
+        },
+        "accounts": {}
+    })
+}
+
+/// Start a new plan with sensible default settings and no accounts.
+pub fn new_file(app: &mut FpApp) {
+    app.data = default_plan(current_year());
+    app.file_path = None;
+    app.selected = Page::Settings;
+    app.error = None;
+    app.dirty = true;
 }
 
 pub fn open_file(app: &mut FpApp) {
@@ -202,6 +255,15 @@ fn write_file(app: &mut FpApp, path: &str) -> bool {
 }
 
 fn add_account(app: &mut FpApp, account_type: &str) {
+    if !app.data.is_object() {
+        // No plan open (the tree is not shown in this state, but guard anyway)
+        return;
+    }
+    // Older or hand-edited files may lack the accounts object entirely —
+    // create it rather than silently dropping the new account
+    if !app.data["accounts"].is_object() {
+        app.data["accounts"] = json!({});
+    }
     let uuid = Uuid::new_v4().to_string();
     let account = default_account(account_type);
     if let Some(accounts) = app.data["accounts"].as_object_mut() {
@@ -223,10 +285,10 @@ fn default_account(account_type: &str) -> serde_json::Value {
             "raise": 3.0,
             "notes": null
         }),
+        // no "table": the SSA account has no historical-data field in the engine
         "ssa" => json!({
             "type": "ssa",
             "name": "Social Security",
-            "table": {},
             "base": 0.0,
             "startIn": "yearRetire",
             "endIn": "yearDie",
@@ -344,6 +406,16 @@ fn default_account(account_type: &str) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_plan_matches_the_engine_schema() {
+        // The "New" plan template must deserialize and simulate cleanly, so a
+        // brand-new plan never greets the user with a parse error.
+        let plan = default_plan(2026);
+        let data: accounts::UserData<accounts::SimAccount> =
+            serde_json::from_value(plan).expect("default plan does not deserialize");
+        accounts::run(data).expect("default plan does not simulate");
+    }
 
     #[test]
     fn default_account_templates_match_the_accounts_schema() {

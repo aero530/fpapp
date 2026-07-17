@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 mod error;
 pub use error::Error;
+pub(crate) use error::{require_non_negative, require_rate_above_neg_100};
 
 mod inputs;
 use inputs::{

@@ -29,6 +29,15 @@ pub(super) const WITHDRAWAL_OPTIONS: &[(&str, &str)] = &[
     ("other", "Other"),
 ];
 
+/// College balances are excluded from the savings pool, so the
+/// fraction-of-savings strategy is not meaningful for them and is not offered.
+pub(super) const COLLEGE_WITHDRAWAL_OPTIONS: &[(&str, &str)] = &[
+    ("fixed", "Fixed Amount"),
+    ("fixed_with_inflation", "Fixed + Inflation"),
+    ("end_at_zero", "Draw Down to Zero"),
+    ("other", "Other"),
+];
+
 pub(super) const TAX_STATUS_OPTIONS: &[(&str, &str)] = &[
     (
         "contribute_taxed_earnings_untaxed_when_used",
@@ -123,12 +132,15 @@ pub fn show_account(app: &mut FpApp, ui: &mut egui::Ui, uuid: &str) {
         widgets::plot_datasets(ui, uuid, plot_data, "Projection", 480.0);
     }
 
-    // Historical data table
-    ui.add_space(8.0);
-    ui.separator();
-    ui.label("Historical Data:");
-    if widgets::table_editor(ui, &mut account, "table") {
-        changed = true;
+    // Historical data table (SSA accounts have no table field in the engine,
+    // so don't offer an editor whose entries would be silently ignored)
+    if account_type != "ssa" {
+        ui.add_space(8.0);
+        ui.separator();
+        ui.label("Historical Data:");
+        if widgets::table_editor(ui, &mut account, "table") {
+            changed = true;
+        }
     }
 
     if changed {

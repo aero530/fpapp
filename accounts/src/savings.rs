@@ -63,6 +63,10 @@ impl Account for Savings {
         if linked_dates.is_some() {
             return Err(Error::config("linked account dates provided but not used"));
         }
+        require_non_negative(self.contribution_value, "contribution value")?;
+        require_non_negative(self.withdrawal_value, "withdrawal value")?;
+        require_rate_above_neg_100(self.yearly_return.value(settings), "yearly return")?;
+        self.table.validate_non_negative()?;
 
         self.analysis = SavingsTables::new(
             &self.table,

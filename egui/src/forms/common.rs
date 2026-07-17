@@ -4,7 +4,7 @@
 use eframe::egui;
 use serde_json::Value;
 
-use super::{CONTRIBUTION_OPTIONS, WITHDRAWAL_OPTIONS};
+use super::CONTRIBUTION_OPTIONS;
 use crate::widgets;
 
 pub(super) fn name_row(ui: &mut egui::Ui, a: &mut Value) -> bool {
@@ -103,12 +103,16 @@ pub(super) fn yearly_return_row(ui: &mut egui::Ui, a: &mut Value, uuid: &str) ->
     c
 }
 
-/// Withdrawal type combo + withdrawal value rows
+/// Withdrawal type combo + withdrawal value rows.
+/// `options` selects the offered strategies (college accounts get a reduced
+/// list without Fraction of Savings) and `tooltip` describes them.
 pub(super) fn withdrawal_rows(
     ui: &mut egui::Ui,
     a: &mut Value,
     id_prefix: &str,
     uuid: &str,
+    options: &[(&str, &str)],
+    tooltip: &str,
 ) -> bool {
     let mut c = false;
     c |= widgets::combo_field(
@@ -116,13 +120,9 @@ pub(super) fn withdrawal_rows(
         "Withdrawal Type:",
         a,
         "withdrawalType",
-        WITHDRAWAL_OPTIONS,
+        options,
         &format!("{}_wt_{}", id_prefix, uuid),
-        "How money is taken out of the account:\n\
-         Fixed Amount — fixed dollar amount\n\
-         Fixed + Inflation — fixed amount adjusted for inflation\n\
-         Draw Down to Zero — equal amounts so balance reaches zero at end\n\
-         Fraction of Savings — proportional to total savings",
+        tooltip,
     );
     ui.end_row();
     c |= widgets::f64_field(
@@ -164,6 +164,19 @@ pub(super) const TAX_STATUS_TOOLTIP: &str = "How taxes impact this account:\n\
      Taxed Both Ways — taxed on contributions, earnings taxed as capital gains\n\
      Traditional — pre-tax contributions, taxed on withdrawal\n\
      Tax-Free (HSA/529) — pre-tax contributions, tax-free withdrawals";
+
+pub(super) const WITHDRAWAL_TOOLTIP: &str = "How money is taken out of the account:\n\
+     Fixed Amount — fixed dollar amount\n\
+     Fixed + Inflation — fixed amount adjusted for inflation\n\
+     Draw Down to Zero — equal amounts so balance reaches zero at end\n\
+     Fraction of Savings — proportional to total savings\n\
+     Other — no automatic withdrawals";
+
+pub(super) const COLLEGE_WITHDRAWAL_TOOLTIP: &str = "How money is taken out of the account:\n\
+     Fixed Amount — fixed dollar amount\n\
+     Fixed + Inflation — fixed amount adjusted for inflation\n\
+     Draw Down to Zero — equal amounts so balance reaches zero at end\n\
+     Other — no automatic withdrawals";
 
 pub(super) fn notes_row(ui: &mut egui::Ui, a: &mut Value) -> bool {
     let c = widgets::notes_field(ui, a);

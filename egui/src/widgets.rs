@@ -51,7 +51,16 @@ pub fn u32_field(
 ) -> bool {
     ui.label(label).on_hover_text(tooltip);
     let mut n = value[field].as_u64().unwrap_or(0) as u32;
-    let changed = ui.add(egui::DragValue::new(&mut n).range(range)).changed();
+    // clamp_existing_to_range(false): user edits and drags still clamp, but a
+    // legacy out-of-range value is not silently rewritten just by rendering
+    // the page (egui's default would mark it changed and dirty the app)
+    let changed = ui
+        .add(
+            egui::DragValue::new(&mut n)
+                .range(range)
+                .clamp_existing_to_range(false),
+        )
+        .changed();
     if changed {
         value[field] = json!(n);
     }
@@ -333,8 +342,16 @@ pub fn table_editor(ui: &mut egui::Ui, value: &mut Value, field: &str) -> bool {
 
                 for (i, (year, amount)) in rows.iter_mut().enumerate() {
                     let mut year_n = year.parse::<u32>().unwrap_or(0);
+                    // same plausible-year clamp the settings page uses; edits
+                    // clamp but existing values are not rewritten on render
                     if ui
-                        .add_sized([YEAR_W, row_h], egui::DragValue::new(&mut year_n).speed(1))
+                        .add_sized(
+                            [YEAR_W, row_h],
+                            egui::DragValue::new(&mut year_n)
+                                .speed(1)
+                                .range(1850..=2200)
+                                .clamp_existing_to_range(false),
+                        )
                         .changed()
                     {
                         *year = year_n.to_string();

@@ -104,8 +104,6 @@
       "contributionType": "fixed",
       "employerContribution": 500.0,
       "yearlyReturn": 5.0,
-      "withdrawalType": "other",
-      "withdrawalValue": 0.0,
       "taxStatus": "contribute_pretax_untaxed_when_used",
       "notes": "Withdrawals driven automatically by healthcare expense accounts"
     },
@@ -118,7 +116,7 @@
       "startIn": 2025,
       "endIn": 2035,
       "startOut": 2035,
-      "endOut": 2039,
+      "endOut": 2038,
       "contributionValue": 6000.0,
       "contributionType": "fixed",
       "yearlyReturn": 6.0,
@@ -137,8 +135,7 @@
       "expenseValue": 3000.0,
       "isHealthcare": true,
       "scalesWithCol": false,
-      "hsaLink": "f6f6f6f6-f6f6-f6f6-f6f6-f6f6f6f6f6f6",
-      "notes": "Out-of-pocket medical expenses drawn from HSA first"
+      "notes": "Out-of-pocket medical expenses drawn from all HSA accounts automatically"
     },
     "c9c9c9c9-c9c9-c9c9-c9c9-c9c9c9c9c9c9": {
       "type": "expense",

@@ -36,10 +36,21 @@ pub fn run(mut data: UserData<SimAccount>) -> Result<AnalysisOutput, Error> {
             .link_id()
         {
             Some(link_id) => match data.accounts.get(&link_id) {
-                Some(linked) => Some(Dates {
+                Some(linked) if linked.type_id() == AccountType::Income => Some(Dates {
                     year_in: linked.get_range_in(&data.settings, None),
                     year_out: linked.get_range_out(&data.settings, None),
                 }),
+                Some(linked) => {
+                    // Same rule the year loop applies to linked values: only
+                    // Income accounts can be linked, so don't resolve dates
+                    // from a wrong-typed account either
+                    log::warn!(
+                        "income_link on '{}' points to {:?}, not Income — treating as unlinked",
+                        data.accounts[uuid].name(),
+                        linked.type_id()
+                    );
+                    None
+                }
                 None => {
                     log::warn!(
                         "linked account {} not found — treating as unlinked",
@@ -396,6 +407,79 @@ mod tests {
         let text = err.to_string();
         assert_eq!(text.matches("invalid configuration").count(), 1, "{text}");
         assert_eq!(text.matches("My HSA").count(), 1, "{text}");
+    }
+
+    #[test]
+    fn negative_dollar_inputs_are_rejected_at_init() {
+        // A negative contribution used to drive the balance negative and
+        // abort mid-simulation with an internal error; now it is a clear
+        // config error before the run starts.
+        let accounts = r#""sav": {
+            "type": "savings", "name": "sav", "table": {},
+            "contributions": null, "earnings": null, "withdrawals": null,
+            "startIn": 2020, "endIn": 2030, "startOut": 2031, "endOut": 2031,
+            "contributionValue": -100.0, "contributionType": "fixed",
+            "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+            "taxStatus": "contribute_taxed_earnings_untaxed_when_used", "notes": null
+        }"#;
+        let err = crate::run(user_data(accounts)).unwrap_err();
+        assert!(err.to_string().contains("negative"), "{err}");
+    }
+
+    #[test]
+    fn negative_historical_table_seed_is_rejected_at_init() {
+        let accounts = r#""sav": {
+            "type": "savings", "name": "sav", "table": { "2020": -500 },
+            "contributions": null, "earnings": null, "withdrawals": null,
+            "startIn": 2020, "endIn": 2030, "startOut": 2031, "endOut": 2031,
+            "contributionValue": 0.0, "contributionType": "fixed",
+            "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+            "taxStatus": "contribute_taxed_earnings_untaxed_when_used", "notes": null
+        }"#;
+        let err = crate::run(user_data(accounts)).unwrap_err();
+        assert!(err.to_string().contains("2020"), "{err}");
+    }
+
+    #[test]
+    fn income_link_to_non_income_account_is_ignored_at_init() {
+        // A retirement account whose incomeLink points at an expense must
+        // still initialize and run (dates fall back, values unlinked) instead
+        // of resolving dates from the wrong-typed account.
+        let accounts = format!(
+            "{},{}",
+            expense_json("rent", 1000.0),
+            r#""ret": {
+                "type": "retirement", "name": "ret", "table": {},
+                "contributions": null, "earnings": null, "withdrawals": null,
+                "employerContributions": null,
+                "startIn": "incomeLink", "endIn": "incomeLink",
+                "startOut": 2031, "endOut": 2031,
+                "contributionValue": 100.0, "contributionType": "fixed",
+                "yearlyReturn": 0.0, "withdrawalType": "other", "withdrawalValue": 0.0,
+                "taxStatus": "contribute_taxed_earnings_untaxed_when_used",
+                "incomeLink": "rent", "matching": null, "notes": null
+            }"#
+        );
+        let totals = run_totals(&accounts);
+        // incomeLink falls back to the simulation bounds, so the fixed
+        // contribution happens every year
+        assert_approx_eq!(f64, totals.saving.get(2020).unwrap(), 100.0);
+        assert_approx_eq!(f64, totals.saving.get(2030).unwrap(), 1100.0);
+    }
+
+    #[test]
+    fn income_historical_actual_outside_window_still_counts() {
+        // Same rule as expenses: a recorded actual is charged even when the
+        // year falls outside the account's active window.
+        let accounts = r#""inc": {
+            "type": "income", "name": "inc", "base": 100.0,
+            "startIn": 2025, "endIn": 2030, "raise": 0.0, "notes": null,
+            "table": { "2020": 999.0 }
+        }"#;
+        let totals = run_totals(accounts);
+        assert_approx_eq!(f64, totals.income.get(2020).unwrap(), 999.0);
+        assert_approx_eq!(f64, totals.income.get(2021).unwrap(), 0.0);
+        assert_approx_eq!(f64, totals.income.get(2025).unwrap(), 100.0);
     }
 
     #[test]

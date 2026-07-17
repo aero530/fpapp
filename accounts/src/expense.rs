@@ -57,6 +57,10 @@ impl Account for Expense {
         if linked_dates.is_some() {
             return Err(Error::config("linked account dates provided but not used"));
         }
+        require_non_negative(self.expense_value, "expense value")?;
+        // A negative healthcare actual would corrupt the HSA settlement; treat
+        // refunds/rebates as income instead of a negative expense
+        self.table.validate_non_negative()?;
         // Seed the analysis with historical expense values so recorded actuals
         // are used (and plotted) instead of being discarded
         self.analysis = SingleTable::new(&self.table);

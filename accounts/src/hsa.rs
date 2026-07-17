@@ -67,6 +67,10 @@ impl Account for Hsa {
                 "only tax status 'contribute_pretax_untaxed_when_used' is supported for HSA accounts",
             ));
         }
+        require_non_negative(self.contribution_value, "contribution value")?;
+        require_non_negative(self.employer_contribution, "employer contribution")?;
+        require_rate_above_neg_100(self.yearly_return.value(settings), "yearly return")?;
+        self.table.validate_non_negative()?;
         self.analysis = SavingsTables::new(&self.table, &None, &None, &None, &None);
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),

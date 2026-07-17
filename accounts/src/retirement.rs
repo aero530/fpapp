@@ -66,6 +66,17 @@ impl Account for Retirement {
         self.name.clone()
     }
     fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
+        require_non_negative(self.contribution_value, "contribution value")?;
+        require_non_negative(self.withdrawal_value, "withdrawal value")?;
+        require_rate_above_neg_100(self.yearly_return.value(settings), "yearly return")?;
+        if let Some(employer_match) = &self.matching {
+            require_non_negative(
+                employer_match.amount.value(settings),
+                "employer match amount",
+            )?;
+            require_non_negative(employer_match.limit.value(settings), "employer match limit")?;
+        }
+        self.table.validate_non_negative()?;
         self.analysis = SavingsTables::new(
             &self.table,
             &self.contributions,

@@ -41,6 +41,7 @@ impl Account for Ssa {
         if linked_dates.is_some() {
             return Err(Error::config("linked account dates provided but not used"));
         }
+        require_non_negative(self.base, "base benefit")?;
         self.analysis = SingleTable::default();
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),

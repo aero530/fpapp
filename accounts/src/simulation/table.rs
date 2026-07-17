@@ -124,6 +124,21 @@ impl Table {
     pub fn years(&self) -> Vec<u32> {
         self.0.keys().copied().collect()
     }
+    /// Config error if any entry is negative.  Used by account `init`
+    /// validation: a negative balance/amount seed would otherwise surface
+    /// later as a confusing mid-simulation internal error (or, for healthcare
+    /// expenses, corrupt the HSA settlement).
+    pub(crate) fn validate_non_negative(&self) -> Result<(), Error> {
+        for (year, value) in self.iter() {
+            if value < 0_f64 {
+                return Err(Error::config(format!(
+                    "historical table value for year {} is negative ({})",
+                    year, value
+                )));
+            }
+        }
+        Ok(())
+    }
 }
 
 impl IntoIterator for Table {
@@ -170,6 +185,17 @@ mod tests {
         t.insert(2022, 123.0);
         t.pull_value_forward(2022);
         assert_eq!(t.get(2022), Some(0.0));
+    }
+
+    #[test]
+    fn validate_non_negative_rejects_negative_entries() {
+        assert!(
+            table(&[(2020, 0.0), (2021, 5.0)])
+                .validate_non_negative()
+                .is_ok()
+        );
+        let err = table(&[(2020, -1.0)]).validate_non_negative().unwrap_err();
+        assert!(err.to_string().contains("2020"));
     }
 
     #[test]

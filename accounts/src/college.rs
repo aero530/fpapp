@@ -70,6 +70,19 @@ impl Account for College {
                 "only tax status 'contribute_taxed_earnings_untaxed_when_used' is supported for college accounts",
             ));
         }
+        require_non_negative(self.contribution_value, "contribution value")?;
+        require_non_negative(self.withdrawal_value, "withdrawal value")?;
+        require_rate_above_neg_100(self.yearly_return.value(settings), "yearly return")?;
+        self.table.validate_non_negative()?;
+        // College balances are excluded from the savings pool, so a
+        // fraction-of-savings withdrawal computes this account's share of a
+        // pool it is not part of — the amounts would be meaningless.
+        if self.withdrawal_type == WithdrawalOptions::ColFracOfSavings {
+            log::warn!(
+                "college account '{}' uses fraction-of-savings withdrawals, but college balances are not part of the savings pool — the withdrawal amounts will not be meaningful",
+                self.name
+            );
+        }
 
         // Init the analysis object with values from the stored tables
         self.analysis = SavingsTables::new(

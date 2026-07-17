@@ -181,8 +181,12 @@ impl eframe::App for FpApp {
                         ui.add_space(120.0);
                         ui.heading("Financial Planner");
                         ui.add_space(16.0);
-                        ui.label("Open a data file to get started.");
+                        ui.label("Start a new plan or open an existing data file.");
                         ui.add_space(12.0);
+                        if ui.button("New Plan...").clicked() {
+                            crate::nav::new_file(self);
+                        }
+                        ui.add_space(4.0);
                         if ui.button("Open File...").clicked() {
                             crate::nav::open_file(self);
                         }

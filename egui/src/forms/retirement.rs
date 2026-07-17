@@ -2,10 +2,10 @@ use eframe::egui;
 use serde_json::{Value, json};
 
 use super::common::{
-    TAX_STATUS_TOOLTIP, contribution_rows, in_out_year_rows, name_row, notes_row, tax_status_row,
-    withdrawal_rows, yearly_return_row,
+    TAX_STATUS_TOOLTIP, WITHDRAWAL_TOOLTIP, contribution_rows, in_out_year_rows, name_row,
+    notes_row, tax_status_row, withdrawal_rows, yearly_return_row,
 };
-use super::{TAX_STATUS_OPTIONS, form_grid, income_link_combo};
+use super::{TAX_STATUS_OPTIONS, WITHDRAWAL_OPTIONS, form_grid, income_link_combo};
 use crate::app::FpApp;
 use crate::widgets;
 
@@ -16,7 +16,7 @@ pub(super) fn show(ui: &mut egui::Ui, a: &mut Value, uuid: &str, app: &FpApp) ->
         c |= in_out_year_rows(ui, a, uuid);
         c |= contribution_rows(ui, a, "ret", uuid, 500.0);
         c |= yearly_return_row(ui, a, uuid);
-        c |= withdrawal_rows(ui, a, "ret", uuid);
+        c |= withdrawal_rows(ui, a, "ret", uuid, WITHDRAWAL_OPTIONS, WITHDRAWAL_TOOLTIP);
         c |= tax_status_row(ui, a, "ret", uuid, TAX_STATUS_OPTIONS, TAX_STATUS_TOOLTIP);
 
         ui.label("Income Link:").on_hover_text(

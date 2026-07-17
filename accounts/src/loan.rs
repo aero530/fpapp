@@ -47,6 +47,9 @@ impl Account for Loan {
         if linked_dates.is_some() {
             return Err(Error::config("linked account dates provided but not used"));
         }
+        require_non_negative(self.payment_value, "payment value")?;
+        require_rate_above_neg_100(self.rate.value(settings), "interest rate")?;
+        self.table.validate_non_negative()?;
 
         self.analysis = LoanTables::new(
             &self.table,
@@ -123,6 +126,24 @@ impl Account for Loan {
         // Limit min value of the loan balance to account for floating point math rounding
         if self.analysis.value.get(year).unwrap() < 0.0001 {
             self.analysis.value.insert(year, 0_f64);
+        }
+
+        // Surface debt that is not actually being retired — otherwise the
+        // balance grows (or lingers past the payment window) silently
+        let balance = self.analysis.value.get(year).unwrap();
+        if year_out.contains(year) && result.payment > 0_f64 && result.interest > result.payment {
+            log::warn!(
+                "loan '{}': the payment does not cover the interest — the balance is growing (negative amortization)",
+                self.name
+            );
+        }
+        if year == year_out.end && balance > 0.01 {
+            log::warn!(
+                "loan '{}': payments end in {} with ${:.0} still outstanding — increase the payment or extend the end year",
+                self.name,
+                year,
+                balance
+            );
         }
 
         Ok(YearlyImpact {

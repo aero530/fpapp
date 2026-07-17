@@ -42,7 +42,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("Income Tax Rate (%):")
                 .on_hover_text("Marginal income tax rate applied to taxable withdrawals and ordinary income");
             let mut v = settings["taxIncome"].as_f64().unwrap_or(22.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(0.1).range(0.0..=100.0)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(0.1).range(0.0..=100.0).clamp_existing_to_range(false)).changed() {
                 settings["taxIncome"] = json!(v);
                 changed = true;
             }
@@ -51,7 +51,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("Capital Gains Tax Rate (%):")
                 .on_hover_text("Tax rate applied to capital gains (investment earnings in taxable accounts)");
             let mut v = settings["taxCapitalGains"].as_f64().unwrap_or(15.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(0.1).range(0.0..=100.0)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(0.1).range(0.0..=100.0).clamp_existing_to_range(false)).changed() {
                 settings["taxCapitalGains"] = json!(v);
                 changed = true;
             }
@@ -60,7 +60,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("Inflation Rate (%):")
                 .on_hover_text("Expected yearly inflation rate — used when account inputs reference inflationBase");
             let mut v = settings["inflationBase"].as_f64().unwrap_or(3.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(0.05).range(0.0..=20.0)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(0.05).range(0.0..=20.0).clamp_existing_to_range(false)).changed() {
                 settings["inflationBase"] = json!(v);
                 changed = true;
             }
@@ -69,7 +69,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("Retirement Cost of Living (%):")
                 .on_hover_text("Your expected spending in retirement as a percent of pre-retirement spending (e.g. 80 means you'll spend 80% of what you spend now)");
             let mut v = settings["retirementCostOfLiving"].as_f64().unwrap_or(80.0);
-            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=200.0)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=200.0).clamp_existing_to_range(false)).changed() {
                 settings["retirementCostOfLiving"] = json!(v);
                 changed = true;
             }
@@ -87,7 +87,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("SSA Breakpoint Low ($):")
                 .on_hover_text("Combined income threshold below which 0% of Social Security benefits are taxable");
             let mut v = bp_low;
-            if ui.add(egui::DragValue::new(&mut v).speed(500.0).range(0.0..=bp_high)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(500.0).range(0.0..=bp_high).clamp_existing_to_range(false)).changed() {
                 settings["ssa"]["breakpoints"]["low"] = json!(v);
                 changed = true;
             }
@@ -96,7 +96,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("SSA Breakpoint High ($):")
                 .on_hover_text("Combined income threshold above which the maximum percentage of Social Security benefits are taxable");
             let mut v = bp_high;
-            if ui.add(egui::DragValue::new(&mut v).speed(500.0).range(bp_low..=f64::MAX)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(500.0).range(bp_low..=f64::MAX).clamp_existing_to_range(false)).changed() {
                 settings["ssa"]["breakpoints"]["high"] = json!(v);
                 changed = true;
             }
@@ -108,7 +108,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("SSA Taxable % (Low):")
                 .on_hover_text("Percent of Social Security benefits that are taxable when income is between the low and high breakpoints");
             let mut v = pct_low;
-            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=pct_high)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(0.0..=pct_high).clamp_existing_to_range(false)).changed() {
                 settings["ssa"]["taxableIncomePercentage"]["low"] = json!(v);
                 changed = true;
             }
@@ -117,7 +117,7 @@ pub fn show(app: &mut FpApp, ui: &mut egui::Ui) {
             ui.label("SSA Taxable % (High):")
                 .on_hover_text("Percent of Social Security benefits that are taxable when income is above the high breakpoint");
             let mut v = pct_high;
-            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(pct_low..=100.0)).changed() {
+            if ui.add(egui::DragValue::new(&mut v).speed(0.5).range(pct_low..=100.0).clamp_existing_to_range(false)).changed() {
                 settings["ssa"]["taxableIncomePercentage"]["high"] = json!(v);
                 changed = true;
             }
