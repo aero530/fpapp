@@ -58,9 +58,15 @@ impl Account for Expense {
             return Err(Error::config("linked account dates provided but not used"));
         }
         require_non_negative(self.expense_value, "expense value")?;
-        // A negative healthcare actual would corrupt the HSA settlement; treat
-        // refunds/rebates as income instead of a negative expense
-        self.table.validate_non_negative()?;
+        // Expense is a flow, not a balance — a negative historical actual
+        // (a refund or credit year) is legitimate for an ordinary expense.
+        // Healthcare expenses are the one exception: a negative actual would
+        // flow into totals.healthcare_expense, which the HSA account rejects
+        // as an internal invariant violation (see hsa.rs) rather than a
+        // config error, so reject it here instead where the message is clear.
+        if self.is_healthcare {
+            self.table.validate_non_negative()?;
+        }
         // Seed the analysis with historical expense values so recorded actuals
         // are used (and plotted) instead of being discarded
         self.analysis = SingleTable::new(&self.table);
@@ -218,5 +224,32 @@ mod tests {
             .simulate(2040, &yearly_totals, &settings, None)
             .unwrap();
         assert_approx_eq!(f64, update.expense, 500.0);
+    }
+
+    #[test]
+    fn ordinary_expense_allows_negative_historical_actual() {
+        // A refund/credit year (e.g. an insurance reimbursement or a returned
+        // purchase) can make a recorded actual negative for a non-healthcare
+        // expense — that is legitimate historical data, not a config error.
+        let mut account = test_account(Table([(2010, -660.0)].into_iter().collect()));
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let yearly_totals = YearlyTotals::new();
+        let update = account
+            .simulate(2010, &yearly_totals, &settings, None)
+            .unwrap();
+        assert_approx_eq!(f64, update.expense, -660.0);
+    }
+
+    #[test]
+    fn healthcare_expense_rejects_negative_historical_actual() {
+        // A negative healthcare actual would flow into totals.healthcare_expense,
+        // which the HSA account treats as an internal invariant violation
+        // (see hsa.rs) — reject it here at init instead, with a clear message.
+        let mut account = test_account(Table([(2010, -100.0)].into_iter().collect()));
+        account.is_healthcare = true;
+        let settings = test_settings_values();
+        let err = account.init(None, &settings).unwrap_err();
+        assert!(err.to_string().contains("2010"), "{err}");
     }
 }

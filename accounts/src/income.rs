@@ -51,7 +51,10 @@ impl Account for Income {
                 self.base
             )));
         }
-        self.table.validate_non_negative()?;
+        // Unlike balance-holding accounts, income is a flow, not a balance —
+        // there is no downstream invariant that requires it to be
+        // non-negative, and a recorded net-loss year (e.g. a small business
+        // or side income) is legitimate historical data.
         self.analysis = SingleTable::new(&self.table);
         self.dates = Dates {
             year_in: self.get_range_in(settings, linked_dates),
@@ -174,5 +177,19 @@ mod tests {
         account.base = -5.0;
         let settings = test_settings_values();
         assert!(account.init(None, &settings).is_err());
+    }
+
+    #[test]
+    fn income_allows_negative_historical_actual() {
+        // A net-loss year (e.g. small-business or side income) is legitimate
+        // historical data, not a config error — income is a flow, not a
+        // balance, so there is no invariant it would violate downstream.
+        let mut account = test_account(Table([(2010, -660.0)].into_iter().collect()));
+        let settings = test_settings_values();
+        account.init(None, &settings).unwrap();
+        let totals = YearlyTotals::new();
+        let impact = account.simulate(2010, &totals, &settings, None).unwrap();
+        assert_approx_eq!(f64, impact.income, -660.0);
+        assert_approx_eq!(f64, impact.income_taxable, -660.0);
     }
 }

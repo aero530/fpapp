@@ -313,12 +313,12 @@ General-purpose savings or brokerage accounts: taxable investment accounts, mone
 Every account except Social Security has a **Historical Data** table at the bottom of its form. Use it to enter known past or current values:
 
 - Add a row with the **+ Add row** button
-- Set the **Year** and the **Amount** for that year (amounts must be zero or greater)
+- Set the **Year** and the **Amount** for that year
 
-What the amount means depends on the account type:
+What the amount means, and whether it can be negative, depends on the account type:
 
-- **Balance accounts** (Retirement, Savings, HSA, College, Loan, Mortgage): the account balance. For a year *before* the simulation starts, enter the end-of-year balance — it becomes the opening balance when the simulation begins. For a year *inside* the simulation window, the value is used as that year's **opening** balance, and the year's earnings, contributions, withdrawals, and payments are applied on top of it.
-- **Flow accounts** (Income, Expense): the actual amount earned or spent that year. A recorded actual replaces the computed value for that year — even if the year falls outside the account's start/end window.
+- **Balance accounts** (Retirement, Savings, HSA, College, Loan, Mortgage): the account balance, which must be zero or greater. For a year *before* the simulation starts, enter the end-of-year balance — it becomes the opening balance when the simulation begins. For a year *inside* the simulation window, the value is used as that year's **opening** balance, and the year's earnings, contributions, withdrawals, and payments are applied on top of it.
+- **Flow accounts** (Income, Expense): the actual amount earned or spent that year. A recorded actual replaces the computed value for that year — even if the year falls outside the account's start/end window. These can be negative: a net-loss year for an Income account, or a refund/credit year for an Expense account, are both legitimate. The one exception is an Expense marked **Healthcare expense** — its historical amounts must be zero or greater, since a negative healthcare cost cannot be reconciled against HSA coverage.
 
 Historical data is particularly useful for existing retirement accounts, HSA balances, or outstanding loan principals. Years before the first simulated year appear in the account's Projection chart but are otherwise only used to seed opening balances.
 

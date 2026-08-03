@@ -8,7 +8,7 @@ Every account type implements `Account`. The two methods that drive the simulati
 
 **`init(linked_dates, settings)`** → `Result<()>`
 
-Seeds internal year tables from user-supplied historical data, resolves the account's active date ranges, and validates configuration (e.g. a mortgage rejects `compound_time <= 0`, a college account rejects unsupported tax statuses, negative dollar inputs and historical values are rejected, and rates/returns must be greater than −100%). Must be called before `simulate`.
+Seeds internal year tables from user-supplied historical data, resolves the account's active date ranges, and validates configuration (e.g. a mortgage rejects `compound_time <= 0`, a college account rejects unsupported tax statuses, rates/returns must be greater than −100%, and negative dollar inputs are rejected). Historical balance seeds must be non-negative for balance-holding accounts (Retirement, Savings, HSA, College, Loan, Mortgage) — the simulation itself cannot represent a negative balance. Income and Expense historicals are flows, not balances, and may be negative (a net-loss year, a refund/credit year) except for Expense accounts marked as healthcare, whose amounts feed HSA coverage and must stay non-negative. Must be called before `simulate`.
 
 **`simulate(year, totals, settings, linked_value)`** → `Result<YearlyImpact>`
 
