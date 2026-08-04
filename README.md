@@ -2,6 +2,11 @@
 
 A financial planning & simulation application.
 
+### [Try it in your browser →](https://aero530.github.io/fpapp/)
+
+The full app, nothing to install. There is no backend: your plan file is read
+from and written to your own computer and is never uploaded anywhere.
+
 ![screenshot_loan](https://github.com/aero530/fpapp/raw/main/egui/screenshot.png "Retirement")
 
 [User Manual](https://github.com/aero530/fpapp/raw/main/USER_MANUAL.md)
@@ -25,12 +30,46 @@ A financial planning & simulation application.
 - Run as a desktop app, or self-host it as a WebAssembly page on any web server
 
 
+## Installing it
+
+**Windows** — download `FinancialPlanner-<version>-x64.msi` from the
+[latest release](https://github.com/aero530/fpapp/releases/latest) and run it.
+
+It installs for the current user only, into
+`%LOCALAPPDATA%\Programs\Financial Planner`, so there is no UAC prompt. A new
+version replaces the old one in place. The installer is not code-signed, so
+SmartScreen warns the first time it is downloaded. If the retired Tauri version
+(4.x, "fpapp") is still installed, uninstall it separately — it lives in
+Program Files under a different name and this package leaves it alone.
+
+To build the MSI locally:
+
+```powershell
+.\installer\build.ps1            # -> target\installer\FinancialPlanner-5.1.0-x64.msi
+.\installer\verify.ps1           # installs it, launches it, uninstalls it again
+```
+
+`build.ps1` provisions a pinned, checksummed WiX 3.14 into `target/` on first
+run; nothing is installed system-wide and no administrator rights are needed.
+The wizard artwork, the application icon and the licence page are all generated
+from `egui/assets/icon-256.png` and `LICENSE` at build time, so there is no
+second copy of either to drift.
+
+Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml),
+which builds and verifies the MSI on a Windows runner and attaches it to the
+matching GitHub release. It can also be run by hand from the Actions tab.
+
+
 ## Running it
 
 **Desktop** — `cargo run --release` starts the native app (eframe/wgpu).
 
-**Browser** — the same app also compiles to WebAssembly and can be self-hosted
-as static files on any web server:
+**Browser** — the same app also compiles to WebAssembly. The
+[online demo](https://aero530.github.io/fpapp/) is that build, published to
+GitHub Pages from `main` by
+[.github/workflows/pages.yml](.github/workflows/pages.yml).
+
+It can equally be self-hosted as static files on any web server:
 
 ```powershell
 .\egui\web\build.ps1        # or ./egui/web/build.sh on Linux
@@ -224,3 +263,5 @@ The UI holds this entire blob as a `serde_json::Value`. It is only deserialised 
 - Add a WebAssembly build of the egui app, self-hostable as static files
 - Open and save plans from the browser without uploading them anywhere
 - Retire the deprecated tauri version (tagged `tauri-final` before removal)
+- Add a per-user Windows installer (MSI), built and verified by CI on a `v*` tag
+- Publish the web build to GitHub Pages as an online demo

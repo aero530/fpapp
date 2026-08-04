@@ -1,9 +1,13 @@
 # Financial Planner in the browser
 
 The same egui app, compiled to WebAssembly and served as a handful of static
-files. There is no backend: Apache hands the browser an HTML page and a wasm
+files. There is no backend: the server hands the browser an HTML page and a wasm
 module, and everything after that — editing, simulating, reading and writing
 plan files — happens on the client.
+
+Live at **<https://aero530.github.io/fpapp/>**, deployed from `main` by
+[`.github/workflows/pages.yml`](../../.github/workflows/pages.yml). The same
+`dist/` also drops straight into an Apache document root; both are covered below.
 
 | File | What it is |
 |---|---|
@@ -53,6 +57,31 @@ Two optional extras, both picked up automatically when present:
 
 `build.ps1 -DebugBuild` / `build.sh --debug` compile far faster but produce a
 module several times larger; use them only for debugging.
+
+## Deploy to GitHub Pages
+
+Pushing to `main` builds `dist/` and publishes it; there is nothing to do by
+hand. The workflow can also be run from the Actions tab against the current
+`main`.
+
+Two things differ from the Apache deployment:
+
+- **`.htaccess` is dropped from the artifact.** Pages serves through its own CDN,
+  which already sends `application/wasm` and compresses on the fly, so the file
+  would only be dead weight.
+- **The site lives in a subdirectory** (`/fpapp/`). Nothing has to change for
+  that: every reference the page makes is relative, including the
+  `new URL('fpapp_bg.wasm', import.meta.url)` in the generated glue and the
+  `./snippets/…` import.
+
+Because Pages is https, the demo gets the better half of the save behaviour
+described below — in Chrome or Edge, **Save** overwrites the plan file in place
+exactly as the desktop build does.
+
+The first run needs the repository's Pages source set to "GitHub Actions"; the
+workflow asks for that itself (`configure-pages` with `enablement: true`), so it
+normally sorts itself out. If that call is refused, set it once under
+Settings → Pages → Source.
 
 ## Deploy to Apache
 
