@@ -35,7 +35,14 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      # cache-bin is off on purpose. By default rust-cache also caches ~/.cargo/bin, which is
+      # where build.sh installs the wasm-bindgen CLI -- and a restored copy of that binary is
+      # what broke this workflow once already, arriving on PATH in a state where it would not
+      # execute. Compiled dependencies are the part worth caching; reinstalling one small
+      # prebuilt binary per run costs seconds.
       - uses: Swatinem/rust-cache@v2
+        with:
+          cache-bin: false
 
       # build.sh reads the required wasm-bindgen CLI version out of Cargo.lock and installs it
       # if it is missing -- the CLI and the crate have to match exactly or the build fails with

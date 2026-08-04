@@ -8,6 +8,11 @@
 #   ./egui/web/build.sh --debug    # fast to compile, big and slow to load
 set -euo pipefail
 
+# Without this, any aborted command leaves nothing behind but the process exit
+# status -- and chasing an unexplained "exit code 127" through a CI log is exactly
+# the time sink this avoids.
+trap 'status=$?; echo "build.sh: aborted at line $LINENO with exit status $status" >&2' ERR
+
 web_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$web_dir/../.." && pwd)"
 out_dir="$web_dir/dist"
@@ -44,7 +49,19 @@ fi
 
 have_version=""
 if command -v wasm-bindgen >/dev/null 2>&1; then
-    have_version="$(wasm-bindgen --version | awk '{print $NF}')"
+    # A binary can be on PATH and still refuse to run: a copy restored from another
+    # machine's build cache, a half-finished install, a missing shared library.
+    #
+    # This has to be guarded rather than written as a plain assignment. Under
+    # `set -e` with `pipefail`, the failing pipeline inside a plain assignment takes
+    # the whole script down with the tool's own exit status and prints nothing of its
+    # own -- which surfaces as an unexplained "exit code 127" from a build that has
+    # barely started. Not being able to read the version is not fatal; it just means
+    # the matching CLI has to be installed below.
+    if ! have_version="$(wasm-bindgen --version 2>/dev/null | awk '{print $NF}')"; then
+        echo 'The wasm-bindgen on PATH will not run; installing it again.' >&2
+        have_version=""
+    fi
 fi
 
 if [[ "$have_version" != "$want_version" ]]; then
@@ -56,10 +73,18 @@ if [[ "$have_version" != "$want_version" ]]; then
     # cargo-binstall grabs a prebuilt binary in seconds; cargo install builds it
     # from source, which takes a few minutes but needs nothing extra.
     if command -v cargo-binstall >/dev/null 2>&1; then
-        cargo binstall --no-confirm "wasm-bindgen-cli@$want_version"
+        cargo binstall --no-confirm --force "wasm-bindgen-cli@$want_version"
     else
-        cargo install --locked wasm-bindgen-cli --version "$want_version"
+        cargo install --locked --force wasm-bindgen-cli --version "$want_version"
     fi
+fi
+
+# Everything below depends on wasm-bindgen working, so say so here rather than
+# failing further down with only an exit status to go on.
+if ! wasm-bindgen --version >/dev/null 2>&1; then
+    echo 'wasm-bindgen still will not run after being installed.' >&2
+    echo "Try removing it and rerunning: rm -f \"\$(command -v wasm-bindgen)\"" >&2
+    exit 1
 fi
 
 # --- compile -----------------------------------------------------------------
