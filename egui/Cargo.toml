@@ -1,6 +1,6 @@
 [package]
 name = "fpapp-egui"
-version = "5.0.0"
+version = "5.1.0"
 edition.workspace = true
 
 [[bin]]
@@ -8,16 +8,44 @@ name = "fpapp-egui"
 path = "src/main.rs"
 
 [dependencies]
-eframe = "0.35.0"
 egui_plot = "0.36.0"
-rfd = "0.17.2"
 accounts = { path = "../accounts" }
 serde.workspace = true
 serde_json.workspace = true
 log.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+eframe = "0.35.0"
 env_logger = "0.11"
+rfd = "0.17.2"
 uuid = { version = "1", features = ["v4"] }
 image = { workspace = true, features = ["png"] }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# WebGL2 (glow) instead of the default wgpu/WebGPU backend: WebGPU is only
+# available in a secure context, so a plain http:// intranet host would render a
+# blank canvas.  No rfd/env_logger/image either — the browser build uses the
+# page's own file pickers, the console logger, and the page favicon.
+eframe = { version = "0.35.0", default-features = false, features = [
+    "default_fonts",
+    "glow",
+] }
+# "js" points uuid's randomness at the browser's crypto API
+uuid = { version = "1", features = ["v4", "js"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "Node",
+    "Window",
+] }
+
 [dev-dependencies]
-egui_kittest = { version = "0.35", default-features = false }
+# "eframe" lets a test drive the whole App (not just a widget), which is how the
+# file-open/save plumbing is covered without opening a dialog.
+egui_kittest = { version = "0.35", default-features = false, features = [
+    "eframe",
+] }

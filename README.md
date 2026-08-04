@@ -22,6 +22,24 @@ A financial planning & simulation application.
   - Health Savings Account (HSA)
 - Make pretty graphs
 - Financial data saved locally as human readable json file
+- Run as a desktop app, or self-host it as a WebAssembly page on any web server
+
+
+## Running it
+
+**Desktop** — `cargo run --release` starts the native app (eframe/wgpu).
+
+**Browser** — the same app also compiles to WebAssembly and can be self-hosted
+as static files on any web server:
+
+```powershell
+.\egui\web\build.ps1        # or ./egui/web/build.sh on Linux
+```
+
+then copy `egui/web/dist/` into the document root. There is no backend and no
+uploading: plans are opened from and saved back to the machine running the
+browser. See [egui/web/README.md](egui/web/README.md) for Apache configuration
+and the details of how saving works per browser.
 
 
 ## Computation Flow
@@ -200,3 +218,8 @@ The UI holds this entire blob as a `serde_json::Value`. It is only deserialised 
 
 - Convert to egui
 - Leave depricated tauri version in place for now
+
+### v5.1.0 - 8/4/26 ###
+
+- Add a WebAssembly build of the egui app, self-hostable as static files
+- Open and save plans from the browser without uploading them anywhere

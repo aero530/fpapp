@@ -44,6 +44,22 @@ All data is stored in a single JSON file. The app does not auto-save.
 
 Start fresh by clicking **New** (also offered on the welcome screen). The Settings page opens with sensible defaults — adjust them, add your accounts, then click **Save As…** to choose where the file lives. You can maintain separate files for different scenarios.
 
+### In the browser
+
+If you are running the app from a web page rather than as a desktop program, it
+behaves the same way with two differences. Your plan is still read from and
+written to your own computer — nothing is uploaded — but the browser controls
+the file dialogs:
+
+- The first save of a session always asks where to put the file.
+- In Chrome or Edge on an `https://` (or `localhost`) address, **Save**
+  afterwards overwrites that same file, just like the desktop app.
+- In other browsers, or on a plain `http://` address, every save is a download
+  into your downloads folder instead.
+
+Edits live in the browser tab until you save. Reloading or closing the tab
+discards unsaved changes, with no warning.
+
 ---
 
 ## Settings

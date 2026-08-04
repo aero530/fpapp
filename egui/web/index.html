@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>Financial Planner</title>
+    <meta
+      name="description"
+      content="Financial planning simulator. Plans are opened from and saved to your own computer; nothing is uploaded."
+    />
+    <link rel="icon" href="icon-256.png" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #1b1b1b;
+        color: #d0d0d0;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      @media (prefers-color-scheme: light) {
+        html,
+        body {
+          background: #f0f0f0;
+          color: #3c3c3c;
+        }
+      }
+
+      /* eframe watches the canvas and sizes the framebuffer to match, so the
+         canvas simply fills the window. */
+      #fpapp_canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* keep touch drags in the app instead of scrolling the page */
+        touch-action: none;
+      }
+
+      #fpapp_loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 34rem;
+        padding: 0 1.5rem;
+        text-align: center;
+        line-height: 1.5;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="fpapp_canvas"></canvas>
+
+    <!-- Removed by the app once it has started; also where startup errors
+         are reported, since a failed start leaves the canvas blank. -->
+    <div id="fpapp_loading">Loading Financial Planner…</div>
+
+    <noscript>
+      <div style="position: absolute; inset: 0; padding: 2rem">
+        This app is a WebAssembly module and needs JavaScript enabled to run.
+      </div>
+    </noscript>
+
+    <script type="module">
+      // fpapp.js is the wasm-bindgen glue; its default export fetches
+      // fpapp_bg.wasm and runs the app's entry point.
+      import init from "./fpapp.js";
+
+      const loading = document.getElementById("fpapp_loading");
+
+      try {
+        await init();
+      } catch (err) {
+        console.error(err);
+        loading.textContent =
+          "Could not load the app: " +
+          (err && err.message ? err.message : err) +
+          ". A browser with WebAssembly and WebGL2 support is required.";
+      }
+    </script>
+  </body>
+</html>

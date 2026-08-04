@@ -7,8 +7,17 @@
 //! user sets RUST_LOG — which defeats the purpose of the warnings.  This
 //! logger tees warn-and-above records into a buffer the app shows in the
 //! sidebar after each analysis run.
+//!
+//! Console output goes to stderr through env_logger natively, and to the
+//! browser console through eframe's `WebLogger` on the web.
 
 use std::sync::{Arc, Mutex};
+
+/// Logger the captured records are forwarded on to.
+#[cfg(not(target_arch = "wasm32"))]
+type ConsoleLogger = env_logger::Logger;
+#[cfg(target_arch = "wasm32")]
+type ConsoleLogger = eframe::WebLogger;
 
 /// Shared buffer of warning messages captured since the last `take`
 #[derive(Clone, Default)]
@@ -42,7 +51,7 @@ impl WarningBuffer {
 }
 
 struct UiLogger {
-    inner: env_logger::Logger,
+    inner: ConsoleLogger,
     warnings: WarningBuffer,
 }
 
@@ -63,12 +72,12 @@ impl log::Log for UiLogger {
     }
 }
 
-/// Install the UI logger (respecting RUST_LOG for console output) and return
-/// the shared warning buffer
+/// Install the UI logger (respecting RUST_LOG for console output where there is
+/// an environment to read it from) and return the shared warning buffer
 pub fn init() -> WarningBuffer {
-    let inner = env_logger::Builder::from_default_env().build();
+    let (inner, console_level) = console_logger();
     let warnings = WarningBuffer::default();
-    let max_level = inner.filter().max(log::LevelFilter::Warn);
+    let max_level = console_level.max(log::LevelFilter::Warn);
     log::set_boxed_logger(Box::new(UiLogger {
         inner,
         warnings: warnings.clone(),
@@ -76,4 +85,19 @@ pub fn init() -> WarningBuffer {
     .expect("logger already installed");
     log::set_max_level(max_level);
     warnings
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn console_logger() -> (ConsoleLogger, log::LevelFilter) {
+    let inner = env_logger::Builder::from_default_env().build();
+    let level = inner.filter();
+    (inner, level)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn console_logger() -> (ConsoleLogger, log::LevelFilter) {
+    // No RUST_LOG in a browser; warnings and errors are what matter in the
+    // devtools console, and the UI shows them too.
+    let level = log::LevelFilter::Warn;
+    (eframe::WebLogger::new(level), level)
 }

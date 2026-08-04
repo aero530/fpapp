@@ -3,6 +3,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::app::{FpApp, Page};
+use crate::platform::{self, SaveMode};
 
 const ACCOUNT_TYPES: &[(&str, &str)] = &[
     ("income", "Income"),
@@ -130,6 +131,11 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
             if let Some(err) = &app.error.clone() {
                 ui.add_space(4.0);
                 ui.colored_label(egui::Color32::from_rgb(220, 60, 60), format!("⚠ {}", err));
+            } else if let Some(status) = &app.status.clone() {
+                // Confirmation for the last file operation.  Mostly for the web
+                // build, where a save is otherwise silent.
+                ui.add_space(4.0);
+                ui.weak(status);
             }
 
             // Engine warnings from the last analysis (misconfigurations that
@@ -148,17 +154,6 @@ pub fn show_nav(app: &mut FpApp, ui: &mut egui::Ui) {
                 }
             }
         });
-}
-
-/// The calendar year, derived from the system clock.  Average Gregorian year
-/// length is close enough here — worst case it is off by a day around New
-/// Year, and it only seeds the default `yearStart`.
-fn current_year() -> u32 {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    1970 + (secs / 31_556_952) as u32
 }
 
 /// A new plan: default settings, no accounts.
@@ -184,72 +179,42 @@ fn default_plan(year_start: u32) -> serde_json::Value {
 
 /// Start a new plan with sensible default settings and no accounts.
 pub fn new_file(app: &mut FpApp) {
-    app.data = default_plan(current_year());
+    app.data = default_plan(platform::current_year());
     app.file_path = None;
+    app.file_name = None;
     app.selected = Page::Settings;
     app.error = None;
+    app.status = None;
     app.dirty = true;
 }
 
+/// Ask for a plan file.  The read lands in `FpApp` via the file-event queue —
+/// on the web the picker is asynchronous, so it is not open yet when this
+/// returns.
 pub fn open_file(app: &mut FpApp) {
-    if let Some(path) = rfd::FileDialog::new()
-        .add_filter("JSON", &["json"])
-        .pick_file()
-    {
-        match std::fs::read_to_string(&path) {
-            Ok(content) => match serde_json::from_str::<serde_json::Value>(&content) {
-                Ok(data) => {
-                    app.data = data;
-                    app.file_path = Some(path);
-                    app.selected = Page::Dashboard;
-                    app.error = None;
-                    app.dirty = true;
-                }
-                Err(e) => {
-                    app.error = Some(format!("Failed to parse file: {}", e));
-                }
-            },
-            Err(e) => {
-                app.error = Some(format!("Failed to open file: {}", e));
-            }
-        }
-    }
+    app.file_io.open();
 }
 
 pub fn save_file(app: &mut FpApp) {
-    if let Some(path) = &app.file_path.clone() {
-        write_file(app, path.to_str().unwrap_or("")); // file_path already set; no update needed
-    } else {
-        save_file_as(app);
-    }
+    request_save(app, SaveMode::InPlace);
 }
 
 pub fn save_file_as(app: &mut FpApp) {
-    if let Some(path) = rfd::FileDialog::new()
-        .add_filter("JSON", &["json"])
-        .save_file()
-    {
-        let path_str = path.to_str().unwrap_or("").to_string();
-        if write_file(app, &path_str) {
-            app.file_path = Some(path);
-        }
-    }
+    request_save(app, SaveMode::Prompt);
 }
 
-fn write_file(app: &mut FpApp, path: &str) -> bool {
+fn request_save(app: &mut FpApp, mode: SaveMode) {
     match serde_json::to_string_pretty(&app.data) {
         Ok(json) => {
-            if let Err(e) = std::fs::write(path, json) {
-                app.error = Some(format!("Failed to save file: {}", e));
-                false
-            } else {
-                app.error = None;
-                true
-            }
+            app.file_io.save(
+                mode,
+                app.file_path.as_deref(),
+                &app.suggested_file_name(),
+                json,
+            );
         }
         Err(e) => {
             app.error = Some(format!("Failed to serialize data: {}", e));
-            false
         }
     }
 }

@@ -15,3 +15,6 @@ dataSimple.json
 /tauri/src-tauri/target/
 
 /target
+
+# Assembled web build (egui/web/build.ps1 regenerates it)
+/egui/web/dist/
