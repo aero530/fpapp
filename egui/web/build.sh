@@ -86,20 +86,86 @@ wasm-bindgen --target web --no-typescript --out-name fpapp --out-dir "$out_dir" 
 
 wasm_out="$out_dir/fpapp_bg.wasm"
 
+# Check that a module still starts: instantiate it and grow the externref table
+# the way the generated glue does on startup.
+#
+# This exists because wasm-opt can produce a module that is valid, smaller, and
+# broken.  Binaryen before ~v131 mis-reindexes exports when a module has more
+# than one table -- this one has two, a funcref table and an externref table --
+# and points "__wbindgen_externrefs" at the funcref table, which is fixed-size.
+# The glue's first act is to grow that table by 4, so the app dies on load with
+# "failed to grow table by 4" while every other check passes: the file is there,
+# it is the right size, and it is a valid wasm module.
+#
+# Needs node, which is not otherwise required to build; without it the check is
+# skipped rather than made mandatory.
+check_module_starts() {
+    local module="$1" output
+    if output="$(_instantiate_module "$module" 2>&1)"; then
+        return 0
+    fi
+    # node prints a full stack trace; the first Error line is the part worth reading.
+    printf '%s\n' "$output" | grep -m1 -E '[A-Za-z]*Error' || printf '%s\n' "$output" | head -1
+    return 1
+}
+
+_instantiate_module() {
+    node --input-type=module -e '
+        import { readFileSync } from "node:fs";
+        const mod = new WebAssembly.Module(readFileSync(process.argv[1]));
+        const imports = {};
+        for (const i of WebAssembly.Module.imports(mod)) {
+            imports[i.module] ??= {};
+            imports[i.module][i.name] =
+                i.kind === "function" ? () => {} :
+                i.kind === "memory"   ? new WebAssembly.Memory({ initial: 17 }) :
+                i.kind === "table"    ? new WebAssembly.Table({ initial: 1, element: "anyfunc" }) :
+                                        new WebAssembly.Global({ value: "i32", mutable: true }, 0);
+        }
+        const table = new WebAssembly.Instance(mod, imports).exports.__wbindgen_externrefs;
+        if (!table) throw new Error("no __wbindgen_externrefs export");
+        table.grow(4);
+    ' "$1"
+}
+
 # wasm-opt is optional (it ships with binaryen).  It typically takes another
 # 15-25% off the module; if the installed version chokes on a newer wasm
 # feature, the unoptimised module is perfectly usable.
 if [[ "$profile" == "release" ]]; then
     if command -v wasm-opt >/dev/null 2>&1; then
-        echo 'Optimising with wasm-opt...'
+        echo "Optimising with wasm-opt ($(wasm-opt --version))..."
         if wasm-opt -Oz --output "$wasm_out.opt" "$wasm_out"; then
-            mv "$wasm_out.opt" "$wasm_out"
+            # Keep the optimised module only if it still starts.  Older binaryen
+            # breaks it silently (see check_module_starts above), and shipping the
+            # unoptimised module is strictly better than shipping a blank page.
+            if ! command -v node >/dev/null 2>&1; then
+                echo 'node not found - cannot verify the optimised module, keeping it unchecked' >&2
+                mv "$wasm_out.opt" "$wasm_out"
+            elif error="$(check_module_starts "$wasm_out.opt")"; then
+                mv "$wasm_out.opt" "$wasm_out"
+            else
+                echo "wasm-opt produced a module that will not start; keeping the unoptimised one." >&2
+                echo "  $error" >&2
+                echo "  This is a known bug in binaryen before v131. Upgrade it to get the smaller module." >&2
+                rm -f "$wasm_out.opt"
+            fi
         else
             echo 'wasm-opt failed; keeping the unoptimised module' >&2
             rm -f "$wasm_out.opt"
         fi
     else
         echo 'wasm-opt not found (optional) — skipping size optimisation'
+    fi
+
+    # Whatever is about to be deployed, optimised or not, has to start.
+    if command -v node >/dev/null 2>&1; then
+        if error="$(check_module_starts "$wasm_out")"; then
+            echo 'Module starts cleanly.'
+        else
+            echo "The built module will not start:" >&2
+            echo "  $error" >&2
+            exit 1
+        fi
     fi
 fi
 

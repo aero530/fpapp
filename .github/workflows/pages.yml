@@ -45,22 +45,37 @@ jobs:
         with:
           tool: cargo-binstall
 
-      # Optional as far as build.sh is concerned; it takes another 15-25% off the module that
-      # every visitor has to download. If Ubuntu's binaryen is too old for something in the
-      # module, build.sh warns and keeps the unoptimised one rather than failing.
-      - name: Install wasm-opt
+      # Pinned and checksummed rather than `apt-get install binaryen`, which is not a cosmetic
+      # preference: Ubuntu's binaryen is old enough to contain a multi-table reindexing bug that
+      # silently produces a valid, smaller, broken module. It repoints the __wbindgen_externrefs
+      # export at the fixed-size funcref table, and the app then dies on load with
+      # "failed to grow table by 4". v131 is verified to get this right.
+      #
+      # wasm-opt itself is optional to build.sh; it takes another ~22% off the module that every
+      # visitor downloads.
+      - name: Install wasm-opt (binaryen, pinned)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y binaryen
+          version=131
+          sha256=b5bf1f0eaf17c63ee588ff7a5954dc8f6ce2c26989051c66f24dfe9ece3e46db
+          url=https://github.com/WebAssembly/binaryen/releases/download/version_$version/binaryen-version_$version-x86_64-linux.tar.gz
+          curl -sSfL -o binaryen.tar.gz "$url"
+          echo "$sha256  binaryen.tar.gz" | sha256sum -c -
+          tar -xzf binaryen.tar.gz
+          echo "$PWD/binaryen-version_$version/bin" >> "$GITHUB_PATH"
+          rm binaryen.tar.gz
 
       - name: Build
         run: ./egui/web/build.sh
 
-      # A partial build deploys as a blank page that says "Loading Financial Planner..."
-      # forever, which looks like a working site to every check except opening it. The pieces
-      # the page cannot start without are asserted here instead.
+      # A partial or subtly-broken build deploys as a blank page that says "Loading Financial
+      # Planner..." forever, which looks like a working site to every check except opening it.
+      #
+      # build.sh instantiates the finished module and grows its externref table, failing the
+      # build if that does not work -- but it skips that check when node is missing, so node
+      # being present is asserted here to keep the gate from quietly turning itself off.
       - name: Check the build is complete
         run: |
+          command -v node >/dev/null || { echo "::error::node is required to verify the module starts"; exit 1; }
           cd egui/web/dist
           for f in index.html fpapp.js fpapp_bg.wasm icon-256.png; do
             test -f "$f" || { echo "::error::$f is missing from the build"; exit 1; }

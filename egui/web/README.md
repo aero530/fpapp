@@ -51,7 +51,17 @@ python -m http.server 8080 --directory egui/web/dist
 Two optional extras, both picked up automatically when present:
 
 - **`wasm-opt`** (from [binaryen](https://github.com/WebAssembly/binaryen)) —
-  trims another 15–25% off the module.
+  trims another ~22% off the module. **Use v131 or newer.** Older binaryen
+  mis-reindexes exports in a module with more than one table — this one has two,
+  a funcref table and an externref table — and repoints `__wbindgen_externrefs`
+  at the fixed-size funcref table. The result is a valid, smaller module that
+  dies on load with `failed to grow table by 4`. Distribution packages are often
+  old enough to do this (Ubuntu's is), so prefer a
+  [release build](https://github.com/WebAssembly/binaryen/releases).
+  The build script instantiates the optimised module and grows that table before
+  accepting it, so a bad `wasm-opt` costs you the size saving and a warning
+  rather than a broken deploy. That check needs `node`; without it the optimised
+  module is kept unverified.
 - **`cargo-binstall`** — fetches the `wasm-bindgen` CLI as a prebuilt binary
   instead of compiling it, when the version needs to change.
 
