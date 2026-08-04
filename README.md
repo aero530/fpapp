@@ -223,3 +223,4 @@ The UI holds this entire blob as a `serde_json::Value`. It is only deserialised 
 
 - Add a WebAssembly build of the egui app, self-hostable as static files
 - Open and save plans from the browser without uploading them anywhere
+- Retire the deprecated tauri version (tagged `tauri-final` before removal)

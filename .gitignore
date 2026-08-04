@@ -2,17 +2,9 @@
 data.json
 dataSimple.json
 
-# Tauri/Svelte artifacts (inside tauri/)
-/node_modules/
-/tauri/node_modules/
-/tauri/build/
-/tauri/.svelte-kit/
-/tauri/.vite/
-
 # Rust build artifacts
 /accounts/target/
 /egui/target/
-/tauri/src-tauri/target/
 
 /target
 
