@@ -1,0 +1,91 @@
+# Build the Windows installer and attach it to a GitHub release.
+#
+# Triggered by pushing a version tag (`v5.2.0`), or manually from the Actions tab. Tests run
+# first: shipping an installer for code that does not pass its own suite is worse than shipping
+# nothing.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (defaults to the version in egui/Cargo.toml)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  installer:
+    name: Windows installer
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same toolchain setup as ci.yml. rust-toolchain.toml pins the channel, so this only has
+      # to make rustup present.
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Cached separately from the cargo build: a 41 MB download that never changes unless the
+      # pinned version in build.ps1 does.
+      - name: Cache WiX toolset
+        uses: actions/cache@v4
+        with:
+          path: target/installer-tools
+          key: ${{ runner.os }}-wix-${{ hashFiles('installer/build.ps1') }}
+
+      # ci.yml runs these on Linux; a release is the one build where the Windows result is what
+      # ships, so they run again here rather than being taken on trust.
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      # Both installer steps run under Windows PowerShell rather than the `pwsh` that Actions
+      # defaults to on Windows. They lean on System.Drawing for the generated artwork and on
+      # WindowsInstaller.Installer COM automation for the checks, and 5.1 is the interpreter
+      # they are developed and tested against locally.
+      #
+      # -PinnedWix ignores the WiX that windows-latest happens to ship, so the artifact does not
+      # depend on the runner image.
+      - name: Build installer
+        shell: powershell
+        run: ./installer/build.ps1 -PinnedWix ${{ inputs.version && format('-Version {0}', inputs.version) || '' }}
+
+      - name: Verify the installer installs, runs and uninstalls
+        shell: powershell
+        run: ./installer/verify.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fpapp-installer
+          path: target/installer/*.msi
+          if-no-files-found: error
+
+      # `gh` is preinstalled on GitHub runners, so no third-party action is needed to publish.
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          # A runner builds exactly one, but the count is asserted rather than assumed: globbing
+          # a directory that turned out to hold two would otherwise attach an arbitrary one.
+          $msi = @(Get-Item target/installer/*.msi)
+          if ($msi.Count -ne 1) {
+            throw "expected exactly one MSI in target/installer, found $($msi.Count): $($msi.Name -join ', ')"
+          }
+          gh release upload "${{ github.ref_name }}" $msi[0].FullName --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

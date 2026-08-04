@@ -1,0 +1,98 @@
+# Publish the WebAssembly build to GitHub Pages as the online demo.
+#
+# The demo tracks `main`, so whatever is on the default branch is what visitors get.
+# https://aero530.github.io/fpapp/
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. cancel-in-progress stays false deliberately: a half-cancelled
+# deployment is worse than a queued one, and these runs are minutes apart at most.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build the web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      # build.sh reads the required wasm-bindgen CLI version out of Cargo.lock and installs it
+      # if it is missing -- the CLI and the crate have to match exactly or the build fails with
+      # a schema error. cargo-binstall makes that a download rather than a source build.
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-binstall
+
+      # Optional as far as build.sh is concerned; it takes another 15-25% off the module that
+      # every visitor has to download. If Ubuntu's binaryen is too old for something in the
+      # module, build.sh warns and keeps the unoptimised one rather than failing.
+      - name: Install wasm-opt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binaryen
+
+      - name: Build
+        run: ./egui/web/build.sh
+
+      # A partial build deploys as a blank page that says "Loading Financial Planner..."
+      # forever, which looks like a working site to every check except opening it. The pieces
+      # the page cannot start without are asserted here instead.
+      - name: Check the build is complete
+        run: |
+          cd egui/web/dist
+          for f in index.html fpapp.js fpapp_bg.wasm icon-256.png; do
+            test -f "$f" || { echo "::error::$f is missing from the build"; exit 1; }
+          done
+          # A wasm module this app's size is megabytes; anything under one is a broken build,
+          # not a small one.
+          size=$(stat -c%s fpapp_bg.wasm)
+          test "$size" -gt 1000000 || { echo "::error::fpapp_bg.wasm is only $size bytes"; exit 1; }
+          echo "fpapp_bg.wasm is $((size / 1024)) KB"
+
+      # Apache-specific and meaningless here: Pages serves the artifact through its own CDN,
+      # which already sends application/wasm and compresses on the fly.
+      - name: Drop the Apache config
+        run: rm -f egui/web/dist/.htaccess
+
+      # enablement: true points the repository's Pages source at Actions on the first run, so
+      # this does not need a manual visit to Settings > Pages to work.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: egui/web/dist
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

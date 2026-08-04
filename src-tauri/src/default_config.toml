@@ -1,2 +1,0 @@
-log_level = "debug"			# The amount of logging information the program should generate
-							# Must be one of "off", "error", "warn", "info", "debug", "trace"

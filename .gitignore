@@ -1,13 +1,12 @@
-# ignore root archive folder
-/archive
-
-/node_modules/
-/public/build/
-
-.DS_Store
-.routify
-.vscode
-
 # Data
 data.json
 dataSimple.json
+
+# Rust build artifacts
+/accounts/target/
+/egui/target/
+
+/target
+
+# Assembled web build (egui/web/build.ps1 regenerates it)
+/egui/web/dist/

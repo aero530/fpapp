@@ -1,0 +1,13 @@
+[package]
+name = "accounts"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+log.workspace = true
+serde.workspace = true
+thiserror = "2"
+
+[dev-dependencies]
+float-cmp = "0.10.0"
+serde_json.workspace = true

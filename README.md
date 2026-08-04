@@ -1,205 +1,267 @@
-# financial planning app #
+# financial planning app
 
 A financial planning & simulation application.
 
----
+### [Try it in your browser →](https://aero530.github.io/fpapp/)
 
-To do:
+The full app, nothing to install. There is no backend: your plan file is read
+from and written to your own computer and is never uploaded anywhere.
 
-- [x] Convert backend from JS to Rust
-- [x] Convert UI from Electron to Tauri
-- [x] Convert web front end from React to Svelte
-- [ ] Cleanup / improve look & style of layout
-- [ ] Convert charts to D3
-- [ ] Generate overall visualizations / charts for dashboard
-- [ ] Add use tips to dashboard page if there is no data loaded
+![screenshot_loan](https://github.com/aero530/fpapp/raw/main/egui/screenshot.png "Retirement")
 
----
+[User Manual](https://github.com/aero530/fpapp/raw/main/USER_MANUAL.md)
 
-![screenshot_loan](https://github.com/aero530/fpapp/raw/main/resources/screenshots/retirement.png "Retirement")
+## Features
 
-## Features ##
+- Simulate income and expenses through retirement
+- Track historic account balances
+- Support multiple account types
+  - Income
+  - Retirement (IRA, Roth IRA, 401K)
+  - Social Security
+  - College Savings (529)
+  - Expenses (such as grocery, car, utilities, insurance, entertainment, rent, etc.)
+  - Loans (student, car, etc.)
+  - Mortgage
+  - Savings
+  - Health Savings Account (HSA)
+- Make pretty graphs
+- Financial data saved locally as human readable json file
+- Run as a desktop app, or self-host it as a WebAssembly page on any web server
 
-* Simulate income and expenses through retirement
-* Track historic account balances
-* Support multiple account types
-  * Income
-  * Retirement (IRA, Roth IRA, 401K)
-  * Social Security
-  * College Savings (529)
-  * Expenses (such as grocery, car, utilities, insurance, entertainment, rent, etc.)
-  * Loans (student, car, etc.)
-  * Mortgage
-  * Savings
-  * Health Savings Account (HSA)
-* Make pretty graphs
-* Financial data saved locally as human readable json file
 
----
+## Installing it
 
-## Computation Flow ##
+**Windows** — download `FinancialPlanner-<version>-x64.msi` from the
+[latest release](https://github.com/aero530/fpapp/releases/latest) and run it.
 
-* Loop through accounts to determine what order they should be processed in
-* initialize tables to the correct sizes
-* Main loop to loop through each year
-  * Initialize this year
-  * Loop through accounts to make contributions and withdrawals
-    * Initialize the value of the account for this year
-    * Calculate earnings for savings, college, retirement, hsa, and income accounts
-    * Add earnings to the account table for the year
-    * Calculate interest for loan and mortgage
-    * Add interest to the account table for the year
-    * Calculate contribution amount if account has a yearlyContribution defined
-      * Calculate contribution amount based on contribution type (fixed_with_inflation, fixed, percent_of_income)
-      * Calculate the employer contribution
-    * Add contribution and employerMatch to the account table for the year
-    * Remove contribution from taxable income for the year based on taxStatus
-    * Calculate payment if paymentType is defined
-      * Calculate payment amount
-    * Add payment to the account table for the year
-    * Calculate withdrawal if withdrawalType is defined
-      * Calculate withdrawal amount for col_frac_of_savings, fixed, fixed_with_inflation, and end_at_zero
-      * Limit withdrawal amount to the current value of the account (do not allow an account to become overdrawn)
-    * Calculate expense amount
-      * Calculate expense amount for fixed and fixed_with_inflation
-    * Add earnings to incomeTotalTaxableTable and incomeTotalTable for the year
-    * Remove withdrawal from the account table for the year
-    * Add withdrawal to income table for the year (withdrawal came from another account and it added to the income tables)
-    * Add expense to the account table for the year
-    * Remove healthcare expenses from linked HSA account
-    * Add entry to expense total table
-    * Add entry to savings total
-  * Add Income to net account (subtract out paying for income tax)
-* Return Results
+It installs for the current user only, into
+`%LOCALAPPDATA%\Programs\Financial Planner`, so there is no UAC prompt. A new
+version replaces the old one in place. The installer is not code-signed, so
+SmartScreen warns the first time it is downloaded. If the retired Tauri version
+(4.x, "fpapp") is still installed, uninstall it separately — it lives in
+Program Files under a different name and this package leaves it alone.
 
----
+To build the MSI locally:
 
-## Development Setup ##
-
-### Clone the repo via git ###
-
-```cmd
-git clone https://github.com/aero530/fpapp.git fpapp
+```powershell
+.\installer\build.ps1            # -> target\installer\FinancialPlanner-5.1.0-x64.msi
+.\installer\verify.ps1           # installs it, launches it, uninstalls it again
 ```
 
-## Update TypeScript Bindings ##
+`build.ps1` provisions a pinned, checksummed WiX 3.14 into `target/` on first
+run; nothing is installed system-wide and no administrator rights are needed.
+The wizard artwork, the application icon and the licence page are all generated
+from `egui/assets/icon-256.png` and `LICENSE` at build time, so there is no
+second copy of either to drift.
 
-The accounts rust module uses ts-rs to automatically create TS bindings for use in the UI. Currently these 
-need to manually generated if the accounts module changes.
+Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml),
+which builds and verifies the MSI on a Windows runner and attaches it to the
+matching GitHub release. It can also be run by hand from the Actions tab.
 
-```cmd
-> cd src-tauri/src/accounts; cargo test; cd ../../../
+
+## Running it
+
+**Desktop** — `cargo run --release` starts the native app (eframe/wgpu).
+
+**Browser** — the same app also compiles to WebAssembly. The
+[online demo](https://aero530.github.io/fpapp/) is that build, published to
+GitHub Pages from `main` by
+[.github/workflows/pages.yml](.github/workflows/pages.yml).
+
+It can equally be self-hosted as static files on any web server:
+
+```powershell
+.\egui\web\build.ps1        # or ./egui/web/build.sh on Linux
 ```
 
-## Dev ##
+then copy `egui/web/dist/` into the document root. There is no backend and no
+uploading: plans are opened from and saved back to the machine running the
+browser. See [egui/web/README.md](egui/web/README.md) for Apache configuration
+and the details of how saving works per browser.
 
-Start app in dev mode:
 
-```cmd
-> npm run tauri dev
+## Computation Flow
+
+- Build simulation order: collect UUIDs grouped by AccountType in fixed sequence
+  (Income → Expense → HSA → Mortgage → Loan → College → Retirement → Savings → SSA),
+  sorted by account name within each type so results are deterministic.
+  SSA runs last so its taxable-benefit calculation sees all other income for
+  the year, including retirement/savings withdrawals.
+- For each account, call init(linked_dates, settings):
+    - Seeds internal year tables from historical user data
+    - Resolves the account's active date ranges
+- Main loop over each year y in [year_start, year_die]:
+  - Open year: initialize all accumulators; carry net forward from y-1
+    (zero, negative, and positive balances all roll forward)
+  - For each account (in type order):
+    - Resolve linked_value (income balance of the linked income account, if any)
+    - Call account.simulate(y, &totals, &settings, linked_value) → YearlyImpact
+      (all internal logic — earnings, contributions, withdrawals, payments,
+       expense amounts, tax treatment — is encapsulated here)
+    - Accumulate YearlyImpact into YearlyTotals immediately
+      (later accounts in the same year see the updated totals)
+  - Set totals.saving = Σ balances of Savings + Retirement accounts and
+    totals.hsa = Σ balances of HSA accounts (College balances are excluded
+    from the savings pool — they are earmarked for education)
+  - End-of-year settlement:
+    - Add income → net
+    - Deduct max(0, income_taxable) × tax_income
+      + max(0, capital_gains) × tax_capital_gains from net; record as tax_burden
+    - Deduct expense from net
+    - Deduct remaining healthcare_expense from net (zero it out;
+      HSA already covered what it could during its simulate() call)
+- Collect per-account plot data
+- Return (plot_data, yearly_totals)
+
+## Data file format
+
+The app reads and writes a single JSON file. Top-level structure:
+
+```json
+{
+  "settings": {
+    "ageRetire": 65,
+    "ageDie": 90,
+    "yearBorn": 1975,
+    "yearStart": 2020,
+    "inflationBase": 3.0,
+    "taxIncome": 22.0,
+    "taxCapitalGains": 15.0,
+    "retirementCostOfLiving": 80.0,
+    "ssa": {
+      "breakpoints":             { "low": 25000, "high": 34000 },
+      "taxableIncomePercentage": { "low": 50,    "high": 85    }
+    }
+  },
+  "accounts": {
+    "<uuid>": {
+      "type": "retirement",
+      "name": "My 401k",
+      "startIn": "yearStart",
+      "endIn": { "base": "yearRetire", "delta": -1 },
+      "startOut": "yearRetire",
+      "endOut": "yearDie",
+      "contributionValue": 19500,
+      "contributionType": "fixed",
+      "yearlyReturn": 6.0,
+      "withdrawalType": "end_at_zero",
+      "taxStatus": "contribute_pretax_taxed_when_used",
+      "table": { "2020": 85000 },
+      "incomeLink": "<uuid> | null"
+    }
+  }
+}
 ```
 
-## Packaging ##
+The UI holds this entire blob as a `serde_json::Value`. It is only deserialised into typed Rust structs when `analyze::run_analysis()` is called.
 
-Create a package for macOS, Windows, or Linux using one of the following commands:
 
-```cmd
-> npm run tauri build
-```
+## To do
 
-<!-- ```cmd
-> cargo build --release
-``` -->
+- [ ] Improve tests to verify calculations for all account types
 
-## Tests ##
-
-```cmd
-> cargo test
-```
 
 ## Revision History ##
 
 ### v0.0.1 - 8.3.12 ###
 
-* Initial development in Octave
+- Initial development in Octave
 
 ### v0.0.2 - 8.27.12 ###
 
-* Convert to SciLab.
+- Convert to SciLab.
 
 ### v0.0.3 - 9.1.12 ###
 
-* Update input numbers
+- Update input numbers
 
 ### v0.0.4 - 12.22.12 ###
 
-* Update input numbers
+- Update input numbers
 
 ### v0.0.5 - 10.27.13 ###
 
-* Update input numbers - http://money.msn.com/retirement/retirement-calculator.aspx
+- Update input numbers - <http://money.msn.com/retirement/retirement-calculator.aspx>
 
 ### v0.1.0 - 12.30.13 ###
 
-* Convert to Python
+- Convert to Python
 
 ### v0.1.1 - 6.1.14 ###
 
-* Update input numbers
+- Update input numbers
 
 ### v0.1.2 - 12.7.14 ###
 
-* Update input numbers
+- Update input numbers
 
 ### v0.1.3 - 12.1.15 ###
 
-* Update input numbers
+- Update input numbers
 
 ### v0.1.4 - 3.10.17 ###
 
-* Update input numbers
+- Update input numbers
 
 ### v1.0.0 - 10.5.18 ###
 
-* Convert to JS / electron
-* Save user data as json instead of at the beginning of the code file
-* Release v1.0.0
+- Convert to JS / electron
+- Save user data as json instead of at the beginning of the code file
+- Release v1.0.0
 
 ### v1.0.1 - 10.9.18 ###
 
-* Added social security account type
+- Added social security account type
 
 ### v1.0.2 - 10.10.18 ###
 
-* Update with new theme
+- Update with new theme
 
 ### v1.0.3 - 11.14.18 ###
 
-* Update to electron 3.0
+- Update to electron 3.0
 
 ### v1.0.4 - 12.29.18 ###
 
-* Update to babel 7
-* Migrate from 2 package.json to single package.json
-* Replace react-router-redux with connected-react-router
-* Remove unused dependencies
+- Update to babel 7
+- Migrate from 2 package.json to single package.json
+- Replace react-router-redux with connected-react-router
+- Remove unused dependencies
 
 ### v2.0.0 - 10.3.19 ###
 
-* Change to new project template
-* Update dependencies
-* Fix calculation bugs
-* Add social security income source
+- Change to new project template
+- Update dependencies
+- Fix calculation bugs
+- Add social security income source
 
 ### v2.1.0 - 10.17.19 ###
 
-* Add file-new
-* Refresh pages on file-open or file-new
+- Add file-new
+- Refresh pages on file-open or file-new
 
 ### v2.1.1 - 12.9.19 ###
 
-* Fix data type storage bug from MUI Editable table fields
+- Fix data type storage bug from MUI Editable table fields
 
 ### v3.0.0 - ________ ###
 
-* Convert to Rust & Tauri
+- Convert to Rust & Tauri
+
+### v4.0.0 - ________ ###
+
+- Update to Tauri 2.0
+
+### v5.0.0 - 6/30/26 ###
+
+- Convert to egui
+- Leave depricated tauri version in place for now
+
+### v5.1.0 - 8/4/26 ###
+
+- Add a WebAssembly build of the egui app, self-hostable as static files
+- Open and save plans from the browser without uploading them anywhere
+- Retire the deprecated tauri version (tagged `tauri-final` before removal)
+- Add a per-user Windows installer (MSI), built and verified by CI on a `v*` tag
+- Publish the web build to GitHub Pages as an online demo

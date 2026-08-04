@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # weekly dependency-advisory sweep (Monday 09:00 UTC)
+    - cron: "0 9 * * 1"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies (eframe/rfd)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev \
+            libxcb-xfixes0-dev libxkbcommon-dev libssl-dev libgtk-3-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+  wasm:
+    name: Web build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The browser build has its own dependency set (no rfd/env_logger, glow
+      # instead of wgpu) and its own platform module, so it can break while the
+      # native build stays green.
+      - name: Clippy (wasm32)
+        run: cargo clippy --target wasm32-unknown-unknown --package fpapp-egui --bin fpapp-egui -- -D warnings
+
+      - name: Build (wasm32)
+        run: cargo build --release --target wasm32-unknown-unknown --package fpapp-egui --bin fpapp-egui
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-audit (prebuilt binary)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Audit
+        run: cargo audit

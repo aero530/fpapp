@@ -1,0 +1,277 @@
+//! Types of financial accounts
+//!
+//! Simulate accounts such as income, expense, retirement, 529, loan, mortgage, etc.
+
+use serde::{Deserialize, Serialize};
+
+mod error;
+pub use error::Error;
+pub(crate) use error::{require_non_negative, require_rate_above_neg_100};
+
+mod inputs;
+use inputs::{
+    ContributionOptions, EmployerMatch, ExpenseOptions, PaymentOptions, PercentInput, Settings,
+    TaxStatus, WithdrawalOptions, YearEvalType, YearInput,
+};
+// re-exported for use outside this lib
+pub use inputs::UserData;
+
+mod simulation;
+use simulation::{LoanTables, SavingsTables, SingleTable, YearRange, YearlyImpact};
+// re-exported for use outside this lib
+pub use simulation::{Dates, PlotDataSet, Table, TableGroup, YearlyTotals};
+
+mod college;
+use college::College;
+
+mod expense;
+use expense::Expense;
+
+mod hsa;
+use hsa::Hsa;
+
+mod income;
+use income::Income;
+
+mod loan;
+use loan::Loan;
+
+mod mortgage;
+use mortgage::Mortgage;
+
+mod retirement;
+use retirement::Retirement;
+
+mod savings;
+use savings::Savings;
+
+mod ssa;
+use ssa::Ssa;
+
+mod runner;
+pub use runner::{AnalysisOutput, run};
+
+/// Trait used to define what each account type must be able to provide
+pub trait Account: std::fmt::Debug {
+    /// Return the type of the account
+    fn type_id(&self) -> AccountType;
+
+    /// Return the name of the account
+    fn name(&self) -> String;
+
+    /// Return link id if the account is linked to another account
+    fn link_id(&self) -> Option<String>;
+
+    /// Initialize analysis tables from historical user data and resolve the
+    /// year ranges used during simulation.  Must be called before `simulate`.
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error>;
+
+    /// Return the value for the specified year
+    fn get_value(&self, year: u32) -> Option<f64>;
+
+    /// Return start_in and end_in
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange>;
+
+    /// Return start_out and end_out
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange>;
+
+    /// Compute the value for a year (this needs to be done in time order)
+    ///  year: year to compute values for
+    ///  income: total income for that year
+    fn simulate(
+        &mut self,
+        year: u32,
+        totals: &YearlyTotals,
+        settings: &Settings,
+        linked_value: Option<f64>,
+    ) -> Result<YearlyImpact, Error>;
+
+    /// Get plot data for UI plotting
+    fn get_plot_data(&self) -> Vec<PlotDataSet>;
+}
+
+/// List of the types of accounts that are available
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+pub enum AccountType {
+    Income,
+    Ssa,
+    Retirement,
+    Hsa,
+    College,
+    Expense,
+    Loan,
+    Mortgage,
+    Savings,
+}
+
+impl std::fmt::Display for AccountType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            AccountType::Income => "income",
+            AccountType::Ssa => "ssa",
+            AccountType::Retirement => "retirement",
+            AccountType::Hsa => "hsa",
+            AccountType::College => "college",
+            AccountType::Expense => "expense",
+            AccountType::Loan => "loan",
+            AccountType::Mortgage => "mortgage",
+            AccountType::Savings => "savings",
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl AccountType {
+    /// The order account types are simulated in within a year.
+    ///
+    /// Ordering constraints:
+    /// - Expense must run before Hsa so the HSA withdrawal can cover the
+    ///   year's outstanding healthcare expenses.
+    /// - Income must run before Retirement/Savings so percent-of-income
+    ///   contributions and employer matching see this year's income.
+    /// - Ssa runs last so the taxable-benefit calculation sees all other
+    ///   income for the year, including retirement/savings withdrawals
+    ///   (which dominate income during retirement).
+    pub fn order() -> &'static [AccountType] {
+        &[
+            AccountType::Income,
+            AccountType::Expense,
+            AccountType::Hsa,
+            AccountType::Mortgage,
+            AccountType::Loan,
+            AccountType::College,
+            AccountType::Retirement,
+            AccountType::Savings,
+            AccountType::Ssa,
+        ]
+    }
+}
+
+/// A financial account, one variant per account type.
+///
+/// This is both the serde representation of the data file (via the `type`
+/// tag — historical year tables deserialize their string keys directly into
+/// u32 years) and the simulation-ready form.  Enum dispatch instead of
+/// `Box<dyn Account>`: no heap indirection, and the set of account types
+/// stays closed and exhaustively matchable.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum SimAccount {
+    Income(Income),
+    Ssa(Ssa),
+    Retirement(Retirement),
+    Hsa(Hsa),
+    College(College),
+    Expense(Expense),
+    Loan(Loan),
+    Mortgage(Mortgage),
+    Savings(Savings),
+}
+
+/// Apply an expression to whichever concrete account this SimAccount holds
+macro_rules! delegate {
+    ($self:expr, $account:ident => $body:expr) => {
+        match $self {
+            SimAccount::Income($account) => $body,
+            SimAccount::Ssa($account) => $body,
+            SimAccount::Retirement($account) => $body,
+            SimAccount::Hsa($account) => $body,
+            SimAccount::College($account) => $body,
+            SimAccount::Expense($account) => $body,
+            SimAccount::Loan($account) => $body,
+            SimAccount::Mortgage($account) => $body,
+            SimAccount::Savings($account) => $body,
+        }
+    };
+}
+
+impl Account for SimAccount {
+    fn type_id(&self) -> AccountType {
+        delegate!(self, a => a.type_id())
+    }
+    fn name(&self) -> String {
+        delegate!(self, a => a.name())
+    }
+    fn link_id(&self) -> Option<String> {
+        delegate!(self, a => a.link_id())
+    }
+    fn init(&mut self, linked_dates: Option<Dates>, settings: &Settings) -> Result<(), Error> {
+        delegate!(self, a => a.init(linked_dates, settings))
+    }
+    fn get_value(&self, year: u32) -> Option<f64> {
+        delegate!(self, a => a.get_value(year))
+    }
+    fn get_range_in(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
+        delegate!(self, a => a.get_range_in(settings, linked_dates))
+    }
+    fn get_range_out(&self, settings: &Settings, linked_dates: Option<Dates>) -> Option<YearRange> {
+        delegate!(self, a => a.get_range_out(settings, linked_dates))
+    }
+    fn simulate(
+        &mut self,
+        year: u32,
+        totals: &YearlyTotals,
+        settings: &Settings,
+        linked_value: Option<f64>,
+    ) -> Result<YearlyImpact, Error> {
+        delegate!(self, a => a.simulate(year, totals, settings, linked_value))
+    }
+    fn get_plot_data(&self) -> Vec<PlotDataSet> {
+        delegate!(self, a => a.get_plot_data())
+    }
+}
+
+/// Common result structure used in yearly account simulation
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
+pub struct WorkingValues {
+    /// earnings is money that an account gains (ie interest for a savings account or retirement account.  for an income account earnings is the yearly income)
+    pub earning: f64,
+    /// interest is money that must be payed off (ie for a loan or mortgage)
+    pub interest: f64,
+    /// contribution is money that goes from income to a savings type account (savings, college, retirement, etc)
+    pub contribution: f64,
+    /// amount contributed by employer
+    pub employer_contribution: f64,
+    /// payment is money that must come out of income
+    pub payment: f64,
+    /// withdrawal is money that may be considered income (dependIng on account type)
+    pub withdrawal: f64,
+    pub expense: f64,
+}
+
+#[cfg(test)]
+mod sample_plan_tests {
+    use super::*;
+    use crate::inputs::UserData;
+
+    fn load_sample() -> UserData<SimAccount> {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/sample_plan.json");
+        let json = std::fs::read_to_string(path).expect("could not read examples/sample_plan.json");
+        serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("sample_plan.json failed to deserialize: {e}"))
+    }
+
+    #[test]
+    fn sample_plan_deserializes() {
+        assert_eq!(load_sample().accounts.len(), 14);
+    }
+
+    #[test]
+    fn sample_plan_runs() {
+        // End-to-end smoke test: the bundled example must simulate cleanly.
+        let (plot_data, totals) = crate::run(load_sample()).unwrap();
+        assert_eq!(plot_data.len(), 14);
+        assert!(!totals.years().is_empty());
+    }
+
+    #[test]
+    fn sample_plan_round_trips_through_serialization() {
+        // Save -> load -> save must be lossless (field defaults materialize on
+        // the first save; after that the representation must be stable).
+        let data = load_sample();
+        let first = serde_json::to_value(&data).unwrap();
+        let reloaded: UserData<SimAccount> = serde_json::from_value(first.clone()).unwrap();
+        let second = serde_json::to_value(&reloaded).unwrap();
+        assert_eq!(first, second);
+    }
+}
